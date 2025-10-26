@@ -9,16 +9,16 @@ import { SiteFooter } from "@/components/marketing/SiteFooter";
 
 
 export default function Page() {
-  return (
-      <main className="min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-50">
-          <Hero/>
-          <Benefits/>
-          <SimulatorCTA/>
-          <WhyAutentika/>
-          <Testimonials/>
-          <GuideCTA/>
-          <DiagnosticForm/>
-          <SiteFooter/>
-      </main>
-  );
+    return (
+        <main>
+            <Hero />
+            <Benefits />
+            <SimulatorCTA />
+            <WhyAutentika />
+            <Testimonials />
+            <GuideCTA />
+            <DiagnosticForm />
+            <SiteFooter />
+        </main>
+    );
 }
