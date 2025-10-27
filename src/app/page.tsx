@@ -6,19 +6,26 @@ import { Testimonials } from "@/components/marketing/Testimonials";
 import { GuideCTA } from "@/components/marketing/GuideCTA";
 import { DiagnosticForm } from "@/components/marketing/DiagnosticForm";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
-
+import {FounderSection} from "@/components/marketing/FounderSection";
 
 export default function Page() {
-  return (
-      <main className="min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-50">
-          <Hero/>
-          <Benefits/>
-          <SimulatorCTA/>
-          <WhyAutentika/>
-          <Testimonials/>
-          <GuideCTA/>
-          <DiagnosticForm/>
-          <SiteFooter/>
-      </main>
-  );
+    return (
+        <main className="relative min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-50">
+            <Hero />
+            <Benefits />
+            <SimulatorCTA />
+            <WhyAutentika />
+            <FounderSection
+                waPhone={process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999"}
+                years={10}
+                cnpj="00.000.000/0001-00"
+                susep="30QP3J"
+                linkedinUrl="https://www.linkedin.com/in/wagnerlisboa" // ajuste se tiver
+            />
+            <Testimonials />
+            <GuideCTA />
+            <DiagnosticForm />
+            <SiteFooter />
+        </main>
+    );
 }
