@@ -6,6 +6,7 @@ import { Section } from "./Section";
 import { Award, Timer, BadgeCheck, ShieldCheck, TrendingUp } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import {FounderBadge} from "@/components/marketing/FounderBadge";
+import {ScrollCue} from "@/components/marketing/ScrollCue";
 
 export function Hero() {
     const router = useRouter();
@@ -106,7 +107,7 @@ export function Hero() {
                 className="pointer-events-none absolute inset-0 -z-10 opacity-[0.06] [background-image:radial-gradient(rgba(255,255,255,0.6)_1px,transparent_1px)] [background-size:12px_12px]"
             />
 
-            <Section className="pt-16">
+            <Section className="relative min-h-[100svh] flex flex-col items-center justify-center pt-20 pb-28">
                 {/* JSON-LD */}
                 <script
                     type="application/ld+json"
@@ -216,6 +217,18 @@ export function Hero() {
                         <TrustPill i={2} icon={TrendingUp} label="Acompanhamento até a contemplação"/>
                     </div>
                 </motion.div>
+                {/* Vignette inferior para não “entregar” a próxima seção */}
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-28 -z-0"
+                    style={{
+                        background:
+                            "linear-gradient(to bottom, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(2,6,23,0.75) 100%)",
+                    }}
+                />
+
+                {/* Scroll cue */}
+                <ScrollCue targetId="como-funciona" />
             </Section>
         </div>
     );
