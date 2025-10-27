@@ -135,7 +135,7 @@ export function Hero() {
                         variants={item}
                         className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-300 backdrop-blur md:text-sm"
                     >
-                        <span className="font-medium">Autentika Seguros</span>
+                        <span className="font-medium">Autentika Corretora</span>
                         <span aria-hidden>•</span>
                         <span>“Planeje hoje, conquiste sempre.”</span>
                     </motion.div>
@@ -200,7 +200,7 @@ export function Hero() {
                     <FounderBadge
                         name="Wagner Lisboa Gorgulho"
                         role="Corretor & Fundador"
-                        waPhone={process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999"}
+                        waPhone={process.env.NEXT_PUBLIC_WA_PHONE ?? "5521969639576"}
                         cnpj="25.241.008/0001-70"
                         susep="30QP3J" // se aplicável; senão remova a prop
                         linkedinUrl="https://www.linkedin.com/in/usuario" // opcional

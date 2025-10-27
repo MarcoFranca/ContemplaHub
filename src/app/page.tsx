@@ -16,9 +16,9 @@ export default function Page() {
             <SimulatorCTA />
             <WhyAutentika />
             <FounderSection
-                waPhone={process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999"}
+                waPhone={process.env.NEXT_PUBLIC_WA_PHONE ?? "5521969639576"}
                 years={10}
-                cnpj="00.000.000/0001-00"
+                cnpj="25.241.008/0001-70"
                 susep="30QP3J"
                 linkedinUrl="https://www.linkedin.com/in/wagnerlisboa" // ajuste se tiver
             />
