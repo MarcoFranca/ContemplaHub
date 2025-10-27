@@ -153,11 +153,11 @@ export function Hero() {
 
                     {/* Subheadline nova */}
                     <motion.p variants={item} className="mt-4 text-balance text-lg text-slate-300 md:text-xl">
-                        Sem juros. Sem promessas. Com método.
+                        O consórcio não é um investimento qualquer, é uma estratégia de construção patrimonial
+                        previsível, segura e sem juros.
                         <br className="hidden sm:block"/>
-                        A Autentika transforma o consórcio em uma jornada previsível
-                        com consultoria personalizada e
-                        acompanhamento até a contemplação.
+                        Com consultoria personalizada e acompanhamento até a contemplação, você alavanca seu patrimônio
+                        com método.
                     </motion.p>
 
                     {/* CTAs */}
