@@ -6,7 +6,6 @@ import { Testimonials } from "@/components/marketing/Testimonials";
 import { GuideCTA } from "@/components/marketing/GuideCTA";
 import { DiagnosticForm } from "@/components/marketing/DiagnosticForm";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
-import { SectionDivider } from "@/components/marketing/SectionDivider";
 import {FounderSection} from "@/components/marketing/FounderSection";
 
 export default function Page() {
@@ -19,7 +18,7 @@ export default function Page() {
             <SimulatorCTA />
             {/*<SectionDivider subtle />*/}
             <WhyAutentika />
-            <SectionDivider emerald={false} />
+            {/*<SectionDivider emerald={false} />*/}
             <FounderSection
                 waPhone={process.env.NEXT_PUBLIC_WA_PHONE ?? "5521969639576"}
                 years={10}
@@ -27,13 +26,13 @@ export default function Page() {
                 susep="30QP3J"
                 linkedinUrl="https://www.linkedin.com/in/wagnerlisboa" // ajuste se tiver
             />
-            <SectionDivider />
+            {/*<SectionDivider />*/}
             <Testimonials />
-            <SectionDivider emerald={false} />
+            {/*<SectionDivider emerald={false} />*/}
             <GuideCTA />
-            <SectionDivider subtle flip />
+            {/*<SectionDivider subtle flip />*/}
             <DiagnosticForm />
-            <SectionDivider />
+            {/*<SectionDivider />*/}
             <SiteFooter />
         </main>
     );
