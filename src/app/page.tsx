@@ -4,9 +4,9 @@ import { SimulatorCTA } from "@/components/marketing/SimulatorCTA";
 import { WhyAutentika } from "@/components/marketing/WhyAutentika";
 import { Testimonials } from "@/components/marketing/Testimonials";
 import { GuideCTA } from "@/components/marketing/GuideCTA";
-import { DiagnosticForm } from "@/components/marketing/DiagnosticForm";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import {FounderSection} from "@/components/marketing/FounderSection";
+import {DiagnosticSection} from "@/components/lead/DiagnosticSection";
 
 export default function Page() {
     return (
@@ -31,8 +31,11 @@ export default function Page() {
             {/*<SectionDivider emerald={false} />*/}
             <GuideCTA />
             {/*<SectionDivider subtle flip />*/}
-            <DiagnosticForm />
-            {/*<SectionDivider />*/}
+            <DiagnosticSection
+                title="Quer saber qual plano combina com você?"
+                subtitle="Receba um diagnóstico consultivo pelo WhatsApp — estratégia com previsões responsáveis."
+                waPhone={process.env.NEXT_PUBLIC_WA_PHONE}
+            />            {/*<SectionDivider />*/}
             <SiteFooter />
         </main>
     );

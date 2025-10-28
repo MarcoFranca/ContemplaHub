@@ -60,7 +60,7 @@ export function FounderBadge({
                     {susep && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-0.5">
               <Shield className="h-3 w-3 text-emerald-400" />
-                    SUSEP (seguros): {susep}
+                    SUSEP: {susep}
                         </span>
                     )}
                 </div>
