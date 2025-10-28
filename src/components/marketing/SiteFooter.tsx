@@ -27,8 +27,8 @@ export function SiteFooter({
     wa.searchParams.set("utm_medium", "footer_cta");
 
     return (
-        <footer className="border-t border-white/10 bg-white/[0.02]">
-            <Section className="py-12">
+        <footer className="border-t-2 border-white/10 bg-white/[0.02]">
+            <Section className=" relative py-12 isolate">
                 {/* JSON-LD Organization */}
                 <script
                     type="application/ld+json"
@@ -54,7 +54,6 @@ export function SiteFooter({
                         }),
                     }}
                 />
-
                 <div className="grid gap-10 md:grid-cols-4">
                     {/* Coluna 1: Marca / propósito */}
                     <div>

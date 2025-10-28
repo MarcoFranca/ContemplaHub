@@ -5,7 +5,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 type Variant = "emerald" | "sky" | "neutral";
-type Preset = "aurora" | "split" | "mesh";
+type Preset = "aurora" | "split" | "mesh" | "fineLines";
 
 type Props = {
     className?: string;
@@ -63,6 +63,30 @@ export function SectionFX({
                         }}
                         animate={reduce ? {} : { x: [0, 12, 0] }}
                         transition={reduce ? {} : { duration: 16, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                </>
+            )}
+
+            {preset === "fineLines" && (
+                <>
+                    {/* listras finíssimas diagonais */}
+                    <motion.div
+                        aria-hidden
+                        className="absolute inset-0 opacity-[0.35]"
+                        style={{
+                            backgroundImage:
+                                `repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 14px)`,
+                        }}
+                        animate={
+                            reduce
+                                ? {}
+                                : { backgroundPosition: ["0px 0px", "14px 14px", "0px 0px"] }
+                        }
+                        transition={
+                            reduce
+                                ? {}
+                                : { duration: 20, repeat: Infinity, ease: "linear" }
+                        }
                     />
                 </>
             )}
