@@ -30,7 +30,7 @@ export function SectionDivider({
             viewport={{ once: true }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-                "relative isolate h-[92px] w-full bg-gradient-to-b",
+                "absolute isolate -mt-8 h-[50px] w-full z-10 bg-gradient-to-b",
                 base,
                 flip && "rotate-180"
             )}

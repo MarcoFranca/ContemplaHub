@@ -230,6 +230,7 @@ export function Hero() {
                 {/* Scroll cue */}
                 <ScrollCue targetId="como-funciona" />
             </Section>
+
         </div>
     );
 }

@@ -32,7 +32,6 @@ const item: Variants = {
 };
 
 export function Benefits() {
-    const reduce = useReducedMotion();
 
     return (
         <Section id="como-funciona" aria-labelledby="benefits-title" className="relative isolate">
@@ -42,10 +41,10 @@ export function Benefits() {
             {/* topo com fade para “colar” no divider acima */}
             <div
                 aria-hidden
-                className="absolute -top-16 left-0 right-0 h-16 -z-10"
+                className="absolute top-0 left-0 right-0 h-16 -z-10"
                 style={{
                     background:
-                        "linear-gradient(to bottom, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(2,6,23,0.6) 100%)",
+                        "linear-gradient(to top, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 30%, rgba(0,0,0,1) 100%)",
                 }}
             />
 
@@ -116,12 +115,12 @@ export function Benefits() {
             </motion.div>
 
             {/* rodapé com fade para preparar o próximo divider */}
+            {/* Fade inferior para preparar o próximo divider */}
             <div
                 aria-hidden
-                className="absolute -bottom-16 left-0 right-0 h-16 -z-10"
+                className="absolute -bottom-16 left-0 right-0 h-16 -z-10 pointer-events-none"
                 style={{
-                    background:
-                        "linear-gradient(to top, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(2,6,23,0.6) 100%)",
+                    background: "linear-gradient(to top, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(2,6,23,1) 100%)",
                 }}
             />
         </Section>

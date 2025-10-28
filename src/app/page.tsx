@@ -11,13 +11,13 @@ import {FounderSection} from "@/components/marketing/FounderSection";
 
 export default function Page() {
     return (
-        <main className="relative min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-50">
+        <main className="overflow-hidden relative min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-50">
             <Hero />
             {/*<SectionDivider />*/}
             <Benefits />
             {/*<SectionDivider emerald={false} />*/}
             <SimulatorCTA />
-            <SectionDivider subtle />
+            {/*<SectionDivider subtle />*/}
             <WhyAutentika />
             <SectionDivider emerald={false} />
             <FounderSection
