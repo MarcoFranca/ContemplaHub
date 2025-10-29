@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Section } from "./Section";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, ShieldCheck, LineChart, MessageCircle, Linkedin } from "lucide-react";
+import { BadgeCheck, ShieldCheck, LineChart, MessageCircle, Instagram } from "lucide-react";
 import { motion, type Variants, useReducedMotion } from "framer-motion";
 import { SectionFX } from "@/components/marketing/SectionFX";
 
@@ -27,6 +27,7 @@ type Props = {
     cnpj?: string;       // ex: "00.000.000/0001-00"
     susep?: string;      // se aplicável
     linkedinUrl?: string;
+    instagramUrl?: string; // novo
 };
 
 export function FounderSection({
@@ -36,6 +37,7 @@ export function FounderSection({
                                    cnpj,
                                    susep,
                                    linkedinUrl,
+                                   instagramUrl,
                                }: Props) {
     const reduce = useReducedMotion();
     const wa = new URL(`https://wa.me/${waPhone}`);
@@ -162,15 +164,17 @@ export function FounderSection({
                             </Link>
                         </Button>
 
-                        {/* CTA secundário — LinkedIn */}
-                        {linkedinUrl && (
+                        {/* CTA secundário — Instagram */}
+                        {instagramUrl && (
                             <Button
-                                asChild size="lg" variant="outline"
+                                asChild
+                                size="lg"
+                                variant="outline"
                                 className="border-white/20 text-slate-100 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-emerald-400"
                             >
-                                <Link href={linkedinUrl} target="_blank">
-                                    <Linkedin className="mr-2 h-4 w-4" />
-                                    Ver LinkedIn
+                                <Link href={instagramUrl} target="_blank" rel="me noopener noreferrer">
+                                    <Instagram className="mr-2 h-4 w-4" />
+                                    Ver Instagram
                                 </Link>
                             </Button>
                         )}

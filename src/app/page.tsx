@@ -7,10 +7,12 @@ import { GuideCTA } from "@/components/marketing/GuideCTA";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import {FounderSection} from "@/components/marketing/FounderSection";
 import {DiagnosticSection} from "@/components/lead/DiagnosticSection";
+import {SiteHeader} from "@/components/marketing/SiteHeader";
 
 export default function Page() {
     return (
         <main className="overflow-hidden relative min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-50">
+            <SiteHeader />
             <Hero />
             {/*<SectionDivider />*/}
             <Benefits />
@@ -24,7 +26,8 @@ export default function Page() {
                 years={10}
                 cnpj="25.241.008/0001-70"
                 susep="30QP3J"
-                linkedinUrl="https://www.linkedin.com/in/wagnerlisboa" // ajuste se tiver
+                linkedinUrl="https://www.linkedin.com/in/wagner-lisboa-gorgulho-90653653/" // ajuste se tiver
+                instagramUrl="https://www.instagram.com/wagnergorgulho?igsh=c2N4c3Rpa2ZxaXhn"
             />
             {/*<SectionDivider />*/}
             <Testimonials />

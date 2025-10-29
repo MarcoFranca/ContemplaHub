@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Section } from "./Section";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Mail, ArrowUpRight, ShieldCheck, MapPin, Building2, Linkedin } from "lucide-react";
+import Image from "next/image";
 
 type Props = {
     waPhone?: string;          // ex: process.env.NEXT_PUBLIC_WA_PHONE
@@ -58,8 +59,14 @@ export function SiteFooter({
                     {/* Coluna 1: Marca / propósito */}
                     <div>
                         <div className="flex items-center gap-2">
-                            <div className="h-6 w-6 rounded-xl bg-gradient-to-br from-emerald-400 to-sky-400" />
-                            <p className="font-semibold">Autentika Seguros</p>
+                            <Image
+                                src="/icone.png"
+                                alt="Autentika Corretora"
+                                width={32}
+                                height={32}
+                                className="h-8 w-8"
+                            />
+                            <p className="font-semibold">Autentika Corretora</p>
                         </div>
                         <p className="mt-3 text-sm text-slate-400 max-w-sm">
                             Soluções inteligentes de consórcio e proteção patrimonial — método, previsibilidade e disciplina.
@@ -160,7 +167,7 @@ export function SiteFooter({
 
                 {/* Copy final */}
                 <div className="mt-8 text-xs text-slate-500">
-                    © {new Date().getFullYear()} Autentika Seguros. Todos os direitos reservados.
+                    © {new Date().getFullYear()} Autentika Corretora. Todos os direitos reservados.
                 </div>
             </Section>
         </footer>
