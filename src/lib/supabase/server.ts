@@ -7,7 +7,11 @@ export const supabaseServer = async () => {
 
     const cookieMethods: CookieMethodsServer = {
         getAll() {
-            return store.getAll().map((c) => ({ name: c.name, value: c.value }));
+            // Tipagem explícita para evitar TS7006
+            return store.getAll().map((c: { name: string; value: string }) => ({
+                name: c.name,
+                value: c.value,
+            }));
         },
         setAll() {
             // Em RSC não escrevemos cookies (no-op)

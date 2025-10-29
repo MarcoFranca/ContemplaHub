@@ -49,7 +49,7 @@ export function SiteHeader() {
                     </Link>
                     <Button
                         size="sm"
-                        onClick={() => window.open("/app/login", "_self")}
+                        onClick={() => window.open("/login", "_self")}
                         className="bg-emerald-500 text-black hover:bg-emerald-400"
                     >
                         Entrar
