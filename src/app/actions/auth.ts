@@ -1,29 +1,15 @@
-// src/app/actions/auth.ts
 "use server";
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 
-const emailSchema = z.object({ email: z.string().email() });
 const passSchema  = z.object({ email: z.string().email(), password: z.string().min(6) });
 const signUpSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
     name: z.string().min(2).max(120).optional(),
 });
-
-export async function signInWithOtpAction(formData: FormData) {
-    const email = String(formData.get("email") ?? "");
-    if (!emailSchema.safeParse({ email }).success) return { ok:false, message:"Informe um e-mail válido." };
-    const supabase = await supabaseServer();
-    const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` },
-    });
-    if (error) return { ok:false, message:error.message };
-    return { ok:true, message:"Enviamos um link de acesso ao seu e-mail." };
-}
 
 export async function signInWithPasswordAction(formData: FormData) {
     const email = String(formData.get("email") ?? "");
@@ -48,36 +34,31 @@ export async function signUpWithPasswordAction(formData: FormData) {
         password,
         options: {
             emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-            data: { name }, // user_metadata (opcional)
+            data: { name },
         },
     });
 
     if (error) return { ok: false, message: error.message };
 
-    // Se a confirmação de e-mail estiver DESLIGADA, a sessão já existe:
     const { data: { session } } = await supabase.auth.getSession();
     if (session) redirect("/app");
 
-    // Se confirmação estiver LIGADA, orientar usuário:
-    return {
-        ok: true,
-        message: "Conta criada! Enviamos um e-mail para confirmar seu acesso.",
-    };
+    return { ok: true, message: "Conta criada! Enviamos um e-mail para confirmar seu acesso." };
 }
 
-export async function signUpWithOtpAction(formData: FormData) {
+export async function resendConfirmationAction(formData: FormData) {
     const email = String(formData.get("email") ?? "");
-    const parsed = emailSchema.safeParse({ email });
-    if (!parsed.success) return { ok: false, message: "Informe um e-mail válido." };
+    if (!email) return { ok: false, message: "Informe o e-mail." };
 
     const supabase = await supabaseServer();
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.resend({
+        type: "signup",
         email,
         options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` },
     });
 
     if (error) return { ok: false, message: error.message };
-    return { ok: true, message: "Enviamos um link de acesso ao seu e-mail." };
+    return { ok: true, message: "Reenviamos o e-mail de confirmação." };
 }
 
 export async function signOutAction() {

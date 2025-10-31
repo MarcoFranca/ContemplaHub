@@ -1,4 +1,4 @@
-// src/lib/supabase/server.ts
+// src/lib/supabase/server.ts (essencial: setAll implementado)
 import { cookies } from "next/headers";
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 
@@ -7,14 +7,19 @@ export const supabaseServer = async () => {
 
     const cookieMethods: CookieMethodsServer = {
         getAll() {
-            // Tipagem explícita para evitar TS7006
             return store.getAll().map((c: { name: string; value: string }) => ({
                 name: c.name,
                 value: c.value,
             }));
         },
-        setAll() {
-            // Em RSC não escrevemos cookies (no-op)
+        setAll(cookiesToSet) {
+            try {
+                cookiesToSet.forEach(({ name, value, options }) => {
+                    store.set({ name, value, ...options });
+                });
+            } catch {
+                // Em RSC puro não pode escrever cookies → no-op silencioso
+            }
         },
     };
 
