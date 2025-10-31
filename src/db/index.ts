@@ -9,11 +9,13 @@ import * as dealsPropostas from "./schema/deals-propostas";
 import * as consorcio from "./schema/consorcio";
 import * as compliance from "./schema/compliance";
 import * as relations from "./schema/relations";
+import * as marketing from "./schema/marketing";
 
 // Conexão única (evite recriar em cada request)
 const connection = postgres(process.env.SUPABASE_DB_URL!, {
     max: 1, // RSC/Edge: ajuste conforme seu runtime
     prepare: true,
+    ssl: 'require',
 });
 
 export const db = drizzle(connection, {
@@ -24,6 +26,7 @@ export const db = drizzle(connection, {
         ...dealsPropostas,
         ...consorcio,
         ...compliance,
+        ...marketing,
         ...relations,
     },
 });
@@ -35,3 +38,4 @@ export * from "./schema/deals-propostas";
 export * from "./schema/consorcio";
 export * from "./schema/compliance";
 export * from "./schema/relations";
+export * from "./schema/marketing";

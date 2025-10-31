@@ -14,7 +14,11 @@ import { BrazilPhoneInput, PlainCurrencyInput } from "@/features/leads/inputs";
 import { PERFIS, objetivosByProduto, type ProdutoTipo } from "@/features/leads/catalogs";
 import { PerfilCombobox } from "@/features/leads/PerfilCombobox";
 
-type LeadFormProps = { onSuccess?: () => void };
+type LeadFormProps = {
+    hash?: string;              // 👈 adicionamos o hash
+    onSuccess?: () => void;
+};
+
 
 type LeadPost = {
     nome: string; email: string; telefone: string;
@@ -24,7 +28,7 @@ type LeadPost = {
     consentimento: boolean; tipo?: ProdutoTipo; company?: string;
 };
 
-export function LeadForm({ onSuccess }: LeadFormProps) {
+export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
     const [pending, start] = useTransition();
     const [err, setErr] = useState<string | null>(null);
     const [consented, setConsented] = useState(false);
@@ -76,7 +80,7 @@ export function LeadForm({ onSuccess }: LeadFormProps) {
 
     async function onSubmit(formData: FormData) {
         setErr(null);
-        const body = formToLeadPost(formData);
+        const body = { hash, ...formToLeadPost(formData)};
 
         if (!body.nome || !body.email || !body.telefone) { setErr("Preencha nome, WhatsApp e e-mail."); return; }
         if (!consented) { setErr("É necessário aceitar a Política de Privacidade."); return; }
@@ -110,7 +114,7 @@ export function LeadForm({ onSuccess }: LeadFormProps) {
             {/* WhatsApp (full mobile) */}
             <div className="grid gap-2 col-span-2 md:col-span-6 min-w-0">
                 <Label htmlFor="telefone">WhatsApp</Label>
-                <BrazilPhoneInput id="telefone" className={`${fieldH} w-full`} required />
+                <BrazilPhoneInput id="telefone" nameDisplay="telefone" className={`${fieldH} w-full`} required />
             </div>
 
             {/* E-mail (full mobile) */}

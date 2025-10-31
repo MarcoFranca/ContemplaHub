@@ -95,7 +95,7 @@ export function DiagnosticSection({
                         variants={item}
                         className="rounded-2xl border border-white/10 bg-white/[0.05] p-6 md:p-8 backdrop-blur-md"
                     >
-                        <LeadForm onSuccess={() => setOk(true)} />
+                        <LeadForm hash="autentika" onSuccess={() => setOk(true)} />
                     </motion.div>
                 ) : (
                     // estado de sucesso

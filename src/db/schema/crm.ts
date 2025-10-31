@@ -1,9 +1,10 @@
 import {
-    pgTable, uuid, text, integer, boolean, timestamp, numeric, jsonb,
+    pgTable, uuid, text, integer, boolean, timestamp, numeric,
     index, uniqueIndex, bigserial
 } from "drizzle-orm/pg-core";
 import { canalOrigem, leadStage, perfilPsico, atividadeTipo } from "./enums";
 import { orgs, profiles } from "./orgs-profiles";
+import {landingPages} from "@/db/schema/marketing";
 
 export const leads = pgTable(
     "leads",
@@ -29,6 +30,7 @@ export const leads = pgTable(
         ownerId: uuid("owner_id").references(() => profiles.userId),
         firstContactAt: timestamp("first_contact_at", { withTimezone: true }),
         lastActivityAt: timestamp("last_activity_at", { withTimezone: true }),
+        landingId: uuid("landing_id").references(() => landingPages.id),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
     },

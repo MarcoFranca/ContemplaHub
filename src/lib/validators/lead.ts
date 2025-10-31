@@ -20,6 +20,7 @@ export type PerfilPsico =
 /* ------------- Entrada vinda do formulário -------------- */
 export const LeadInSchema = z.object({
     // básicos
+    hash: z.string().min(2).default("autentika"),
     nome: z.string().min(2, "Nome obrigatório"),
     email: z.string().email("E-mail inválido"),
     telefone: z.string().min(10, "Telefone inválido"), // deve vir só dígitos (55DDDN...)
