@@ -1,45 +1,63 @@
-import { NextResponse } from "next/server";
+// src/app/api/lp/[slugOrHash]/config/route.ts
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const srv = () =>
-    createClient(
+function srv() {
+    return createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
         { auth: { persistSession: false } }
     );
+}
 
-export async function GET(_: Request, ctx: { params: { slugOrHash: string } }) {
+export async function GET(
+    _req: NextRequest,
+    context: { params: Promise<{ slugOrHash: string }> }
+) {
     try {
-        const key = ctx.params.slugOrHash;
-        if (!key) return NextResponse.json({ error: "Parâmetro ausente" }, { status: 400 });
+        const { slugOrHash } = await context.params;
+        const key = (slugOrHash ?? "").trim();
+
+        if (!key) {
+            return NextResponse.json({ error: "Parâmetro ausente" }, { status: 400 });
+        }
 
         const s = srv();
-        // tenta por slug
-        let { data, error } = await s
+
+        // 1) Tenta por slug
+        let { data: lp, error: err } = await s
             .from("landing_pages")
             .select("id, slug, public_hash, active, utm_defaults, org_id")
             .eq("slug", key)
-            .limit(1);
+            .maybeSingle();
 
-        if (error) throw error;
-        if (!data?.length) {
-            // tenta por hash
+        // 2) Se não achou, tenta por public_hash
+        if (!lp && !err) {
             const r2 = await s
                 .from("landing_pages")
                 .select("id, slug, public_hash, active, utm_defaults, org_id")
                 .eq("public_hash", key)
-                .limit(1);
-            if (r2.error) throw r2.error;
-            data = r2.data;
+                .maybeSingle();
+            lp = r2.data;
+            err = r2.error;
         }
 
-        const lp = data?.[0];
+        if (err) throw err;
         if (!lp || !lp.active) {
             return NextResponse.json({ error: "LP não encontrada/ativa" }, { status: 404 });
         }
 
-        const org = await s.from("orgs").select("id, nome, slug").eq("id", lp.org_id).single();
-        if (org.error) throw org.error;
+        // 3) Busca org
+        const { data: org, error: oErr } = await s
+            .from("orgs")
+            .select("id, nome, slug")
+            .eq("id", lp.org_id)
+            .single();
+
+        if (oErr) throw oErr;
 
         return NextResponse.json({
             landing: {
@@ -49,7 +67,7 @@ export async function GET(_: Request, ctx: { params: { slugOrHash: string } }) {
                 active: lp.active,
                 utm_defaults: lp.utm_defaults ?? {},
             },
-            org: org.data,
+            org,
             leads_endpoint: `${process.env.NEXT_PUBLIC_SITE_URL}/api/leads`,
         });
     } catch (e) {
