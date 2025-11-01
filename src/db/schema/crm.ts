@@ -31,6 +31,10 @@ export const leads = pgTable(
         firstContactAt: timestamp("first_contact_at", { withTimezone: true }),
         lastActivityAt: timestamp("last_activity_at", { withTimezone: true }),
         landingId: uuid("landing_id").references(() => landingPages.id),
+        sourceLabel: text("source_label"), // "Campanha Natal 2025"
+        formLabel: text("form_label"),     // "LP Principal / Google"
+        channel: text("channel"),          // "google_ads", "instagram", etc.
+        referrerUrl: text("referrer_url"),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
     },

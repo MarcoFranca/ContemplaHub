@@ -1,5 +1,5 @@
 // src/db/schema/marketing.ts
-import { pgTable, uuid, text, boolean, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import {pgTable, uuid, text, boolean, timestamp, jsonb, uniqueIndex, varchar} from "drizzle-orm/pg-core";
 import { orgs, profiles } from "./orgs-profiles";
 
 export const landingPages = pgTable("landing_pages", {
@@ -9,6 +9,8 @@ export const landingPages = pgTable("landing_pages", {
     slug: text("slug"),                              // opcional, SEO
     publicHash: text("public_hash").notNull(),       // ex.: a8F9xK
     utmDefaults: jsonb("utm_defaults"),
+    allowedDomains: text("allowed_domains").$type<string[] | null>(), // text[] no PG
+    webhookSecret: varchar("webhook_secret", { length: 128 }),
     active: boolean("active").default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 }, t => ({
