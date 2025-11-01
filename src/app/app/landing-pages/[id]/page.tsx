@@ -1,3 +1,5 @@
+import {ToastAnnouncer} from "@/components/ToastAnnouncer";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -196,6 +198,7 @@ await fetch(url, {
 
     return (
         <main className="p-6 space-y-6">
+            <ToastAnnouncer />
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Globe2 className="h-5 w-5 text-emerald-400" />
