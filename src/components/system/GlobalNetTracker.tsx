@@ -1,8 +1,8 @@
+// src/components/system/GlobalNetTracker.tsx
 "use client";
 
 import * as React from "react";
-
-type PendingKind = "saving" | "loading" | "rendering" | "navigating";
+import { consumePendingPref, type PendingKind } from "@/lib/pendingPref";
 
 function dispatchStart(kind?: PendingKind, label?: string) {
     window.dispatchEvent(new CustomEvent("pending:start", { detail: { kind, label } }));
@@ -35,27 +35,9 @@ function hasNextActionHeader(h?: HeadersInit): boolean {
     return Object.keys(h as Record<string, string>).some((k) => k.toLowerCase() === "next-action");
 }
 
-/** Preferência para o PRÓXIMO request (setada pelos botões) */
-declare global {
-    interface Window {
-        __pendingPref?: { kind?: PendingKind; label?: string; ts: number };
-    }
-}
-
-function consumePendingPref(): { kind?: PendingKind; label?: string } | undefined {
-    const pref = window.__pendingPref;
-    if (!pref) return undefined;
-    // segurança: expira em 2s se não for usada
-    if (Date.now() - pref.ts > 2000) {
-        window.__pendingPref = undefined;
-        return undefined;
-    }
-    window.__pendingPref = undefined;
-    return { kind: pref.kind, label: pref.label };
-}
-
 export function GlobalNetTracker() {
     React.useEffect(() => {
+        /* ---- patch fetch ---- */
         const origFetch = window.fetch;
 
         window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -64,8 +46,9 @@ export function GlobalNetTracker() {
             const internal = isInternalUrl(url);
             const serverAction = hasNextActionHeader(init?.headers);
 
-            // usa label/kind custom SE fornecida pelo botão (sem disparar manualmente)
+            // preferência custom vinda dos botões (expira em ~2s)
             const pref = consumePendingPref();
+
             if (serverAction || method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE") {
                 dispatchStart(pref?.kind ?? "saving", pref?.label);
             } else if (internal) {
@@ -80,32 +63,46 @@ export function GlobalNetTracker() {
             }
         };
 
+        /* ---- patch XMLHttpRequest tipado ---- */
         const OrigXHR = window.XMLHttpRequest;
+
         class XHRPatched extends OrigXHR {
             private __started = false;
             private __kind: PendingKind | undefined;
             private __label: string | undefined;
 
-            override open(method: string, url: string | URL, async = true, username?: string | null, password?: string | null): void {
+            override open(
+                method: string,
+                url: string | URL,
+                async = true,
+                username?: string | null,
+                password?: string | null
+            ): void {
                 const urlStr = typeof url === "string" ? url : url.toString();
                 const pref = consumePendingPref();
                 this.__kind = (isInternalUrl(urlStr) ? "loading" : undefined) ?? pref?.kind;
                 this.__label = pref?.label;
                 super.open(method, urlStr, async, username ?? undefined, password ?? undefined);
             }
+
             override send(body?: Document | XMLHttpRequestBodyInit | null): void {
                 if (!this.__started && this.__kind) {
                     dispatchStart(this.__kind, this.__label);
                     this.__started = true;
                 }
-                this.addEventListener("loadend", () => {
-                    dispatchStop();
-                    this.__started = false;
-                    this.__kind = undefined;
-                    this.__label = undefined;
-                }, { once: true });
+                this.addEventListener(
+                    "loadend",
+                    () => {
+                        dispatchStop();
+                        this.__started = false;
+                        this.__kind = undefined;
+                        this.__label = undefined;
+                    },
+                    { once: true }
+                );
                 super.send(body ?? null);
             }
+
             static readonly UNSENT = OrigXHR.UNSENT;
             static readonly OPENED = OrigXHR.OPENED;
             static readonly HEADERS_RECEIVED = OrigXHR.HEADERS_RECEIVED;
