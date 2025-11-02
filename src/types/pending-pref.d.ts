@@ -8,7 +8,7 @@ declare global {
         __pendingPref?: {
             kind?: PendingKind;
             label?: string;
-            ts?: number;
+            ts?: number; // deixe opcional aqui
         };
     }
 }

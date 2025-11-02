@@ -9,17 +9,11 @@ import {
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
     AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { setPendingPref, type PendingKind } from "@/lib/pendingPref";
 
 type ButtonVariant = React.ComponentProps<typeof Button>["variant"];
 type ButtonSize = React.ComponentProps<typeof Button>["size"];
-
 export type ConfirmMatchMode = "equals" | "equals-insensitive" | "custom";
-type PendingKind = "saving" | "loading" | "rendering" | "navigating";
-
-// >>> helper para preferência
-function setPendingPref(kind?: PendingKind, label?: string) {
-    window.__pendingPref = { kind, label, ts: Date.now() };
-}
 
 type Props = {
     title: string;
@@ -32,7 +26,6 @@ type Props = {
     iconLeft?: React.ReactNode;
     label?: string;
     ariaLabel?: string;
-
     expected?: string;
     mode?: ConfirmMatchMode;
     placeholder?: string;
@@ -40,7 +33,6 @@ type Props = {
     validate?: (value: string) => string | null;
     transform?: (value: string) => string;
     mismatchMessage?: string;
-
     pendingLabel?: string;
     pendingKind?: PendingKind;
     onBeforeSubmit?: () => void | boolean;
@@ -57,7 +49,6 @@ export function ConfirmInputSubmitButton({
                                              iconLeft,
                                              label,
                                              ariaLabel,
-
                                              expected = "",
                                              mode = "equals",
                                              placeholder,
@@ -65,10 +56,8 @@ export function ConfirmInputSubmitButton({
                                              validate,
                                              transform,
                                              mismatchMessage = "O valor digitado não confere.",
-
                                              pendingLabel = "Salvando…",
                                              pendingKind = "saving",
-
                                              onBeforeSubmit,
                                          }: Props) {
     const triggerRef = React.useRef<HTMLButtonElement>(null);
@@ -88,11 +77,9 @@ export function ConfirmInputSubmitButton({
     const onConfirm = React.useCallback(() => {
         const err = check(value);
         if (err) { setError(err); return; }
-
         if (onBeforeSubmit && onBeforeSubmit() === false) return;
 
-        // preferência de label/kind para o próximo fetch
-        if (pendingLabel || pendingKind) setPendingPref(pendingKind, pendingLabel);
+        setPendingPref(pendingKind, pendingLabel);
 
         const btn = triggerRef.current;
         const form = btn?.closest("form") as HTMLFormElement | null;

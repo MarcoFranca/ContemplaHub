@@ -1,27 +1,15 @@
+// src/components/commun/ConfirmSubmitButton.tsx
 "use client";
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+    AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-
-type PendingKind = "saving" | "loading" | "rendering" | "navigating";
-
-declare global {
-    interface Window {
-        __pendingPref?: { kind?: PendingKind; label?: string; ts: number };
-    }
-}
+import { setPendingPref, type PendingKind } from "@/lib/pendingPref";
 
 export type ConfirmSubmitButtonProps = {
     title: string;
@@ -60,8 +48,7 @@ export function ConfirmSubmitButton({
     }, []);
 
     const onConfirm = React.useCallback(() => {
-        // apenas prepara a preferência para o PRÓXIMO request
-        window.__pendingPref = { kind: pendingKind, label: pendingLabel, ts: Date.now() };
+        setPendingPref(pendingKind, pendingLabel);
         const form = findNearestForm();
         if (form) form.requestSubmit();
     }, [findNearestForm, pendingKind, pendingLabel]);
