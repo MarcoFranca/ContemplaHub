@@ -9,7 +9,7 @@ export const landingPages = pgTable("landing_pages", {
     slug: text("slug"),                              // opcional, SEO
     publicHash: text("public_hash").notNull(),       // ex.: a8F9xK
     utmDefaults: jsonb("utm_defaults"),
-    allowedDomains: text("allowed_domains").$type<string[] | null>(), // text[] no PG
+    allowedDomains: text("allowed_domains").array().$type<string[] | null>(),
     webhookSecret: varchar("webhook_secret", { length: 128 }),
     active: boolean("active").default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),

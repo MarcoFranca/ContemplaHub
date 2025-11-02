@@ -35,6 +35,7 @@ export const leads = pgTable(
         formLabel: text("form_label"),     // "LP Principal / Google"
         channel: text("channel"),          // "google_ads", "instagram", etc.
         referrerUrl: text("referrer_url"),
+        createdBy: uuid("created_by").references(() => profiles.userId),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
     },
@@ -42,6 +43,7 @@ export const leads = pgTable(
         byOrgEtapa: index("idx_leads_org_etapa").on(t.orgId, t.etapa),
         byOwner: index("idx_leads_owner").on(t.ownerId),
         byCreated: index("idx_leads_created").on(t.createdAt),
+        byCreatedBy: index("idx_leads_created_by").on(t.createdBy),
         contatoUnique: uniqueIndex("leads_contato_unique").on(t.orgId, t.telefone, t.email),
     })
 );
