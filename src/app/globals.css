@@ -144,3 +144,19 @@
 .animate-fade-in {
   animation: fade-in 0.4s ease-out both;
 }
+
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: .25 }
+  40% { opacity: 1 }
+}
+.dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: currentColor;
+  display: inline-block;
+  margin-left: 3px;
+  animation: dotPulse 1.2s infinite ease-in-out;
+}
+.dot2 { animation-delay: .2s }
+.dot3 { animation-delay: .4s }

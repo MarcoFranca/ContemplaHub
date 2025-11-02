@@ -1,3 +1,5 @@
+import {ConfirmInputSubmitButton} from "@/components/commun/ConfirmInputSubmitButton";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,7 @@ import {
     Plus,
 } from "lucide-react";
 import { ToastAnnouncer } from "@/components/ToastAnnouncer";
+import { ConfirmSubmitButton} from "@/components/commun/ConfirmSubmitButton";
 
 function normalizeSlug(s: string | null | undefined) {
     const raw = (s ?? "").trim().toLowerCase();
@@ -88,6 +91,8 @@ export default async function LandingPagesPage() {
     }
 
     const rows = await listLandingPages();
+    type LandingItem = (typeof rows)[number];
+
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
     return (
@@ -176,7 +181,7 @@ minha-lp.vercel.app`}
                         <p className="text-sm text-muted-foreground">Nenhuma LP criada.</p>
                     ) : (
                         <ul className="space-y-2">
-                            {rows.map((lp: any) => {
+                            {rows.map((lp: LandingItem) => {
                                 const publicUrl = lp.slug
                                     ? `${siteUrl}/lp/${lp.slug}`
                                     : `${siteUrl}/lp?h=${lp.public_hash}`;
@@ -224,7 +229,7 @@ minha-lp.vercel.app`}
                                         </div>
 
                                         <div className="flex items-center gap-1">
-                                            {/* Regenerar hash → volta com toast=hash */}
+                                            {/* Regenerar hash → toast=hash (com confirm) */}
                                             <form
                                                 action={async () => {
                                                     "use server";
@@ -232,17 +237,19 @@ minha-lp.vercel.app`}
                                                     redirect("/app/landing-pages?toast=hash");
                                                 }}
                                             >
-                                                <Button
-                                                    type="submit"
+                                                <ConfirmSubmitButton
+                                                    title="Gerar novo hash?"
+                                                    description="Isso invalida imediatamente o link público atual (?h=HASH). Confirma a rotação do hash desta LP?"
+                                                    confirmLabel="Gerar novo hash"
                                                     variant="ghost"
                                                     size="icon"
-                                                    title="Gerar novo hash público"
-                                                >
-                                                    <RefreshCw className="h-4 w-4" />
-                                                </Button>
+                                                    pendingLabel="Gerando novo hash…"
+                                                    pendingKind="saving"
+                                                    iconLeft={<RefreshCw className="h-4 w-4" />}
+                                                />
                                             </form>
 
-                                            {/* Toggle → volta com toast conforme estado */}
+                                            {/* Toggle → volta com toast conforme estado (sem confirm) */}
                                             <form
                                                 action={async () => {
                                                     "use server";
@@ -260,6 +267,7 @@ minha-lp.vercel.app`}
                                                     variant="ghost"
                                                     size="icon"
                                                     title={lp.active ? "Desativar" : "Ativar"}
+                                                    aria-label={lp.active ? "Desativar" : "Ativar"}
                                                 >
                                                     {lp.active ? (
                                                         <ToggleRight className="h-4 w-4" />
@@ -269,7 +277,7 @@ minha-lp.vercel.app`}
                                                 </Button>
                                             </form>
 
-                                            {/* Delete → volta com toast=deleted */}
+                                            {/* Delete → toast=deleted (com confirm) */}
                                             <form
                                                 action={async () => {
                                                     "use server";
@@ -277,15 +285,25 @@ minha-lp.vercel.app`}
                                                     redirect("/app/landing-pages?toast=deleted");
                                                 }}
                                             >
-                                                <Button
-                                                    type="submit"
+                                                <ConfirmInputSubmitButton
+                                                    title="Excluir definitivamente?"
+                                                    description="Esta ação é irreversível. Digite o slug (ou 'DELETAR') para confirmar."
+                                                    confirmLabel="Excluir"
+                                                    cancelLabel="Cancelar"
                                                     variant="ghost"
                                                     size="icon"
                                                     className="text-red-400"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                    iconLeft={<Trash2 className="h-4 w-4" />}
+                                                    // Confirma digitando exatamente o slug (ou troque para equals-insensitive)
+                                                    expected={lp.slug ?? "DELETAR"}
+                                                    mode={lp.slug ? "equals" : "equals-insensitive"}
+                                                    placeholder={lp.slug ? lp.slug : "DELETAR"}
+                                                    helperText={lp.slug ? "Digite o slug exatamente como acima." : "Digite DELETAR para confirmar."}
+                                                    mismatchMessage="Valor incorreto."
+                                                    // HUD GlobalPending:
+                                                    pendingKind="saving"
+                                                    pendingLabel="Deletando…"
+                                                />
                                             </form>
                                         </div>
                                     </li>

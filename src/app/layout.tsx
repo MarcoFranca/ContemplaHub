@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { SonnerProvider } from "./providers/sonner-provider";
+import {GlobalPending} from "@/components/system/GlobalPending";
+import {GlobalNetTracker} from "@/components/system/GlobalNetTracker";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -36,6 +38,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="autentika-theme">
             {children}
             <SonnerProvider />
+            <GlobalNetTracker />
+            <GlobalPending />
         </ThemeProvider>
         </body>
         </html>
