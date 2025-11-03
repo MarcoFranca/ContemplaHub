@@ -128,6 +128,7 @@ export async function listLeadsForKanban(args: ListArgs = {}) {
     return (data ?? []) as LeadCard[];
 }
 
+
 // ====== Movimentação de estágio com histórico ======
 export async function moveLeadStage(payload: {
     leadId: string;
@@ -173,38 +174,51 @@ export async function moveLeadStage(payload: {
     return updated;
 }
 
-// ====== Cadastro manual de lead ======
-export async function createLeadManual(form: {
-    nome: string;
-    telefone?: string;
-    email?: string;
-    origem?: string;
-    valorInteresse?: string;
-}) {
+
+// ====== Cadastro manual de lead (recebe FormData) ======
+export async function createLeadManual(formData: FormData): Promise<void> {
     const me = await getCurrentProfile();
     if (!me?.orgId) throw new Error("Sem organização.");
 
     const s = srv();
-    const origem = normalizeOrigem(form.origem);
+
+    const nome = String(formData.get("nome") ?? "").trim();
+    const emailRaw = String(formData.get("email") ?? "").trim();
+    const telefoneRaw = String(formData.get("telefone") ?? "").trim();
+    const origemRaw = String(formData.get("origem") ?? "orgânico").trim();
+    const valorInteresseRaw = String(formData.get("valorInteresse") ?? "").trim();
+
+    if (!nome) {
+        redirect("/app/leads?err=" + encodeURIComponent("Informe o nome do lead."));
+    }
+
+    const telefone = telefoneRaw ? telefoneRaw.replace(/\D+/g, "") : null;
+    const email = emailRaw || null;
+    const origem = normalizeOrigem(origemRaw);
+    const valor_interesse = valorInteresseRaw || null;
 
     const payload = {
         org_id: me.orgId,
-        nome: form.nome,
-        telefone: form.telefone || null,
-        email: form.email || null,
+        nome,
+        telefone,
+        email,
         origem,
         perfil: "nao_informado",
-        valor_interesse: form.valorInteresse ?? null,
+        valor_interesse,
         etapa: "novo" as Stage,
         owner_id: me.userId,
         created_by: me.userId,
     };
 
-    const { data, error } = await s.from("leads").insert(payload).select("id").single();
-    if (error) redirect("/app/leads?err=" + encodeURIComponent(error.message));
+    const { error } = await s.from("leads").insert(payload);
+    if (error) {
+        if (error.code === "23505") {
+            redirect("/app/leads?err=" + encodeURIComponent("Já existe um lead com esse telefone/e-mail."));
+        }
+        redirect("/app/leads?err=" + encodeURIComponent(error.message));
+    }
 
     revalidatePath("/app/leads");
-    return { ok: true, id: data?.id as string };
 }
 
 // ====== Opções para o modal (administradoras + grupos) ======
