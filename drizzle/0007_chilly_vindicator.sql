@@ -1,0 +1,1 @@
+ALTER TABLE "leads" ADD COLUMN "user_agent" text;

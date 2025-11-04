@@ -2,9 +2,9 @@
 
 import { useId, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { maskPhoneBR, normalizePhoneBR } from "@/lib/masks";
+import { maskCurrencyPlain, normalizeCurrencyPlain } from "@/lib/masks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { maskPhoneBR, normalizePhoneBR, maskCurrencyPlain, normalizeCurrencyPlain } from "@/lib/masks";
-
 /* ---------- Phone com máscara + hidden normalizado ---------- */
 export type PhoneInputProps = {
     id?: string;
@@ -14,13 +14,23 @@ export type PhoneInputProps = {
     defaultValue?: string;
     autoFocus?: boolean;
     className?: string;
+    /** Nova prop opcional: retorna (mascarado, dígitos) a cada mudança */
+    onValueChange?: (masked: string, digits: string) => void;
 };
 
 export function BrazilPhoneInput(props: PhoneInputProps) {
-    const { id, nameDisplay = "telefone_visual", nameNormalized = "telefone",
-        required, defaultValue = "", autoFocus, className } = props;
+    const {
+        id,
+        nameDisplay = "telefone_visual",
+        nameNormalized = "telefone",
+        required,
+        defaultValue = "",
+        autoFocus,
+        className,
+        onValueChange,
+    } = props;
 
-    const autoId = useId(); // hook sempre chamado
+    const autoId = useId();
     const _id = id ?? autoId;
 
     const [value, setValue] = useState(maskPhoneBR(defaultValue));
@@ -32,7 +42,12 @@ export function BrazilPhoneInput(props: PhoneInputProps) {
                 id={_id}
                 name={nameDisplay}
                 value={value}
-                onChange={(e) => setValue(maskPhoneBR(e.target.value))}
+                onChange={(e) => {
+                    const masked = maskPhoneBR(e.target.value);
+                    const digits = normalizePhoneBR(masked);
+                    setValue(masked);
+                    onValueChange?.(masked, digits);
+                }}
                 placeholder="(11) 99999-9999"
                 inputMode="tel"
                 autoComplete="tel-national"
@@ -49,23 +64,33 @@ export function BrazilPhoneInput(props: PhoneInputProps) {
 /* ---------- Currency simples (milhar, sem centavos) ---------- */
 export type CurrencyInputProps = {
     id?: string;
-    nameDisplay?: string;
-    nameNormalized?: string;
+    nameDisplay?: string;     // campo visível (mascarado)
+    nameNormalized?: string;  // campo hidden (normalizado p/ API)
     placeholder?: string;
     required?: boolean;
     defaultValue?: string;
     className?: string;
+    /** Nova prop opcional: retorna (mascarado, normalizado) a cada mudança */
+    onValueChange?: (masked: string, normalized: string) => void;
 };
 
 export function PlainCurrencyInput(props: CurrencyInputProps) {
-    const { id, nameDisplay = "valor_carta_visual", nameNormalized = "valor_carta",
-        placeholder = "300.000", required, defaultValue = "", className } = props;
+    const {
+        id,
+        nameDisplay = "valor_carta_visual",
+        nameNormalized = "valor_carta",
+        placeholder = "300.000",
+        required,
+        defaultValue = "",
+        className,
+        onValueChange,
+    } = props;
 
     const autoId = useId();
     const _id = id ?? autoId;
 
     const [value, setValue] = useState(maskCurrencyPlain(defaultValue));
-    const normalized = normalizeCurrencyPlain(value);
+    const normalized = normalizeCurrencyPlain(value); // ex.: "300000"
 
     return (
         <>
@@ -73,7 +98,12 @@ export function PlainCurrencyInput(props: CurrencyInputProps) {
                 id={_id}
                 name={nameDisplay}
                 value={value}
-                onChange={(e) => setValue(maskCurrencyPlain(e.target.value))}
+                onChange={(e) => {
+                    const masked = maskCurrencyPlain(e.target.value);
+                    const norm = normalizeCurrencyPlain(masked);
+                    setValue(masked);
+                    onValueChange?.(masked, norm);
+                }}
                 placeholder={placeholder}
                 inputMode="numeric"
                 autoComplete="off"
@@ -85,7 +115,6 @@ export function PlainCurrencyInput(props: CurrencyInputProps) {
         </>
     );
 }
-
 /* ---------- Select com “Outro” + campo livre ---------- */
 export type SelectWithOtherProps = {
     id: string;

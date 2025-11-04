@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 import { onlyDigits } from "@/lib/masks";
 import { BrazilPhoneInput, PlainCurrencyInput } from "@/features/leads/inputs";
 import { PERFIS, objetivosByProduto, type ProdutoTipo } from "@/features/leads/catalogs";
@@ -33,6 +33,7 @@ export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
     const [err, setErr] = useState<string | null>(null);
     const [consented, setConsented] = useState(false);
 
+    const [loading, setLoading] = useState(false);
     const [tipo, setTipo] = useState<ProdutoTipo>("imobiliario");
     const [prazo, setPrazo] = useState<string>("180");
     const [prazoOutro, setPrazoOutro] = useState<string>("");

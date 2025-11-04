@@ -3,24 +3,38 @@ import { createClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
 import { z } from "zod";
 
+// helpers
+const toDigits = (s?: string | null) => (s ? String(s).replace(/\D+/g, "") : "");
+const toDecimal = (s?: string | null) =>
+    s ? String(s).replace(/\./g, "").replace(",", ".") : null;
+
+// Aceita camel + snake; normaliza tipos
 const LeadInSchema = z.object({
     org_id: z.string().uuid().optional(),
     landing_id: z.string().uuid().optional(),
     public_hash: z.string().min(2).optional(),
-    hash: z.string().min(2).optional(), // alias legado
+    hash: z.string().min(2).optional(),
 
     nome: z.string().min(2),
-    telefone: z.string().min(6),
+    telefone: z.string().min(6),             // já virá em dígitos do client; revalidamos abaixo
     email: z.string().email().optional().nullable(),
 
-    // campos conforme seu schema atual
-    valorInteresse: z.coerce.number().optional().nullable(),
-    prazoMeses: z.coerce.number().optional().nullable(),
+    // aceita ambos padrões (form manda snake, antigo manda camel)
+    valorInteresse: z.union([z.number(), z.string()]).optional().nullable(),
+    valor_carta: z.union([z.number(), z.string()]).optional().nullable(),
+
+    prazoMeses: z.union([z.number(), z.string()]).optional().nullable(),
+    prazo_meses: z.union([z.number(), z.string()]).optional().nullable(),
+
     objetivo: z.string().optional().nullable(),
-    perfil: z.string().optional().nullable(),
+    perfil: z.string().optional().nullable(),       // alias de perfil_psico
+    perfil_psico: z.string().optional().nullable(), // vindo do form
+
     observacoes: z.string().optional().nullable(),
 
-    consentimento: z.union([z.boolean(), z.string()]).transform(v => (v === true || v === "true")),
+    consentimento: z
+        .union([z.boolean(), z.string()])
+        .transform(v => (v === true || v === "true")),
 
     utm_source: z.string().optional().nullable(),
     utm_medium: z.string().optional().nullable(),
@@ -31,6 +45,9 @@ const LeadInSchema = z.object({
     source_label: z.string().optional().nullable(),
     form_label: z.string().optional().nullable(),
     channel: z.string().optional().nullable(),
+
+    // produto do interesse (ex.: "imobiliario" | "auto")
+    tipo: z.string().optional().nullable(),
 });
 
 type LeadIn = z.infer<typeof LeadInSchema>;
@@ -84,28 +101,37 @@ export async function POST(req: Request) {
         }
 
         if (body?.hash && !body?.public_hash) body.public_hash = body.hash;
+
+        // Parse + normalização de aliases
         const parsed = LeadInSchema.parse(body);
 
+        // normaliza telefone (garante dígitos)
+        const telefoneDigits = toDigits(parsed.telefone);
+        if (telefoneDigits.length < 10) {
+            return NextResponse.json({ error: "Telefone inválido." }, { status: 400 });
+        }
+
+        // resolve landing
         if (!parsed.landing_id && !parsed.public_hash) {
             return NextResponse.json({ error: "landing_id ou public_hash obrigatório." }, { status: 400 });
         }
 
-        // resolve landing
-        let q = s.from("landing_pages")
+        let q = s
+            .from("landing_pages")
             .select("id, org_id, owner_user_id, public_hash, active, allowed_domains, webhook_secret")
             .eq("active", true);
         if (parsed.landing_id) q = q.eq("id", parsed.landing_id);
         if (parsed.public_hash) q = q.eq("public_hash", parsed.public_hash);
-
         const { data: landing, error: landErr } = await q.single();
         if (landErr || !landing) {
             return NextResponse.json({ error: "Landing inválida/inativa." }, { status: 400 });
         }
 
         // allowed_domains
-        const okDomain = Array.isArray(landing.allowed_domains) && landing.allowed_domains.length
-            ? landing.allowed_domains.some((d: string) => origin.includes(d) || referer.includes(d))
-            : true;
+        const okDomain =
+            Array.isArray(landing.allowed_domains) && landing.allowed_domains.length
+                ? landing.allowed_domains.some((d: string) => origin.includes(d) || referer.includes(d))
+                : true;
         if (!okDomain) {
             return NextResponse.json({ error: "Origem não permitida." }, { status: 403 });
         }
@@ -118,19 +144,27 @@ export async function POST(req: Request) {
             }
         }
 
-        const payload = {
+        // mapeia valores do interesse (aceita camel + snake)
+        const valorInteresseIn =
+            parsed.valorInteresse ??
+            (parsed.valor_carta != null ? Number(toDecimal(String(parsed.valor_carta))) : null);
+
+        const prazoMesesIn =
+            parsed.prazoMeses ??
+            (parsed.prazo_meses != null ? Number(parsed.prazo_meses) : null);
+
+        const perfilIn = parsed.perfil ?? parsed.perfil_psico ?? null;
+
+        // payload do lead (tabela leads)
+        const leadPayload = {
             org_id: landing.org_id,
             owner_id: landing.owner_user_id,
             landing_id: landing.id,
-            origem: "lp_externa",
+            origem: "lp",
             nome: parsed.nome,
-            telefone: parsed.telefone,
+            telefone: telefoneDigits,
             email: parsed.email ?? null,
-            valor_interesse: parsed.valorInteresse ?? null, // <- nome real na tabela? (se snake no banco)
-            prazo_meses: parsed.prazoMeses ?? null,        // idem
-            objetivo: parsed.objetivo ?? null,
-            perfil: parsed.perfil ?? null,
-            observacoes: parsed.observacoes ?? null,
+            perfil: "nao_informado",
             consentimento: parsed.consentimento,
             consent_scope: "lp_form",
             consent_ts: new Date().toISOString(),
@@ -147,26 +181,46 @@ export async function POST(req: Request) {
             etapa: "novo",
         };
 
-        // 🔎 ATENÇÃO ao nome das colunas no Postgres
-        // Se sua tabela usa snake_case (padrão Drizzle para nome real),
-        // mantenha as chaves acima em snake_case.
-        // Se você criou camelCase direto no Postgres, troque os nomes para camel aqui.
-
         const { data: lead, error: insErr } = await s
             .from("leads")
-            .insert(payload)
+            .insert(leadPayload)
             .select("id")
             .single();
         if (insErr) throw insErr;
 
         const leadId = lead.id as string;
 
+        // cria interesse "aberto" se houver quaisquer dados
+        const hasInterest =
+            valorInteresseIn != null ||
+            prazoMesesIn != null ||
+            parsed.objetivo ||
+            perfilIn ||
+            parsed.observacoes ||
+            parsed.tipo;
+
+        if (hasInterest) {
+            const { error: intErr } = await s.from("lead_interesses").insert({
+                org_id: landing.org_id,
+                lead_id: leadId,
+                produto: parsed.tipo ?? null,                     // "imobiliario" | "auto"
+                valor_total: valorInteresseIn as number | null,   // decimal normalizado
+                prazo_meses: prazoMesesIn as number | null,
+                objetivo: parsed.objetivo ?? null,
+                perfil_desejado: perfilIn,
+                observacao: parsed.observacoes ?? null,
+                status: "aberto",
+                created_by: landing.owner_user_id,
+            });
+            if (intErr) throw intErr;
+        }
+
         // consent log
-        if (payload.consentimento) {
+        if (leadPayload.consentimento) {
             await s.from("consent_logs").insert([{
                 lead_id: leadId,
                 consentimento: true,
-                scope: payload.consent_scope,
+                scope: leadPayload.consent_scope,
                 ip,
                 user_agent: ua,
             }]);

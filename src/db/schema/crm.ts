@@ -35,6 +35,7 @@ export const leads = pgTable(
         formLabel: text("form_label"),     // "LP Principal / Google"
         channel: text("channel"),          // "google_ads", "instagram", etc.
         referrerUrl: text("referrer_url"),
+        userAgent: text("user_agent"),
         createdBy: uuid("created_by").references(() => profiles.userId),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),

@@ -1,4 +1,3 @@
-// src/app/app/leads/page.tsx
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -72,7 +71,7 @@ export default async function LeadsKanbanPage() {
     );
 }
 
-/** Dialog 100% compatível com Server Component (sem handlers de cliente) */
+/** Dialog de criação de lead + (opcional) interesse aberto */
 function CreateLeadDialog() {
     return (
         <Dialog>
@@ -80,31 +79,32 @@ function CreateLeadDialog() {
                 <Button>Novo lead</Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Novo lead manual</DialogTitle>
                 </DialogHeader>
 
                 {/* Server Action direta; sem onSubmit (usa required nativo) */}
-                <form action={createLeadManual} className="space-y-3">
+                <form action={createLeadManual} className="space-y-4">
+                    {/* DADOS DO LEAD */}
                     <div className="grid gap-2">
                         <Label htmlFor="nome">Nome</Label>
                         <Input id="nome" name="nome" required placeholder="Ex.: Ana Lima" />
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="telefone">Telefone</Label>
-                        <Input id="telefone" name="telefone" placeholder="(11) 99999-9999" />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="email">E-mail</Label>
-                        <Input id="email" type="email" name="email" placeholder="ana@exemplo.com" />
+                    <div className="grid gap-2 md:grid-cols-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="telefone">Telefone</Label>
+                            <Input id="telefone" name="telefone" placeholder="(11) 99999-9999" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">E-mail</Label>
+                            <Input id="email" type="email" name="email" placeholder="ana@exemplo.com" />
+                        </div>
                     </div>
 
                     <div className="grid gap-2">
                         <Label htmlFor="origem">Origem</Label>
-                        {/* select nativo: evita onValueChange em Client Component */}
                         <select
                             id="origem"
                             name="origem"
@@ -120,9 +120,56 @@ function CreateLeadDialog() {
                         </select>
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="valorInteresse">Valor de interesse (opcional)</Label>
-                        <Input id="valorInteresse" name="valorInteresse" placeholder="Ex.: 350000" />
+                    {/* INTERESSE (opcional) */}
+                    <div className="pt-3 border-t border-white/10">
+                        <p className="text-sm font-medium">Interesse (opcional)</p>
+                        <div className="grid gap-2 md:grid-cols-2 mt-2">
+                            <div className="grid gap-2">
+                                <Label htmlFor="produto">Produto</Label>
+                                <select id="produto" name="produto" className="h-9 rounded-md bg-background border px-2 text-sm">
+                                    <option value="">—</option>
+                                    <option value="imobiliario">Imobiliário</option>
+                                    <option value="auto">Auto</option>
+                                </select>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="valorTotal">Valor total</Label>
+                                <Input id="valorTotal" name="valorTotal" placeholder="Ex.: 350.000,00" />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="prazoMeses">Prazo (meses)</Label>
+                                <Input id="prazoMeses" name="prazoMeses" type="number" placeholder="Ex.: 180" />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="perfilDesejado">Perfil</Label>
+                                <select id="perfilDesejado" name="perfilDesejado" className="h-9 rounded-md bg-background border px-2 text-sm">
+                                    <option value="">—</option>
+                                    <option value="disciplinado_acumulador">Disciplinado acumulador</option>
+                                    <option value="sonhador_familiar">Sonhador familiar</option>
+                                    <option value="corporativo_racional">Corporativo racional</option>
+                                    <option value="impulsivo_emocional">Impulsivo emocional</option>
+                                    <option value="estrategico_oportunista">Estratégico oportunista</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-2 mt-2">
+                            <Label htmlFor="objetivo">Objetivo</Label>
+                            <Input id="objetivo" name="objetivo" placeholder="Compra de imóvel / troca do carro / etc." />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="observacao">Observação</Label>
+                            <textarea
+                                id="observacao"
+                                name="observacao"
+                                className="min-h-[80px] rounded-md bg-background border px-3 py-2 text-sm"
+                                placeholder="Notas adicionais sobre o interesse…"
+                            />
+                        </div>
                     </div>
 
                     <DialogFooter>

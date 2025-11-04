@@ -31,27 +31,27 @@ export const objetivosByProduto = (p: ProdutoTipo) =>
 /** PERFIS com descrição curta para o combobox */
 export const PERFIS = [
     {
-        v: "disciplinado-acumulador",
+        v: "disciplinado_acumulador",
         l: "Disciplinado Acumulador",
         d: "Planejamento rígido e foco em patrimônio de longo prazo.",
     },
     {
-        v: "sonhador-familiar",
+        v: "sonhador_familiar",
         l: "Sonhador Familiar",
         d: "Prioriza estabilidade da família e segurança do lar.",
     },
     {
-        v: "corporativo-racional",
+        v: "corporativo_racional",
         l: "Corporativo Racional (PJ)",
         d: "Empresário que pensa em fluxo de caixa e blindagem.",
     },
     {
-        v: "impulsivo-emocional",
+        v: "impulsivo_emocional",
         l: "Impulsivo Emocional (guiado)",
         d: "Gosta de rapidez, precisa de rota e disciplina.",
     },
     {
-        v: "estrategico-oportunista",
+        v: "estrategico_oportunista",
         l: "Estratégico Oportunista",
         d: "Busca vantagens, timings e condições exclusivas.",
     },
