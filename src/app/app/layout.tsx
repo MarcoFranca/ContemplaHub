@@ -1,28 +1,18 @@
-// src/app/app/layout.tsx
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
-import { Sidebar } from "@/components/app/Sidebar";
-import { Header } from "@/components/app/Header";
 import { SectionFX } from "@/components/marketing/SectionFX";
+import { AppShell } from "@/components/app/AppShell";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
     const supabase = await supabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) redirect("/login");
 
     return (
-        <div className="relative min-h-screen text-slate-50 flex">
-            {/* fundo mesh cobrindo tudo */}
-            <SectionFX
-                preset="mesh"
-                variant="emerald"
-                showGrid
-                className="absolute inset-0 -z-10"
-            />
-
-            {/* vinheta e textura extras (igual LP) */}
+        <div className="relative isolate h-[100dvh] w-full overflow-hidden text-slate-50">
+            {/* Background fixo, não rola nunca */}
+            <SectionFX preset="mesh" variant="emerald" showGrid className="absolute inset-0 -z-10" />
             <div
                 aria-hidden
                 className="absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay"
@@ -33,12 +23,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
                 }}
             />
 
-            {/* estrutura principal */}
-            <Sidebar />
-            <div className="flex-1 flex flex-col ml-60 relative z-10">
-                <Header />
-                <main className="flex-1 px-6 py-8 overflow-y-auto">{children}</main>
-            </div>
+            {/* AppShell controla sidebar/header/main e o espaço do children */}
+            <AppShell>{children}</AppShell>
         </div>
     );
 }

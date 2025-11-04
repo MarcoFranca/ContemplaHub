@@ -57,6 +57,13 @@
       "when": 1762255692705,
       "tag": "0007_chilly_vindicator",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1762272650512,
+      "tag": "0008_large_vargas",
+      "breakpoints": true
     }
   ]
 }

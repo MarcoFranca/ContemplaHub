@@ -1,67 +1,37 @@
 "use client";
 
-import { useOptimistic, useTransition, useMemo, useState } from "react";
+import * as React from "react";
+import { useOptimistic, useTransition } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-    DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { createContractFromLead, type AdminOption, type GrupoOption } from "../actions";
-
-type Stage =
-    | "novo"
-    | "diagnostico"
-    | "proposta"
-    | "negociacao"
-    | "fechamento"
-    | "ativo"
-    | "perdido";
-
-export type Lead = {
-    id: string;
-    nome: string | null;
-    etapa: Stage;
-    telefone?: string | null;
-    email?: string | null;
-    origem?: string | null;
-    utm_source?: string | null;
-    valor_interesse?: string | null; // legado (se existir)
-    prazo_meses?: number | null;     // legado (se existir)
-    created_at?: string;
-
-    interest?: {
-        produto?: string | null;
-        valorTotal?: string | null;
-        prazoMeses?: number | null;
-        objetivo?: string | null;
-        perfilDesejado?: string | null;
-        observacao?: string | null;
-    } | null;
-};
+import { LeadCardItem, type Lead, type Stage } from "./LeadCardItem";
+import type { AdminOption, GrupoOption } from "../actions";
 
 type OptimisticAction = { id: string; from: Stage; to: Stage };
+
+// zona próxima da borda que ativa o scroll e velocidade máx
+const EDGE_PX = 96;
+const MAX_SPEED = 28;
 
 export default function KanbanBoard({
                                         initialColumns,
                                         stages,
                                         onMove,
                                         contractOptions,
+                                        CreateContractDialog,
                                     }: {
     initialColumns: Record<Stage, Lead[]>;
     stages: Stage[];
     onMove: (leadId: string, to: Stage) => Promise<void>;
     contractOptions: { administradoras: AdminOption[]; grupos: GrupoOption[] };
+    CreateContractDialog: React.ComponentType<{
+        leadId: string;
+        leadName: string;
+        administradoras: AdminOption[];
+        grupos: GrupoOption[];
+        onSuccess?: () => void;
+    }>;
 }) {
-    const [isPending, start] = useTransition();
-
+    const [, start] = useTransition();
     const [columns, setColumns] = useOptimistic<Record<Stage, Lead[]>, OptimisticAction>(
         initialColumns,
         (state, action) => {
@@ -79,12 +49,20 @@ export default function KanbanBoard({
         }
     );
 
+    const containerRef = React.useRef<HTMLDivElement | null>(null);
+    const draggingRef = React.useRef(false);
+    const rafRef = React.useRef<number | null>(null);
+    const speedRef = React.useRef(0); // velocidade dinâmica (px/frame)
+
     function onDragStart(ev: React.DragEvent, lead: Lead) {
         ev.dataTransfer.setData("text/plain", JSON.stringify(lead));
+        draggingRef.current = true;
     }
 
     function onDrop(ev: React.DragEvent, to: Stage) {
         ev.preventDefault();
+        draggingRef.current = false;
+        stopAutoScroll();
         const raw = ev.dataTransfer.getData("text/plain");
         if (!raw) return;
         try {
@@ -94,64 +72,118 @@ export default function KanbanBoard({
                 setColumns({ id: lead.id, from, to });
                 await onMove(lead.id, to);
             });
-        } catch {
-            // ignore parse errors
-        }
+        } catch {}
     }
 
+    // ---- Auto-scroll baseado em dragover global ----
+    function stopAutoScroll() {
+        if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+        speedRef.current = 0;
+    }
+
+    function loop() {
+        const el = containerRef.current;
+        if (!el || !draggingRef.current) {
+            rafRef.current = null;
+            return;
+        }
+        const speed = speedRef.current;
+        if (speed !== 0) {
+            const max = el.scrollWidth - el.clientWidth;
+            const next = Math.min(max, Math.max(0, el.scrollLeft + speed));
+            el.scrollLeft = next;
+        }
+        rafRef.current = requestAnimationFrame(loop);
+    }
+
+    React.useEffect(() => {
+        function handleDragOver(e: DragEvent) {
+            if (!draggingRef.current) return;
+            const el = containerRef.current;
+            if (!el) return;
+
+            const rect = el.getBoundingClientRect();
+            const x = e.clientX;
+
+            // calcula proximidade das bordas visíveis
+            const distLeft = Math.max(0, x - rect.left);
+            const distRight = Math.max(0, rect.right - x);
+
+            let speed = 0;
+            if (distLeft <= EDGE_PX) {
+                // quanto mais perto, mais rápido (aceleração suave)
+                const pct = 1 - distLeft / EDGE_PX; // 0..1
+                if (el.scrollLeft > 0) speed = -Math.ceil(pct * MAX_SPEED);
+            } else if (distRight <= EDGE_PX) {
+                const pct = 1 - distRight / EDGE_PX; // 0..1
+                const max = el.scrollWidth - el.clientWidth;
+                if (el.scrollLeft < max) speed = Math.ceil(pct * MAX_SPEED);
+            }
+
+            speedRef.current = speed;
+            if (!rafRef.current) rafRef.current = requestAnimationFrame(loop);
+
+            // permitir drop em qualquer ponto
+            e.preventDefault();
+        }
+
+        function handleDragEnd() {
+            draggingRef.current = false;
+            stopAutoScroll();
+        }
+
+        document.addEventListener("dragover", handleDragOver, { passive: false });
+        document.addEventListener("dragend", handleDragEnd);
+        return () => {
+            document.removeEventListener("dragover", handleDragOver as any);
+            document.removeEventListener("dragend", handleDragEnd as any);
+            stopAutoScroll();
+        };
+    }, []);
+
     return (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-3 xl:grid-cols-7">
+        <div
+            ref={containerRef}
+            className="
+        relative h-full
+        overflow-x-auto overflow-y-hidden
+        flex flex-nowrap gap-3 md:gap-4
+        [scrollbar-width:thin]
+        /* REMOVIDO snap-x/snap-mandatory para não 'puxar' de volta */
+        will-change-[scroll-position]
+        bg-[radial-gradient(1200px_600px_at_10%_-10%,rgba(16,185,129,0.06),transparent_60%),radial-gradient(1000px_500px_at_90%_110%,rgba(59,130,246,0.05),transparent_60%)]
+        bg-no-repeat
+      "
+        >
             {stages.map((s) => (
-                <Card key={s} className="bg-white/5 border-white/10">
-                    <CardHeader>
-                        <CardTitle className="text-sm capitalize">{s}</CardTitle>
+                <Card
+                    key={s}
+                    className="
+            bg-white/5 border-white/10 overflow-hidden
+            flex-none
+            w-[70vw] xs:w-[72vw] sm:w-[260px] md:w-[280px] xl:w-[300px]
+            h-full
+          "
+                >
+                    <CardHeader className="sticky top-0 z-10 bg-gradient-to-b from-slate-900/60 to-slate-900/20 backdrop-blur border-b border-white/5 py-3">
+                        <CardTitle className="text-sm font-semibold tracking-wide capitalize">{s}</CardTitle>
                     </CardHeader>
 
                     <CardContent
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => onDrop(e, s)}
-                        className="min-h-[60vh] space-y-2"
+                        className="h-[calc(100%-48px)] overflow-y-auto p-2 md:p-3 space-y-3 [scrollbar-width:thin]"
                     >
                         {columns[s].map((l) => (
-                            <div
+                            <LeadCardItem
                                 key={l.id}
-                                draggable
-                                onDragStart={(e) => onDragStart(e, l)}
-                                className="rounded-lg border border-white/10 bg-white/10 p-3 cursor-grab active:cursor-grabbing"
-                            >
-                                <div className="flex items-start justify-between gap-2">
-                                    <div>
-                                        <p className="font-medium leading-tight">{l.nome ?? "—"}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {l.telefone ?? l.email ?? "—"} • {l.origem ?? l.utm_source ?? "site"}
-                                        </p>
-                                    </div>
-
-                                    {/* Interesse: abrir resumo */}
-                                    {l.interest ? (
-                                        <InterestDetailsDialog interest={l.interest} />
-                                    ) : null}
-                                </div>
-
-                                {/* Linha de interesse resumida (fallback usa campos legados se não existir interest aberto) */}
-                                <InterestSummaryRow lead={l} />
-
-                                {l.etapa === "fechamento" && (
-                                    <div className="mt-3">
-                                        <CreateContractDialog
-                                            leadId={l.id}
-                                            leadName={l.nome ?? "Cliente"}
-                                            administradoras={contractOptions.administradoras}
-                                            grupos={contractOptions.grupos}
-                                            onSuccess={() => {
-                                                toast.success("Contrato criado. Cliente movido para Carteira.");
-                                            }}
-                                        />
-                                    </div>
-                                )}
-                            </div>
+                                lead={l}
+                                onDragStart={onDragStart}
+                                contractOptions={contractOptions}
+                                CreateContractDialog={CreateContractDialog}
+                            />
                         ))}
-
                         {columns[s].length === 0 && (
                             <p className="text-xs text-muted-foreground">Arraste cards para cá.</p>
                         )}
@@ -159,232 +191,5 @@ export default function KanbanBoard({
                 </Card>
             ))}
         </div>
-    );
-}
-
-/** Badge simples */
-function Pill({ children, title }: { children: React.ReactNode; title?: string }) {
-    return (
-        <span
-            title={title}
-            className="inline-flex items-center gap-1 rounded-full bg-white/10 border border-white/10 px-2 py-0.5 text-[11px] leading-none"
-        >
-      {children}
-    </span>
-    );
-}
-
-/** Linha compacta com os principais dados do interesse */
-function InterestSummaryRow({ lead }: { lead: Lead }) {
-    const i = lead.interest;
-    const produto = i?.produto;
-    const prazo = (i?.prazoMeses ?? lead.prazo_meses) || null;
-    const valor = i?.valorTotal ?? lead.valor_interesse ?? null;
-    const objetivo = i?.objetivo ?? null;
-    const perfil = i?.perfilDesejado ?? null;
-
-    if (!produto && !prazo && !valor && !objetivo && !perfil) return null;
-
-    return (
-        <div className="mt-2 flex flex-wrap gap-1">
-            {produto && <Pill>{produto}</Pill>}
-            {prazo && <Pill title="Prazo (meses)">{prazo}m</Pill>}
-            {valor && (
-                <Pill title="Valor total">
-                    {(() => {
-                        const n = Number(String(valor).replace(/\./g, "").replace(",", "."));
-                        return isFinite(n) ? `R$ ${n.toLocaleString("pt-BR")}` : String(valor);
-                    })()}
-                </Pill>
-            )}
-            {objetivo && <Pill title="Objetivo">{objetivo}</Pill>}
-            {perfil && <Pill title="Perfil">{perfil}</Pill>}
-        </div>
-    );
-}
-
-/** Dialog para ver os detalhes do interesse “aberto” */
-function InterestDetailsDialog({
-                                   interest,
-                               }: {
-    interest: NonNullable<Lead["interest"]>;
-}) {
-    const { produto, valorTotal, prazoMeses, objetivo, perfilDesejado, observacao } = interest;
-    return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                    Ver interesse
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Interesse do lead</DialogTitle>
-                </DialogHeader>
-
-                <div className="grid gap-3 text-sm">
-                    <div className="grid gap-1">
-                        <span className="text-muted-foreground">Produto</span>
-                        <span className="font-medium">{produto ?? "—"}</span>
-                    </div>
-
-                    <div className="grid gap-1 md:grid-cols-2">
-                        <div className="grid gap-1">
-                            <span className="text-muted-foreground">Valor total</span>
-                            <span className="font-medium">
-                {valorTotal
-                    ? (() => {
-                        const n = Number(String(valorTotal).replace(/\./g, "").replace(",", "."));
-                        return isFinite(n) ? `R$ ${n.toLocaleString("pt-BR")}` : String(valorTotal);
-                    })()
-                    : "—"}
-              </span>
-                        </div>
-                        <div className="grid gap-1">
-                            <span className="text-muted-foreground">Prazo (meses)</span>
-                            <span className="font-medium">{prazoMeses ?? "—"}</span>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-1">
-                        <span className="text-muted-foreground">Objetivo</span>
-                        <span className="font-medium">{objetivo ?? "—"}</span>
-                    </div>
-
-                    <div className="grid gap-1">
-                        <span className="text-muted-foreground">Perfil</span>
-                        <span className="font-medium">{perfilDesejado ?? "—"}</span>
-                    </div>
-
-                    <div className="grid gap-1">
-                        <span className="text-muted-foreground">Observação</span>
-                        <span className="font-medium whitespace-pre-wrap">{observacao ?? "—"}</span>
-                    </div>
-                </div>
-
-                <DialogFooter>
-                    <Button type="button" variant="outline">
-                        Fechar
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-// ============== Modal CreateContractDialog ===================
-function CreateContractDialog({
-                                  leadId,
-                                  leadName,
-                                  administradoras,
-                                  grupos,
-                                  onSuccess,
-                              }: {
-    leadId: string;
-    leadName: string;
-    administradoras: AdminOption[];
-    grupos: GrupoOption[];
-    onSuccess?: () => void;
-}) {
-    const [open, setOpen] = useState(false);
-    const [admId, setAdmId] = useState<string>("");
-
-    const gruposFiltrados = useMemo(
-        () => grupos.filter((g) => g.administradoraId === admId),
-        [grupos, admId]
-    );
-
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button size="sm">Gerar contrato</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Novo contrato — {leadName}</DialogTitle>
-                </DialogHeader>
-
-                <form
-                    action={createContractFromLead} // Server Action (Promise<void>)
-                    onSubmit={(e) => {
-                        const form = e.currentTarget as HTMLFormElement;
-                        const fd = new FormData(form);
-                        if (!fd.get("administradoraId") || !fd.get("grupoId") || !fd.get("valorCarta")) {
-                            e.preventDefault();
-                            return;
-                        }
-                        setOpen(false);
-                        toast.loading("Criando contrato…");
-                        onSuccess?.();
-                    }}
-                    className="space-y-3"
-                >
-                    <input type="hidden" name="leadId" value={leadId} />
-
-                    <div className="grid gap-2">
-                        <Label>Administradora</Label>
-                        <select
-                            name="administradoraId"
-                            value={admId}
-                            onChange={(e) => setAdmId(e.target.value)}
-                            className="h-9 rounded-md bg-background border px-2 text-sm"
-                            required
-                        >
-                            <option value="">Selecione…</option>
-                            {administradoras.map((a) => (
-                                <option key={a.id} value={a.id}>
-                                    {a.nome}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label>Grupo</Label>
-                        <select name="grupoId" className="h-9 rounded-md bg-background border px-2 text-sm" required>
-                            <option value="">Selecione…</option>
-                            {gruposFiltrados.map((g) => (
-                                <option key={g.id} value={g.id}>
-                                    {g.codigo ?? g.id}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label>Produto</Label>
-                        <select name="produto" defaultValue="imobiliario" className="h-9 rounded-md bg-background border px-2 text-sm">
-                            <option value="imobiliario">Imobiliário</option>
-                            <option value="auto">Auto</option>
-                        </select>
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label>Valor da carta</Label>
-                        <Input name="valorCarta" placeholder="Ex.: 350.000,00" required />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="grid gap-2">
-                            <Label>Data de adesão (opcional)</Label>
-                            <Input type="date" name="dataAdesao" />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Data de assinatura (opcional)</Label>
-                            <Input type="date" name="dataAssinatura" />
-                        </div>
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label>Nº do contrato (opcional)</Label>
-                        <Input name="numero" placeholder="Ex.: 2025-000123" />
-                    </div>
-
-                    <DialogFooter>
-                        <Button type="submit">Criar contrato</Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
     );
 }

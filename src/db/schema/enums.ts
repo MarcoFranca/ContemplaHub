@@ -7,6 +7,9 @@ export const perfilPsico = pgEnum("perfil_psico", [
     "impulsivo_emocional",
     "estrategico_oportunista",
     "nao_informado",
+    "conservador",
+    "moderado",
+    "arrojado",
 ]);
 
 export const leadStage = pgEnum("lead_stage", [
