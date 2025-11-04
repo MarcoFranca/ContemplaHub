@@ -12,6 +12,33 @@ import { Label } from "@/components/ui/label";
 import { CopyButton } from "@/components/CopyInline";
 import Link from "next/link";
 import { Globe2, ArrowLeft } from "lucide-react";
+import { Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+function Hint({ children }: { children: React.ReactNode }) {
+    return <p className="text-xs text-muted-foreground">{children}</p>;
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+    return (
+        <kbd className="rounded border bg-black/30 px-1.5 py-0.5 text-[11px]">
+            {children}
+        </kbd>
+    );
+}
+
+function Tt({ tip }: { tip: string }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Info className="ml-1 inline-block h-4 w-4 text-emerald-400 align-middle" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                {tip}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
 
 /**
  * Next 15 / React 19:
@@ -86,6 +113,7 @@ export default async function Page({
     ].join("\n");
 
     const HTML_FORM = `<!-- Exemplo de formulário HTML puro enviando ao seu /api/leads -->
+
 <form id="lead-form" method="post" action="${siteUrl}/api/leads">
   <input type="hidden" name="origem" value="lp_externa">
   <input type="hidden" name="org_id" value="${lp.org.id}">
@@ -113,9 +141,10 @@ export default async function Page({
   <label>Objetivo</label><input name="objetivo">
   <label>Perfil</label><input name="perfil">
   <label>Observações</label><textarea name="observacoes"></textarea>
-  <label><input type="checkbox" name="consentimento" checked> Autorizo contato</label>
+  <label><input type="checkbox" name="consentimento" value="true" checked> Autorizo contato</label>
   <button type="submit">Enviar</button>
 </form>
+
 <script>
 (function(){
   var p = new URLSearchParams(window.location.search);
@@ -226,6 +255,10 @@ await fetch(url, {
                             <CopyButton value={PUBLIC_CONFIG_URL} />
                         </div>
                     </div>
+                    <Hint>
+                        Use a <Kbd>URL pública</Kbd> para testar a LP pronta no nosso domínio.
+                        A <Kbd>Config JSON</Kbd> expõe dados básicos para quem quiser renderizar a LP do lado do cliente (sem credenciais).
+                    </Hint>
                 </CardContent>
             </Card>
 
@@ -233,14 +266,29 @@ await fetch(url, {
                 <CardHeader><CardTitle>ENV (projetos Next/Node)</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                     <div className="flex justify-end"><CopyButton value={ENV_BLOCK} /></div>
+                    <Hint>
+                        Em projetos Next/Node, coloque isso no <Kbd>.env</Kbd> e use em seu front-end
+                        quando precisar compor requests para <Kbd>/api/leads</Kbd>.
+                    </Hint>
                     <pre className="text-xs bg-black/40 p-3 rounded-md overflow-x-auto">{ENV_BLOCK}</pre>
                 </CardContent>
+
             </Card>
 
             <Card className="bg-white/5 border-white/10">
                 <CardHeader><CardTitle>HTML do formulário (LP externa)</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                     <div className="flex justify-end"><CopyButton value={HTML_FORM} /></div>
+                    <Hint>
+                        Copie e cole em qualquer site (WordPress, Elementor, HTML puro).
+                        Campos obrigatórios: <Kbd>nome</Kbd>, <Kbd>telefone</Kbd> e <Kbd>consentimento</Kbd>.{" "}
+                        O formulário já inclui honeypot contra bots e UTMs automáticas
+                        <Tt tip="O script preenche utm_source/utm_medium/utm_campaign/utm_term/utm_content a partir da URL." />.
+                    </Hint>
+                    <Hint>
+                        <strong>Dica:</strong> o campo <Kbd>telefone</Kbd> deve ir somente com dígitos (ex.: 5511999999999).
+                        Se seu formulário mascara o número, normalize antes de enviar.
+                    </Hint>
                     <pre className="text-xs bg-black/40 p-3 rounded-md overflow-x-auto">{HTML_FORM}</pre>
                 </CardContent>
             </Card>
@@ -249,22 +297,36 @@ await fetch(url, {
                 <CardHeader><CardTitle>Script de UTMs</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                     <div className="flex justify-end"><CopyButton value={`<script>${JS_UTM}</script>`} /></div>
+                    <Hint>
+                        Cole este <Kbd>&lt;script&gt;</Kbd> no fim da sua página. Ele puxa as UTMs da URL
+                        e preenche os <Kbd>inputs hidden</Kbd> do formulário automaticamente.
+                    </Hint>
                     <pre className="text-xs bg-black/40 p-3 rounded-md overflow-x-auto">{JS_UTM}</pre>
                 </CardContent>
+
             </Card>
 
             <Card className="bg-white/5 border-white/10">
                 <CardHeader><CardTitle>Config pública (exemplo)</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                     <div className="flex justify-end"><CopyButton value={PUBLIC_JSON} /></div>
+                    <Hint>
+                        Útil para renderizar breadcrumbs/labels no seu site sem expor segredos.{" "}
+                        <Tt tip="Não inclui chaves privadas; é seguro para ser usado client-side." />
+                    </Hint>
                     <pre className="text-xs bg-black/40 p-3 rounded-md overflow-x-auto">{PUBLIC_JSON}</pre>
                 </CardContent>
+
             </Card>
 
             {/* Segurança e Integração */}
             <Card className="bg-white/5 border-white/10">
                 <CardHeader><CardTitle>Segurança da Integração</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
+                    <Hint>
+                        Informe domínios permitidos (um por linha). Ex.: <Kbd>seudominio.com</Kbd> ou{" "}
+                        <Kbd>app.seudominio.com</Kbd>. Nós validamos <Kbd>Origin</Kbd>/<Kbd>Referer</Kbd> contra essa lista.
+                    </Hint>
                     <form action={actionSaveDomains} className="space-y-2">
                         <Label>Allowed Domains (um por linha ou separados por vírgula)</Label>
                         <textarea name="domains" defaultValue={DOMAINS_TEXT} className="w-full h-28 rounded-md bg-black/30 p-2 text-sm" />
@@ -286,6 +348,43 @@ await fetch(url, {
                             </p>
                         </div>
                     </div>
+                    <Hint>
+                        <strong>Use HMAC somente para JSON</strong>. Se for formulário HTML puro (post de navegador), não precisa assinar.{" "}
+                        <Tt tip="Quando você envia application/json via fetch/axios, exigimos X-Auth-Signature = HMAC_SHA256(secret, body)" />
+                    </Hint>
+
+                </CardContent>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10">
+                <CardHeader><CardTitle>Teste rápido (sem programar)</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                    <Hint>
+                        Envie um lead de teste direto daqui. Isso usa <Kbd>form-data</Kbd> (como um formulário de site) e
+                        respeita seus <Kbd>Allowed Domains</Kbd>.
+                    </Hint>
+                    <form
+                        action={`${siteUrl}/api/leads`}
+                        method="post"
+                        target="_blank"
+                        className="grid gap-2 md:grid-cols-3"
+                    >
+                        <input type="hidden" name="org_id" value={lp.org.id} />
+                        <input type="hidden" name="landing_id" value={lp.id} />
+                        <input type="hidden" name="public_hash" value={lp.public_hash} />
+                        <Input name="nome" placeholder="Nome" required />
+                        <Input name="telefone" placeholder="5511999999999" required />
+                        <Input name="email" type="email" placeholder="email@exemplo.com" />
+                        <Input name="valorInteresse" placeholder="350000" />
+                        <Input name="prazoMeses" placeholder="180" />
+                        <Input name="objetivo" placeholder="Comprar imóvel" />
+                        <Input name="perfil" placeholder="nao_informado" />
+                        <Input name="observacoes" placeholder="Lead de teste" />
+                        <input type="hidden" name="consentimento" value="true" />
+                        <div className="md:col-span-3">
+                            <Button type="submit">Enviar lead de teste</Button>
+                        </div>
+                    </form>
                 </CardContent>
             </Card>
 
@@ -294,6 +393,9 @@ await fetch(url, {
                 <CardHeader><CardTitle>Embed • Form HTML</CardTitle></CardHeader>
                 <CardContent>
                     <div className="flex justify-end"><CopyButton value={EMBED_HTML} /></div>
+                    <Hint>
+                        Para um teste rápido sem publicar no seu site, abra a URL pública da LP e verifique se os leads chegam no Kanban.
+                    </Hint>
                     <pre className="text-xs bg-black/40 p-3 rounded-md overflow-x-auto">{EMBED_HTML}</pre>
                 </CardContent>
             </Card>
@@ -302,9 +404,28 @@ await fetch(url, {
                 <CardHeader><CardTitle>Webhook • JSON Assinado (HMAC)</CardTitle></CardHeader>
                 <CardContent>
                     <div className="flex justify-end"><CopyButton value={WEBHOOK_JSON} /></div>
+                    <Hint>
+                        Para integrações headless (React, Vue, Apps), envie <Kbd>application/json</Kbd> assinado.
+                        Exemplo em Node abaixo. Em outras linguagens, gere o HMAC SHA-256 do <Kbd>body JSON</Kbd> com o <Kbd>secret</Kbd> e
+                        envie no header <Kbd>X-Auth-Signature</Kbd>.
+                    </Hint>
                     <pre className="text-xs bg-black/40 p-3 rounded-md overflow-x-auto">{WEBHOOK_JSON}</pre>
                 </CardContent>
             </Card>
+
+            <Card className="bg-white/5 border-white/10">
+                <CardHeader><CardTitle>Ajuda rápida</CardTitle></CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li><strong>“Origem não permitida”</strong>: inclua seu domínio em <Kbd>Allowed Domains</Kbd> e salve.</li>
+                        <li><strong>Telefone inválido</strong>: envie apenas dígitos com DDI/DDD (ex.: 5511999999999).</li>
+                        <li><strong>Erro de enum/perfil</strong>: use valores como <Kbd>nao_informado</Kbd> ou um dos perfis sugeridos no painel.</li>
+                        <li><strong>JSON com HMAC</strong>: calcule o SHA-256 do body e envie no header <Kbd>X-Auth-Signature</Kbd>.</li>
+                        <li><strong>Spam</strong>: mantemos um campo honeypot <Kbd>company</Kbd>; não preencha esse campo no formulário real.</li>
+                    </ul>
+                </CardContent>
+            </Card>
+
         </main>
     );
 }
