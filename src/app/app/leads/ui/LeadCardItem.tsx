@@ -1,13 +1,17 @@
-// src/app/app/leads/ui/LeadCardItem.tsx
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
 import { InterestSummaryRow } from "./InterestSummaryRow";
 import { InterestDetailsDialog } from "./InterestDetailsDialog";
-import type { AdminOption, GrupoOption } from "../actions";
 
-export type Stage = "novo" | "diagnostico" | "proposta" | "negociacao" | "fechamento" | "ativo" | "perdido";
+export type Stage =
+    | "novo"
+    | "diagnostico"
+    | "proposta"
+    | "negociacao"
+    | "fechamento"
+    | "ativo"
+    | "perdido";
 
 export type Lead = {
     id: string;
@@ -32,22 +36,10 @@ export type Lead = {
 export function LeadCardItem({
                                  lead,
                                  onDragStart,
-                                 contractOptions,
-                                 CreateContractDialog,
                              }: {
     lead: Lead;
     onDragStart: (e: React.DragEvent, l: Lead) => void;
-    contractOptions: { administradoras: AdminOption[]; grupos: GrupoOption[] };
-    CreateContractDialog: React.ComponentType<{
-        leadId: string;
-        leadName: string;
-        administradoras: AdminOption[];
-        grupos: GrupoOption[];
-        onSuccess?: () => void;
-    }>;
 }) {
-    const Contract = CreateContractDialog;
-
     return (
         <div
             draggable
@@ -66,18 +58,6 @@ export function LeadCardItem({
             </div>
 
             <InterestSummaryRow lead={lead as any} />
-
-            {lead.etapa === "fechamento" && (
-                <div className="mt-3">
-                    <Contract
-                        leadId={lead.id}
-                        leadName={lead.nome ?? "Cliente"}
-                        administradoras={contractOptions.administradoras}
-                        grupos={contractOptions.grupos}
-                        onSuccess={() => toast.success("Contrato criado. Cliente movido para Carteira.")}
-                    />
-                </div>
-            )}
         </div>
     );
 }

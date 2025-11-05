@@ -4,35 +4,30 @@ import * as React from "react";
 import { useOptimistic, useTransition } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { LeadCardItem, type Lead, type Stage } from "./LeadCardItem";
-import type { AdminOption, GrupoOption } from "../actions";
 import { toast } from "sonner";
-import {ContractDrawer} from "@/components/app/ContractDrawer";
+import { ContractDrawer } from "@/components/app/ContractDrawer";
+import {fireConfetti} from "@/lib/ui/confetti";
 
 type OptimisticAction = { id: string; from: Stage; to: Stage };
+export type AdminOption = { id: string; nome: string };
 
 // zona próxima da borda que ativa o scroll e velocidade máx
 const EDGE_PX = 96;
 const MAX_SPEED = 28;
+
+type Props = {
+    initialColumns: Record<Stage, Lead[]>;
+    stages: Stage[];
+    onMove: (leadId: string, to: Stage) => Promise<void>;
+    contractOptions: { administradoras: AdminOption[] }; // ❗️apenas administradoras
+};
 
 export default function KanbanBoard({
                                         initialColumns,
                                         stages,
                                         onMove,
                                         contractOptions,
-                                        CreateContractDialog,
-                                    }: {
-    initialColumns: Record<Stage, Lead[]>;
-    stages: Stage[];
-    onMove: (leadId: string, to: Stage) => Promise<void>;
-    contractOptions: { administradoras: AdminOption[]; grupos: GrupoOption[] };
-    CreateContractDialog: React.ComponentType<{
-        leadId: string;
-        leadName: string;
-        administradoras: AdminOption[];
-        grupos: GrupoOption[];
-        onSuccess?: () => void;
-    }>;
-}) {
+                                    }: Props) {
     const [, start] = useTransition();
     const [columns, setColumns] = useOptimistic<Record<Stage, Lead[]>, OptimisticAction>(
         initialColumns,
@@ -56,15 +51,14 @@ export default function KanbanBoard({
     const rafRef = React.useRef<number | null>(null);
     const speedRef = React.useRef(0); // velocidade dinâmica (px/frame)
 
-    // === Modal de contrato controlado ===
+    // === Drawer de contrato controlado ===
     const [contractLead, setContractLead] = React.useState<{ id: string; nome: string } | null>(null);
-    const ContractDialog = CreateContractDialog;
 
-    function openContractDialogFor(id: string, nome: string) {
+    function openContractDrawerFor(id: string, nome: string) {
         setContractLead({ id, nome });
     }
 
-    function closeContractDialog() {
+    function closeContractDrawer() {
         setContractLead(null);
     }
 
@@ -83,9 +77,9 @@ export default function KanbanBoard({
             const lead = JSON.parse(raw) as Lead;
             const from = lead.etapa;
 
-            // 👇 intercepta “ativo”: abre modal em vez de mover direto
+            // 👉 Se soltar em “ativo”, abre o Drawer de contrato (não move ainda)
             if (to === "ativo") {
-                openContractDialogFor(lead.id, lead.nome ?? "Cliente");
+                openContractDrawerFor(lead.id, lead.nome ?? "Cliente");
                 return;
             }
 
@@ -127,7 +121,6 @@ export default function KanbanBoard({
             const rect = el.getBoundingClientRect();
             const x = e.clientX;
 
-            // calcula proximidade das bordas visíveis
             const distLeft = Math.max(0, x - rect.left);
             const distRight = Math.max(0, rect.right - x);
 
@@ -159,6 +152,9 @@ export default function KanbanBoard({
             stopAutoScroll();
         };
     }, []);
+
+    // 🎉 confete helper
+
 
     return (
         <>
@@ -198,8 +194,6 @@ export default function KanbanBoard({
                                     key={l.id}
                                     lead={l}
                                     onDragStart={onDragStart}
-                                    contractOptions={contractOptions}
-                                    CreateContractDialog={CreateContractDialog}
                                 />
                             ))}
                             {columns[s].length === 0 && (
@@ -210,18 +204,27 @@ export default function KanbanBoard({
                 ))}
             </div>
 
-            {/* Modal de contrato ao dropar em “ativo” */}
+            {/* Drawer de contrato quando soltar em “ativo” */}
             {contractLead && (
                 <ContractDrawer
                     open={!!contractLead}
-                    onOpenChange={(v) => !v && closeContractDialog()}
+                    onOpenChange={(v) => !v && closeContractDrawer()}
                     leadId={contractLead.id}
                     leadName={contractLead.nome}
                     administradoras={contractOptions.administradoras}
-                    grupos={contractOptions.grupos}
-                    onSuccess={() => {
-                        toast.success("Contrato criado e lead movido para Carteira.");
-                        closeContractDialog();
+                    onSuccess={async () => {
+                        toast.success(
+                            <span>
+                Contrato criado e cliente movido para a Carteira.{" "}
+                                <a
+                                    href="/app/carteira"
+                                    className="underline text-emerald-300 hover:text-emerald-200 ml-1"
+                                >
+                  Ver Carteira →
+                </a>
+              </span>
+                        );
+                        await fireConfetti();
                     }}
                 />
             )}

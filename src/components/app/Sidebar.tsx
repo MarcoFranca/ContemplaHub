@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
     Home, Trello, Users, Building2, Globe2, LogOut,
-    PanelLeftClose, PanelLeftOpen,
+    PanelLeftClose, PanelLeftOpen, Briefcase,
 } from "lucide-react";
 
 const links = [
     { href: "/app", icon: Home, label: "Painel" },
     { href: "/app/leads", icon: Trello, label: "Leads" },
+    { href: "/app/carteira", icon: Briefcase, label: "Carteira" },
     { href: "/app/usuarios", icon: Users, label: "Usuários" },
     { href: "/app/organizacao", icon: Building2, label: "Organização" },
     { href: "/app/landing-pages", icon: Globe2, label: "Landing Pages" },

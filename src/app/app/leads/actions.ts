@@ -367,7 +367,7 @@ export async function listContractOptions(): Promise<{
 }
 
 // ====== Criar contrato + cota e mover lead para "ativo" (versão compatível com novo schema) ======
-export async function createContractFromLead(formData: FormData) {
+export async function createContractFromLead(formData: FormData): Promise<void> {
     const me = await getCurrentProfile();
     if (!me?.orgId) throw new Error("Sem organização.");
 
@@ -484,11 +484,12 @@ export async function createContractFromLead(formData: FormData) {
         .eq("org_id", me.orgId);
     if (uErr) throw uErr;
 
+
     // revalidate
     revalidatePath("/app/leads");
     revalidatePath("/app/carteira");
     revalidatePath("/app");
-
-    return { ok: true, cotaId: cota.id };
+    const cotaId = "...";
+    console.log("Contrato criado:", cotaId);
 }
 

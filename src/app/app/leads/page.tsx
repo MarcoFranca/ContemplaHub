@@ -29,10 +29,9 @@ export default async function LeadsKanbanPage() {
                     stages={STAGES}
                     onMove={async (leadId, to) => {
                         "use server";
-                        await moveLeadStage({leadId, to});
+                        await moveLeadStage({ leadId, to });
                     }}
-                    contractOptions={contractOptions}
-                    CreateContractDialog={CreateContractDialog}
+                    contractOptions={contractOptions} // { administradoras: [...] }
                 />
             </div>
         </div>

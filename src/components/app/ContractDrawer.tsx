@@ -47,7 +47,14 @@ export function ContractDrawer({
                     action={createContractFromLead}
                     onSubmit={(e) => {
                         const fd = new FormData(e.currentTarget);
-                        if (!fd.get("administradoraId") || !fd.get("valorCarta")) {
+                        // Validamos antes — não retornar Promise aqui (evita TS2322)
+                        if (
+                            !fd.get("administradoraId") ||
+                            !fd.get("numeroCota") ||
+                            !fd.get("grupoCodigo") ||
+                            !fd.get("valorCarta") ||
+                            !fd.get("produto")
+                        ) {
                             e.preventDefault();
                             toast.error("Preencha os campos obrigatórios.");
                             return;
@@ -83,25 +90,17 @@ export function ContractDrawer({
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <Label>Nº da cota</Label>
-                                <Input
-                                    name="numeroCota"
-                                    placeholder="Ex: 1302-004"
-                                    required
-                                />
+                                <Input name="numeroCota" placeholder="Ex: 1302-004" required />
                             </div>
                             <div>
                                 <Label>Grupo</Label>
-                                <Input
-                                    name="grupoCodigo"
-                                    placeholder="Ex: IM-2030"
-                                    required
-                                />
+                                <Input name="grupoCodigo" placeholder="Ex: IM-2030" required />
                             </div>
                         </div>
                     </div>
 
                     {/* ======================= */}
-                    {/* BLOCO 2 — Financeiro */}
+                    {/* BLOCO 2 — Financeiro    */}
                     {/* ======================= */}
                     <div className="space-y-3 pt-2 border-t border-white/10">
                         <Label>Produto</Label>
@@ -110,6 +109,7 @@ export function ContractDrawer({
                             value={produto}
                             onChange={(e) => setProduto(e.target.value)}
                             className="h-9 rounded-md bg-background border px-2 text-sm"
+                            required
                         >
                             <option value="imobiliario">Imóvel</option>
                             <option value="auto">Auto</option>
@@ -125,6 +125,11 @@ export function ContractDrawer({
                                 <Label>Prazo (meses)</Label>
                                 <Input name="prazo" type="number" placeholder="Ex: 180" />
                             </div>
+                        </div>
+
+                        <div>
+                            <Label>Valor da parcela (opcional)</Label>
+                            <Input name="valorParcela" placeholder="Ex: 1.650,00" />
                         </div>
 
                         <div>
@@ -181,10 +186,63 @@ export function ContractDrawer({
                                 Cliente autorizou gestão da carta
                             </label>
                         </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label>% redução (se reduzida)</Label>
+                                <Input name="percentualReducao" placeholder="Ex: 20" />
+                            </div>
+                            <div>
+                                <Label>Parcela s/ redutor (R$)</Label>
+                                <Input name="valorParcelaSemRedutor" placeholder="Ex: 2.200,00" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label>Taxa admin (%)</Label>
+                                <Input name="taxaAdminPercentual" placeholder="Ex: 16" />
+                            </div>
+                            <div>
+                                <Label>Taxa admin mensal (R$)</Label>
+                                <Input name="taxaAdminValorMensal" placeholder="Ex: 180,00" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label>Embutido máx. (%)</Label>
+                                <Input name="embutidoMaxPercent" placeholder="Ex: 30" />
+                            </div>
+                            <div>
+                                <Label>Furo (meses)</Label>
+                                <Input name="furoMeses" type="number" placeholder="Ex: 2" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label>Assembleia todo dia</Label>
+                                <Input name="assembleiaDia" type="number" placeholder="Ex: 21" />
+                            </div>
+                            <div>
+                                <Label>Data último lance</Label>
+                                <Input type="date" name="dataUltimoLance" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <Label>Objetivo</Label>
+                            <Input name="objetivo" placeholder="Ex: investimento, troca..." />
+                        </div>
+                        <div>
+                            <Label>Estratégia / Observações</Label>
+                            <Input name="estrategia" placeholder="Anotações livres..." />
+                        </div>
                     </div>
 
                     {/* ======================= */}
-                    {/* BLOCO 4 — Datas e contrato */}
+                    {/* BLOCO 4 — Datas / contrato */}
                     {/* ======================= */}
                     <div className="pt-2 border-t border-white/10 space-y-3">
                         <div className="grid grid-cols-2 gap-3">
@@ -203,9 +261,6 @@ export function ContractDrawer({
                         </div>
                     </div>
 
-                    {/* ======================= */}
-                    {/* RODAPÉ */}
-                    {/* ======================= */}
                     <DrawerFooter className="pt-6 flex justify-between">
                         <Button
                             type="button"
