@@ -37,3 +37,16 @@ export const contemplacaoMotivo = pgEnum("contemplacao_motivo", [
 ]);
 
 export const produtoEnum = pgEnum("produto", ["imobiliario","auto"]);
+
+
+export const lanceBaseCalc = pgEnum("lance_base_calc", [
+    "saldo_devedor", // % do lance calcula sobre saldo devedor
+    "valor_carta",   // % do lance calcula sobre valor da carta
+]);
+
+export const fontePagamentoLance = pgEnum("fonte_pagamento_lance", [
+    "embutido",      // desconto na carta (sobre o VALOR DA CARTA)
+    "fgts",          // uso de FGTS
+    "proprio",       // recurso próprio
+    "outro"          // qualquer outra fonte (especificar em observação)
+]);

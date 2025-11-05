@@ -5,6 +5,8 @@ import { useOptimistic, useTransition } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { LeadCardItem, type Lead, type Stage } from "./LeadCardItem";
 import type { AdminOption, GrupoOption } from "../actions";
+import { toast } from "sonner";
+import {ContractDrawer} from "@/components/app/ContractDrawer";
 
 type OptimisticAction = { id: string; from: Stage; to: Stage };
 
@@ -54,6 +56,18 @@ export default function KanbanBoard({
     const rafRef = React.useRef<number | null>(null);
     const speedRef = React.useRef(0); // velocidade dinâmica (px/frame)
 
+    // === Modal de contrato controlado ===
+    const [contractLead, setContractLead] = React.useState<{ id: string; nome: string } | null>(null);
+    const ContractDialog = CreateContractDialog;
+
+    function openContractDialogFor(id: string, nome: string) {
+        setContractLead({ id, nome });
+    }
+
+    function closeContractDialog() {
+        setContractLead(null);
+    }
+
     function onDragStart(ev: React.DragEvent, lead: Lead) {
         ev.dataTransfer.setData("text/plain", JSON.stringify(lead));
         draggingRef.current = true;
@@ -68,6 +82,13 @@ export default function KanbanBoard({
         try {
             const lead = JSON.parse(raw) as Lead;
             const from = lead.etapa;
+
+            // 👇 intercepta “ativo”: abre modal em vez de mover direto
+            if (to === "ativo") {
+                openContractDialogFor(lead.id, lead.nome ?? "Cliente");
+                return;
+            }
+
             start(async () => {
                 setColumns({ id: lead.id, from, to });
                 await onMove(lead.id, to);
@@ -112,19 +133,16 @@ export default function KanbanBoard({
 
             let speed = 0;
             if (distLeft <= EDGE_PX) {
-                // quanto mais perto, mais rápido (aceleração suave)
-                const pct = 1 - distLeft / EDGE_PX; // 0..1
+                const pct = 1 - distLeft / EDGE_PX;
                 if (el.scrollLeft > 0) speed = -Math.ceil(pct * MAX_SPEED);
             } else if (distRight <= EDGE_PX) {
-                const pct = 1 - distRight / EDGE_PX; // 0..1
+                const pct = 1 - distRight / EDGE_PX;
                 const max = el.scrollWidth - el.clientWidth;
                 if (el.scrollLeft < max) speed = Math.ceil(pct * MAX_SPEED);
             }
 
             speedRef.current = speed;
             if (!rafRef.current) rafRef.current = requestAnimationFrame(loop);
-
-            // permitir drop em qualquer ponto
             e.preventDefault();
         }
 
@@ -143,53 +161,70 @@ export default function KanbanBoard({
     }, []);
 
     return (
-        <div
-            ref={containerRef}
-            className="
-        relative h-full
-        overflow-x-auto overflow-y-hidden
-        flex flex-nowrap gap-3 md:gap-4
-        [scrollbar-width:thin]
-        /* REMOVIDO snap-x/snap-mandatory para não 'puxar' de volta */
-        will-change-[scroll-position]
-        bg-[radial-gradient(1200px_600px_at_10%_-10%,rgba(16,185,129,0.06),transparent_60%),radial-gradient(1000px_500px_at_90%_110%,rgba(59,130,246,0.05),transparent_60%)]
-        bg-no-repeat
-      "
-        >
-            {stages.map((s) => (
-                <Card
-                    key={s}
-                    className="
-            bg-white/5 border-white/10 overflow-hidden
-            flex-none
-            w-[70vw] xs:w-[72vw] sm:w-[260px] md:w-[280px] xl:w-[300px]
-            h-full
-          "
-                >
-                    <CardHeader className="sticky top-0 z-10 bg-gradient-to-b from-slate-900/60 to-slate-900/20 backdrop-blur border-b border-white/5 py-3">
-                        <CardTitle className="text-sm font-semibold tracking-wide capitalize">{s}</CardTitle>
-                    </CardHeader>
-
-                    <CardContent
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => onDrop(e, s)}
-                        className="h-[calc(100%-48px)] overflow-y-auto p-2 md:p-3 space-y-3 [scrollbar-width:thin]"
+        <>
+            <div
+                ref={containerRef}
+                className="
+          relative h-full
+          overflow-x-auto overflow-y-hidden
+          flex flex-nowrap gap-3 md:gap-4
+          [scrollbar-width:thin]
+          will-change-[scroll-position]
+          bg-[radial-gradient(1200px_600px_at_10%_-10%,rgba(16,185,129,0.06),transparent_60%),radial-gradient(1000px_500px_at_90%_110%,rgba(59,130,246,0.05),transparent_60%)]
+          bg-no-repeat
+        "
+            >
+                {stages.map((s) => (
+                    <Card
+                        key={s}
+                        className="
+              bg-white/5 border-white/10 overflow-hidden
+              flex-none
+              w-[70vw] xs:w-[72vw] sm:w-[260px] md:w-[280px] xl:w-[300px]
+              h-full
+            "
                     >
-                        {columns[s].map((l) => (
-                            <LeadCardItem
-                                key={l.id}
-                                lead={l}
-                                onDragStart={onDragStart}
-                                contractOptions={contractOptions}
-                                CreateContractDialog={CreateContractDialog}
-                            />
-                        ))}
-                        {columns[s].length === 0 && (
-                            <p className="text-xs text-muted-foreground">Arraste cards para cá.</p>
-                        )}
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+                        <CardHeader className="sticky top-0 z-10 bg-gradient-to-b from-slate-900/60 to-slate-900/20 backdrop-blur border-b border-white/5 py-3">
+                            <CardTitle className="text-sm font-semibold tracking-wide capitalize">{s}</CardTitle>
+                        </CardHeader>
+
+                        <CardContent
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => onDrop(e, s)}
+                            className="h-[calc(100%-48px)] overflow-y-auto p-2 md:p-3 space-y-3 [scrollbar-width:thin]"
+                        >
+                            {columns[s].map((l) => (
+                                <LeadCardItem
+                                    key={l.id}
+                                    lead={l}
+                                    onDragStart={onDragStart}
+                                    contractOptions={contractOptions}
+                                    CreateContractDialog={CreateContractDialog}
+                                />
+                            ))}
+                            {columns[s].length === 0 && (
+                                <p className="text-xs text-muted-foreground">Arraste cards para cá.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+
+            {/* Modal de contrato ao dropar em “ativo” */}
+            {contractLead && (
+                <ContractDrawer
+                    open={!!contractLead}
+                    onOpenChange={(v) => !v && closeContractDialog()}
+                    leadId={contractLead.id}
+                    leadName={contractLead.nome}
+                    administradoras={contractOptions.administradoras}
+                    grupos={contractOptions.grupos}
+                    onSuccess={() => {
+                        toast.success("Contrato criado e lead movido para Carteira.");
+                        closeContractDialog();
+                    }}
+                />
+            )}
+        </>
     );
 }

@@ -1,4 +1,3 @@
-// src/app/app/carteira/actions.ts
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
@@ -13,11 +12,10 @@ function srv() {
     );
 }
 
-/** Tipos retornados pelo SELECT aninhado do Supabase */
+/** Tipos retornados pelo SELECT do Supabase */
 type RowCon = {
     motivo: string | null;
     data: string | null;
-    assembleia: { data: string | null } | null;
 };
 
 type Row = {
@@ -27,7 +25,7 @@ type Row = {
     created_at: string | null;
     administradora: { nome: string | null } | null;
     lead: { nome: string | null; telefone: string | null } | null;
-    contemplacoes: RowCon[] | null; // pode vir array
+    contemplacoes: RowCon[] | null; // array opcional
 };
 
 /** Objeto final que o front consome */
@@ -39,35 +37,33 @@ export type CarteiraItem = {
     valorCarta: string | null;
     status: string;
     motivo: string | null;
-    assembleia: string | null; // pt-BR (DD/MM/AAAA) se existir
+    assembleia: string | null; // data da contemplação, se houver
     createdAt: string | null;  // ISO vindo do BD
 };
 
 export type ListCarteiraArgs = {
-    /** filtra situacao: "ativa" | "contemplada" | "quitada" | "cancelada" */
-    situacao?: string;
-    /** ordenação; default: created_at desc */
+    situacao?: string; // ativa | contemplada | quitada | cancelada
     orderBy?: "created_at" | "valor_carta";
     asc?: boolean;
-    /** paginação opcional */
     limit?: number;
     offset?: number;
 };
 
 /**
  * Lista a carteira (cotas) da organização do usuário atual.
- * - Junta: administradora, lead, e (se existir) a contemplação com assembleia.
- * - Não usa colunas inexistentes (ex.: cotas.assembleia_id).
+ * Junta: administradora, lead e (se existir) contemplação.
  */
-export async function listCarteira(args: ListCarteiraArgs = {}): Promise<CarteiraItem[]> {
+export async function listCarteira(
+    args: ListCarteiraArgs = {}
+): Promise<CarteiraItem[]> {
     const me = await getCurrentProfile();
     if (!me?.orgId) throw new Error("Sem organização.");
 
     const s = srv();
-
     const orderCol = args.orderBy ?? "created_at";
     const asc = !!args.asc;
 
+    // nova query sem assembleia_id
     let q = s
         .from("cotas")
         .select(`
@@ -79,8 +75,7 @@ export async function listCarteira(args: ListCarteiraArgs = {}): Promise<Carteir
       lead:leads(nome, telefone),
       contemplacoes(
         motivo,
-        data,
-        assembleia:assembleias(data)
+        data
       )
     `)
         .eq("org_id", me.orgId)
@@ -97,13 +92,14 @@ export async function listCarteira(args: ListCarteiraArgs = {}): Promise<Carteir
     const { data, error } = await q;
     if (error) throw error;
 
-    // ⚠️ Cast controlado do retorno sem genérico em .select(...)
     const rows = (data ?? []) as unknown as Row[];
 
     return rows.map<CarteiraItem>((r) => {
-        // contemplacoes pode vir como array; pegamos a primeira (há UNIQUE por cota)
-        const c = Array.isArray(r.contemplacoes) && r.contemplacoes.length > 0 ? r.contemplacoes[0] : null;
-        const dtAsm = c?.assembleia?.data ?? null;
+        const c =
+            Array.isArray(r.contemplacoes) && r.contemplacoes.length > 0
+                ? r.contemplacoes[0]
+                : null;
+        const dtCont = c?.data ?? null;
 
         return {
             id: r.id,
@@ -113,7 +109,7 @@ export async function listCarteira(args: ListCarteiraArgs = {}): Promise<Carteir
             valorCarta: r.valor_carta ?? null,
             status: r.situacao ?? "ativa",
             motivo: c?.motivo ?? null,
-            assembleia: dtAsm ? new Date(dtAsm).toLocaleDateString("pt-BR") : null,
+            assembleia: dtCont ? new Date(dtCont).toLocaleDateString("pt-BR") : null,
             createdAt: r.created_at ?? null,
         };
     });

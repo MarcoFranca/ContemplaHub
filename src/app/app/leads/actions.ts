@@ -179,19 +179,16 @@ export async function listLeadsForKanban(args: ListArgs = {}) {
 }
 
 // ====== Movimentação de estágio com histórico ======
-export async function moveLeadStage(payload: {
-    leadId: string;
-    to: Stage;
-    reason?: string;
-}) {
+export async function moveLeadStage(payload: { leadId: string; to: Stage; reason?: string; }) {
     const me = await getCurrentProfile();
     if (!me?.orgId) throw new Error("Sem organização.");
 
     const s = srv();
 
+    // 1) etapa atual
     const { data: current, error: cErr } = await s
         .from("leads")
-        .select("id, etapa")
+        .select("id, etapa, org_id")
         .eq("id", payload.leadId)
         .eq("org_id", me.orgId)
         .single();
@@ -199,6 +196,7 @@ export async function moveLeadStage(payload: {
 
     const fromStage = (current?.etapa ?? null) as Stage | null;
 
+    // 2) muda etapa
     const { error: uErr, data: updated } = await s
         .from("leads")
         .update({ etapa: payload.to, updated_at: new Date().toISOString() })
@@ -208,18 +206,42 @@ export async function moveLeadStage(payload: {
         .single();
     if (uErr) throw uErr;
 
-    const { error: hErr } = await s.from("lead_stage_history").insert([
-        {
-            lead_id: payload.leadId,
-            from_stage: fromStage,
-            to_stage: payload.to,
-            moved_by: me.userId,
-            reason: payload.reason ?? null,
-        },
-    ]);
+    // 3) histórico
+    const { error: hErr } = await s.from("lead_stage_history").insert([{
+        lead_id: payload.leadId,
+        from_stage: fromStage,
+        to_stage: payload.to,
+        moved_by: me.userId,
+        reason: payload.reason ?? null,
+    }]);
     if (hErr) throw hErr;
 
+    // 4) ✅ se foi pra ATIVO e não existe cota, cria uma cota mínima
+    if (payload.to === "ativo") {
+        const { data: already, error: chkErr } = await s
+            .from("cotas")
+            .select("id")
+            .eq("org_id", me.orgId)
+            .eq("lead_id", payload.leadId)
+            .maybeSingle();
+        if (chkErr) throw chkErr;
+
+        if (!already) {
+            const { error: iErr } = await s.from("cotas").insert({
+                org_id: me.orgId,
+                lead_id: payload.leadId,
+                situacao: "ativa",        // chave pra Carteira
+                // campos opcionais que não sabemos aqui ficam null
+                // administradora_id, grupo_id, valor_carta, produto, ...
+                created_at: new Date().toISOString(),
+            });
+            if (iErr) throw iErr;
+        }
+    }
+
+    // 5) revalidate
     revalidatePath("/app/leads");
+    revalidatePath("/app/carteira"); // 👈 garante que a carteira re-renderize
     revalidatePath("/app");
     return updated;
 }
@@ -321,8 +343,14 @@ export async function listContractOptions(): Promise<{
     const s = srv();
 
     const [admRes, grpRes] = await Promise.all([
-        s.from("administradoras").select("id, nome").eq("org_id", me.orgId).order("nome", { ascending: true }),
-        s.from("grupos").select("id, administradora_id, codigo").eq("org_id", me.orgId).order("codigo", { ascending: true }),
+        s.from("administradoras")
+            .select("id, nome")
+            // .eq("org_id", me.orgId)  ❌ remova essa linha
+            .order("nome", { ascending: true }),
+        s.from("grupos")
+            .select("id, administradora_id, codigo")
+            .eq("org_id", me.orgId)
+            .order("codigo", { ascending: true }),
     ]);
 
     if (admRes.error) throw admRes.error;
@@ -338,7 +366,7 @@ export async function listContractOptions(): Promise<{
     };
 }
 
-// ====== Criar contrato + cota e mover lead para "ativo" ======
+// ====== Criar contrato + cota e mover lead para "ativo" (versão compatível com novo schema) ======
 export async function createContractFromLead(formData: FormData) {
     const me = await getCurrentProfile();
     if (!me?.orgId) throw new Error("Sem organização.");
@@ -349,59 +377,106 @@ export async function createContractFromLead(formData: FormData) {
         { auth: { persistSession: false } }
     );
 
-    const leadId = String(formData.get("leadId") ?? "");
-    const administradoraId = String(formData.get("administradoraId") ?? "");
-    const grupoId = String(formData.get("grupoId") ?? "");
-    const valorCartaStr = String(formData.get("valorCarta") ?? "");
-    const produto = String(formData.get("produto") ?? "imobiliario");
-    const dataAdesao = String(formData.get("dataAdesao") ?? "");
-    const dataAssinatura = String(formData.get("dataAssinatura") ?? "");
-    const numero = formData.get("numero") ? String(formData.get("numero")) : null;
+    // helpers
+    const parseMoney = (raw: string | null): number | null => {
+        if (!raw) return null;
+        const v = raw.replace(/\./g, "").replace(",", ".");
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+    };
+    const getBool = (name: string) => formData.get(name) ? true : false;
+    const getStr = (name: string) => {
+        const v = formData.get(name);
+        return v ? String(v).trim() : null;
+    };
+    const getInt = (name: string) => {
+        const v = getStr(name);
+        if (!v) return null;
+        const n = Number(v);
+        return Number.isFinite(n) ? Math.trunc(n) : null;
+    };
 
-    if (!leadId || !administradoraId || !grupoId || !valorCartaStr) {
+    // campos do formulário (NOVOS)
+    const leadId          = getStr("leadId");
+    const administradoraId= getStr("administradoraId");
+
+    const numeroCota      = getStr("numeroCota");      // obrigatório
+    const grupoCodigo     = getStr("grupoCodigo");     // obrigatório
+    const produto         = (getStr("produto") ?? "imobiliario") as "imobiliario" | "auto" | "pesados";
+
+    const valorCarta      = parseMoney(getStr("valorCarta"));
+    const prazo           = getInt("prazo");
+    const formaPagamento  = getStr("formaPagamento");
+    const indiceCorrecao  = getStr("indiceCorrecao");
+
+    const parcelaReduzida = getBool("parcelaReduzida");
+    const fgtsPermitido   = getBool("fgtsPermitido");
+    const embutidoPermitido = getBool("embutidoPermitido");
+    const autorizacaoGestao = getBool("autorizacaoGestao");
+
+    const dataAdesao      = getStr("dataAdesao");      // yyyy-mm-dd ou null
+    const dataAssinatura  = getStr("dataAssinatura");  // yyyy-mm-dd ou null
+    const numeroContrato  = getStr("numero");
+
+    // valida mínimas obrigatórias
+    if (!leadId || !administradoraId || !numeroCota || !grupoCodigo || !valorCarta) {
         throw new Error("Campos obrigatórios ausentes.");
     }
 
-    const valorCarta = valorCartaStr.replace(/\./g, "").replace(",", ".");
-
     // valida lead pertence à org
-    const { data: lead, error: leadErr } = await s
-        .from("leads")
-        .select("id, org_id")
-        .eq("id", leadId)
-        .single();
-    if (leadErr) throw leadErr;
-    if (lead?.org_id !== me.orgId) throw new Error("Lead de outra organização.");
+    {
+        const { data: lead, error: leadErr } = await s
+            .from("leads")
+            .select("id, org_id")
+            .eq("id", leadId)
+            .single();
+        if (leadErr) throw leadErr;
+        if (lead?.org_id !== me.orgId) throw new Error("Lead de outra organização.");
+    }
 
-    // 1) cria cota
+    // 1) cria COTA (conforme novo schema)
     const { data: cota, error: cErr } = await s
         .from("cotas")
         .insert({
             org_id: me.orgId,
             lead_id: leadId,
             administradora_id: administradoraId,
-            grupo_id: grupoId,
+
+            numero_cota: numeroCota,
+            grupo_codigo: grupoCodigo,
+
             valor_carta: valorCarta,
-            produto,
-            data_adesao: dataAdesao,
+            prazo: prazo,
+            forma_pagamento: formaPagamento,
+            indice_correcao: indiceCorrecao,
+
+            parcela_reduzida: parcelaReduzida,
+            // percentual_reducao / valor_parcela / valor_parcela_sem_redutor podem ser adicionados depois via edição
+
+            embutido_permitido: embutidoPermitido,
+            fgts_permitido: fgtsPermitido,
+            autorizacao_gestao: autorizacaoGestao,
+
+            produto: produto,
+            data_adesao: dataAdesao ?? null,
             situacao: "ativa",
         })
         .select("id")
         .single();
     if (cErr) throw cErr;
 
-    // 2) cria contrato
+    // 2) cria CONTRATO (opcional, mas mantemos como antes)
     const { error: kErr } = await s.from("contratos").insert({
         org_id: me.orgId,
         deal_id: null,
         cota_id: cota.id,
-        numero,
-        data_assinatura: dataAssinatura,
+        numero: numeroContrato,
+        data_assinatura: dataAssinatura ?? null,
         status: "ativo",
     });
     if (kErr) throw kErr;
 
-    // 3) move lead para "ativo" + histórico
+    // 3) move LEAD para "ativo" + atualiza updated_at
     const { error: uErr } = await s
         .from("leads")
         .update({ etapa: "ativo", updated_at: new Date().toISOString() })
@@ -409,7 +484,11 @@ export async function createContractFromLead(formData: FormData) {
         .eq("org_id", me.orgId);
     if (uErr) throw uErr;
 
+    // revalidate
     revalidatePath("/app/leads");
     revalidatePath("/app/carteira");
     revalidatePath("/app");
+
+    return { ok: true, cotaId: cota.id };
 }
+

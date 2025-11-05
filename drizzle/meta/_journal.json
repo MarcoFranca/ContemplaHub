@@ -64,6 +64,13 @@
       "when": 1762272650512,
       "tag": "0008_large_vargas",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1762292358204,
+      "tag": "0009_fuzzy_serpent_society",
+      "breakpoints": true
     }
   ]
 }
