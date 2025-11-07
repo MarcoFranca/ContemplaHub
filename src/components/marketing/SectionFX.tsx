@@ -5,7 +5,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 type Variant = "emerald" | "sky" | "neutral";
-type Preset = "aurora" | "split" | "mesh" | "fineLines";
+type Preset = "aurora" | "split" | "mesh" | "fineLines" | "nebula";
 
 type Props = {
     className?: string;
@@ -189,6 +189,41 @@ export function SectionFX({
                     backgroundSize: "300px 300px",
                 }}
             />
+            {preset === "nebula" && (
+                <>
+                    {/* fundo com blobs maiores e conic girando devagar */}
+                    <motion.div
+                        aria-hidden
+                        className="absolute inset-0"
+                        style={{
+                            backgroundImage: `
+          radial-gradient(48% 42% at 18% 20%, ${palette.auraFrom}, transparent 72%),
+          radial-gradient(42% 38% at 82% 30%, ${palette.auraMid}, transparent 70%),
+          conic-gradient(from 200deg at 50% 60%, ${palette.accent} 0deg, transparent 80deg, ${palette.accent} 220deg, transparent 360deg)
+        `,
+                            filter: "saturate(1.06) contrast(1.02)",
+                        }}
+                        animate={
+                            reduce ? {} : {
+                                opacity: [0.9, 1, 0.92],
+                                scale: [1, 1.015, 1],
+                            }
+                        }
+                        transition={reduce ? {} : { duration: 14, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                    {/* leve rotação do conic pra dar vida */}
+                    <motion.div
+                        aria-hidden
+                        className="absolute inset-0"
+                        style={{
+                            backgroundImage: `conic-gradient(from 0deg at 50% 60%, ${palette.accent}15, transparent 180deg, ${palette.accent}10 270deg, transparent)`,
+                            mixBlendMode: "screen",
+                        }}
+                        animate={reduce ? {} : { rotate: [0, 6, 0] }}
+                        transition={reduce ? {} : { duration: 24, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                </>
+            )}
         </div>
     );
 }

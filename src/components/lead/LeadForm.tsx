@@ -9,10 +9,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
-import { onlyDigits } from "@/lib/masks";
-import { BrazilPhoneInput, PlainCurrencyInput } from "@/features/leads/inputs";
+import { BrazilPhoneInput } from "@/features/leads/inputs";
 import { PERFIS, objetivosByProduto, type ProdutoTipo } from "@/features/leads/catalogs";
 import { PerfilCombobox } from "@/features/leads/PerfilCombobox";
+import {formatMoneyBR, parseMoneyBR} from "@/lib/formatters";
+import {onlyDigits} from "@/lib/masks";
 
 type LeadFormProps = {
     hash?: string;              // 👈 adicionamos o hash
@@ -43,6 +44,7 @@ export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
 
     const [perfil, setPerfil] = useState<string>("");
     const [perfilOutro, setPerfilOutro] = useState<string>("");
+    const [valorMasked, setValorMasked] = useState("0,00");
 
     const fieldH = "h-11";
     const textAreaH = "min-h-28";
@@ -175,7 +177,28 @@ export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
             {/* Valor da carta (ocupa as 2 colunas do mobile) */}
             <div className="grid gap-2 col-span-2 md:col-span-6 min-w-0">
                 <Label htmlFor="valor_carta_visual">Valor da carta (R$)</Label>
-                <PlainCurrencyInput id="valor_carta_visual" className={`${fieldH} w-full`} required />
+                <div className="grid gap-2 col-span-2 md:col-span-6 min-w-0">
+                    <Label htmlFor="valor_carta_visual">Valor da carta (R$)</Label>
+                    <Input
+                        id="valor_carta_visual"
+                        name="valor_carta_visual"
+                        inputMode="numeric"
+                        placeholder="0,00"
+                        className={`${fieldH} w-full`}
+                        value={valorMasked}
+                        onChange={(e) => setValorMasked(formatMoneyBR(e.target.value))}
+                    />
+                    {/* campo “hidden” normalizado em número (ex.: 1234.56) */}
+                    <input
+                        type="hidden"
+                        name="valor_carta"
+                        value={(() => {
+                            const n = parseMoneyBR(valorMasked);
+                            return n == null ? "" : String(n);
+                        })()}
+                    />
+                </div>
+
             </div>
 
             {/* Objetivo (2 col mobile) */}
@@ -184,7 +207,7 @@ export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
                     Objetivo
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-emerald-400 cursor-help" />
+                            <Info className="h-4 w-4 text-emerald-400 cursor-help"/>
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs text-sm" side="right" sideOffset={6}>
                             Escolha o principal. Você pode detalhar nas Observações.

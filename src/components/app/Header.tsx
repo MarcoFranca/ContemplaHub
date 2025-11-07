@@ -2,11 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { MobileNav } from "@/components/app/MobileNav";
 import {LeadsToolbar} from "@/app/app/leads/ui/LeadsToolbar";
-import {CreateLeadDialog} from "@/app/app/leads/ui";
+import {CreateLeadSheet} from "@/app/app/leads/ui/CreateLeadSheet";
 
 export function Header({
                            collapsed,
@@ -41,7 +39,7 @@ export function Header({
             {path.startsWith("/app/leads") && (
                 <div className={"flex h-auto mr-8 items-center justify-center gap-8"}>
                     <LeadsToolbar />
-                    <CreateLeadDialog variant="fab" />
+                    <CreateLeadSheet variant="fab" />
                 </div>
             )}
         </motion.header>

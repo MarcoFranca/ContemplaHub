@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ContractDrawer } from "@/components/app/ContractDrawer";
 import {fireConfetti} from "@/lib/ui/confetti";
 import {LeadsToolbar} from "@/app/app/leads/ui/LeadsToolbar";
+import {ColumnHeaderStats} from "@/app/app/leads/ui/ColumnHeaderStats";
 
 type OptimisticAction = { id: string; from: Stage; to: Stage };
 export type AdminOption = { id: string; nome: string };
@@ -198,12 +199,11 @@ export default function KanbanBoard({
               h-full
             "
                     >
-                        <div className="flex justify-between items-center mb-2 text-xs text-muted-foreground">
-                            <span>{columns[s].length} leads</span>
-                            <span>
-    Tempo médio: {(avgDays[s] ?? "—")} dias • Fechamentos: {(conversion[s] ?? "—")}%
-  </span>
-                        </div>
+                        <ColumnHeaderStats
+                            count={columns[s].length}
+                            avgDays={avgDays[s]}
+                            conversion={conversion[s]}
+                        />
 
                         <CardHeader
 

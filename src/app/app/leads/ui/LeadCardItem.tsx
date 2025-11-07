@@ -3,6 +3,7 @@
 import * as React from "react";
 import { InterestSummaryRow } from "./InterestSummaryRow";
 import { InterestDetailsDialog } from "./InterestDetailsDialog";
+import {formatPhoneBR} from "@/lib/formatters";
 
 export type Stage =
     | "novo"
@@ -50,11 +51,12 @@ export function LeadCardItem({
                 <div className="min-w-0">
                     <p className="font-medium leading-tight truncate">{lead.nome ?? "—"}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                        {(lead.telefone ?? lead.email ?? "—")} • {(lead.origem ?? lead.utm_source ?? "site")}
+                        {lead.telefone ? formatPhoneBR(lead.telefone) : (lead.email ?? "—")} •{" "}
+                        {(lead.origem ?? lead.utm_source ?? "site")}
                     </p>
                 </div>
 
-                {lead.interest ? <InterestDetailsDialog interest={lead.interest} /> : null}
+                {lead.interest ? <InterestDetailsDialog interest={lead.interest} phone={lead.telefone ?? null}/> : null}
             </div>
 
             <InterestSummaryRow lead={lead as any} />

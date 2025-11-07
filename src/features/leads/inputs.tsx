@@ -2,8 +2,7 @@
 
 import { useId, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { maskPhoneBR, normalizePhoneBR } from "@/lib/masks";
-import { maskCurrencyPlain, normalizeCurrencyPlain } from "@/lib/masks";
+import { maskMoneyBRCents, parseMoneyBRCents, maskPhoneBR, normalizePhoneBR } from "@/lib/masks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 /* ---------- Phone com máscara + hidden normalizado ---------- */
 export type PhoneInputProps = {
@@ -89,8 +88,8 @@ export function PlainCurrencyInput(props: CurrencyInputProps) {
     const autoId = useId();
     const _id = id ?? autoId;
 
-    const [value, setValue] = useState(maskCurrencyPlain(defaultValue));
-    const normalized = normalizeCurrencyPlain(value); // ex.: "300000"
+    const [value, setValue] = useState(maskMoneyBRCents(defaultValue));
+    const normalized = parseMoneyBRCents(value)?.toString() ?? "";
 
     return (
         <>
@@ -99,8 +98,8 @@ export function PlainCurrencyInput(props: CurrencyInputProps) {
                 name={nameDisplay}
                 value={value}
                 onChange={(e) => {
-                    const masked = maskCurrencyPlain(e.target.value);
-                    const norm = normalizeCurrencyPlain(masked);
+                    const masked = maskMoneyBRCents(e.target.value);
+                    const norm = parseMoneyBRCents(masked)?.toString() ?? "";
                     setValue(masked);
                     onValueChange?.(masked, norm);
                 }}
