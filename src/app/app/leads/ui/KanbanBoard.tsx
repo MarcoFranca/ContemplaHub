@@ -7,6 +7,7 @@ import { LeadCardItem, type Lead, type Stage } from "./LeadCardItem";
 import { toast } from "sonner";
 import { ContractDrawer } from "@/components/app/ContractDrawer";
 import {fireConfetti} from "@/lib/ui/confetti";
+import {LeadsToolbar} from "@/app/app/leads/ui/LeadsToolbar";
 
 type OptimisticAction = { id: string; from: Stage; to: Stage };
 export type AdminOption = { id: string; nome: string };

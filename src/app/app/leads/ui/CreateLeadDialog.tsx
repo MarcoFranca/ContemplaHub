@@ -11,7 +11,7 @@ export function CreateLeadDialog({ variant = "button" }: { variant?: "button" | 
     const trigger =
         variant === "fab" ? (
             <Button
-                className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 rounded-full h-12 w-12 p-0 shadow-lg bg-emerald-600 hover:bg-emerald-500"
+                className="bg-emerald-600 hover:bg-emerald-500"
                 title="Novo lead"
             >
                 <Plus className="h-6 w-6 text-white" />
@@ -25,7 +25,7 @@ export function CreateLeadDialog({ variant = "button" }: { variant?: "button" | 
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Novo lead manual</DialogTitle>
+                    <DialogTitle>Novo lead </DialogTitle>
                 </DialogHeader>
                 <form action={createLeadManual} className="space-y-4">
                     <div className="grid gap-2">

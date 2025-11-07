@@ -126,14 +126,26 @@ export async function listLeadsForKanban(args: ListArgs = {}) {
     // filtros de etapa
     const hideLost = !args.showLost;
     const hideActive = !args.showActive;
+
+    // Base do funil
+    const baseStages: Stage[] = ["novo","diagnostico","proposta","negociacao","contrato"];
+
+// inclui os extras conforme flags
+    const allowed: string[] = [...baseStages];
+    if (args.showActive) allowed.push("ativo");
+    if (args.showLost)   allowed.push("perdido");
+
+    q = q.in("etapa", allowed);
+
     if (hideLost && hideActive) {
-        q = q.in("etapa", ["novo", "diagnostico", "proposta", "negociacao", "contrato"]);
+        q = q.in("etapa", baseStages);
     } else {
-        const allowed: Stage[] = ["novo", "diagnostico", "proposta", "negociacao", "contrato"];
+        const allowed: Stage[] = [...baseStages];
         if (!hideActive) allowed.push("ativo");
-        if (!hideLost) allowed.push("perdido");
+        if (!hideLost)  allowed.push("perdido");
         q = q.in("etapa", allowed);
     }
+
 
     const { data, error } = await q;
     if (error) throw error;

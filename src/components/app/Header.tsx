@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { MobileNav } from "@/components/app/MobileNav";
+import {LeadsToolbar} from "@/app/app/leads/ui/LeadsToolbar";
+import {CreateLeadDialog} from "@/app/app/leads/ui";
 
 export function Header({
                            collapsed,
@@ -32,25 +34,15 @@ export function Header({
             <div className="flex items-center gap-2">
                 {/* Mobile: hambúrguer (abre drawer) */}
                 <MobileNav />
-                {/* Desktop: recolher/expandir sidebar */}
-                <Button
-                    size="icon"
-                    variant="ghost"
-                    className="hidden md:inline-flex"
-                    onClick={onToggle}
-                    title={collapsed ? "Expandir menu" : "Recolher menu"}
-                >
-                    {collapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-                </Button>
-
                 <h2 className="text-lg font-semibold tracking-tight text-white">{title}</h2>
             </div>
 
             {/* Ação contextual — exemplo: Leads tem “+” */}
             {path.startsWith("/app/leads") && (
-                <Button size="icon" className="bg-emerald-600 hover:bg-emerald-500" title="Novo lead">
-                    <Plus className="h-5 w-5" />
-                </Button>
+                <div className={"flex h-auto mr-8 items-center justify-center gap-8"}>
+                    <LeadsToolbar />
+                    <CreateLeadDialog variant="fab" />
+                </div>
             )}
         </motion.header>
     );
