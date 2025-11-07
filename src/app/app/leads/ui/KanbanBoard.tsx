@@ -19,7 +19,21 @@ type Props = {
     initialColumns: Record<Stage, Lead[]>;
     stages: Stage[];
     onMove: (leadId: string, to: Stage) => Promise<void>;
-    contractOptions: { administradoras: AdminOption[] }; // ❗️apenas administradoras
+    contractOptions: { administradoras: AdminOption[] };
+    metrics?: {
+        avgDays?: Partial<Record<Stage, number>>;     // tempo médio em dias por etapa
+        conversion?: Partial<Record<Stage, number>>;  // % de leads que avançam dessa etapa
+    };
+};
+
+const stageLabels: Record<Stage, {label: string, color: string}> = {
+    novo: { label: "Novo", color: "bg-emerald-500/20" },
+    diagnostico: { label: "Diagnóstico", color: "bg-sky-500/20" },
+    proposta: { label: "Proposta", color: "bg-indigo-500/20" },
+    negociacao: { label: "Negociação", color: "bg-yellow-500/20" },
+    contrato: { label: "Contrato", color: "bg-orange-500/20" },
+    ativo: { label: "Ativo", color: "bg-green-600/20" },
+    perdido: { label: "Perdido", color: "bg-red-500/20" },
 };
 
 export default function KanbanBoard({
@@ -27,7 +41,10 @@ export default function KanbanBoard({
                                         stages,
                                         onMove,
                                         contractOptions,
+                                        metrics,
                                     }: Props) {
+    const avgDays = metrics?.avgDays ?? {};
+    const conversion = metrics?.conversion ?? {};
     const [, start] = useTransition();
     const [columns, setColumns] = useOptimistic<Record<Stage, Lead[]>, OptimisticAction>(
         initialColumns,
@@ -77,8 +94,7 @@ export default function KanbanBoard({
             const lead = JSON.parse(raw) as Lead;
             const from = lead.etapa;
 
-            // 👉 Se soltar em “ativo”, abre o Drawer de contrato (não move ainda)
-            if (to === "ativo") {
+            if (to === "contrato") {                      // <— aqui
                 openContractDrawerFor(lead.id, lead.nome ?? "Cliente");
                 return;
             }
@@ -86,6 +102,7 @@ export default function KanbanBoard({
             start(async () => {
                 setColumns({ id: lead.id, from, to });
                 await onMove(lead.id, to);
+                toast.info(`Lead movido para: ${stageLabels[to].label}`);
             });
         } catch {}
     }
@@ -180,7 +197,16 @@ export default function KanbanBoard({
               h-full
             "
                     >
-                        <CardHeader className="sticky top-0 z-10 bg-gradient-to-b from-slate-900/60 to-slate-900/20 backdrop-blur border-b border-white/5 py-3">
+                        <div className="flex justify-between items-center mb-2 text-xs text-muted-foreground">
+                            <span>{columns[s].length} leads</span>
+                            <span>
+    Tempo médio: {(avgDays[s] ?? "—")} dias • Fechamentos: {(conversion[s] ?? "—")}%
+  </span>
+                        </div>
+
+                        <CardHeader
+
+                            className={`text-sm p-4 text-center font-semibold tracking-wide capitalize ${stageLabels[s].color}`}>
                             <CardTitle className="text-sm font-semibold tracking-wide capitalize">{s}</CardTitle>
                         </CardHeader>
 

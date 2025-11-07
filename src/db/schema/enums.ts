@@ -13,7 +13,7 @@ export const perfilPsico = pgEnum("perfil_psico", [
 ]);
 
 export const leadStage = pgEnum("lead_stage", [
-    "novo","diagnostico","proposta","negociacao","fechamento","ativo","perdido",
+    "novo","diagnostico","proposta","negociacao","contrato","ativo","perdido",
 ]);
 
 export const canalOrigem = pgEnum("canal_origem", [

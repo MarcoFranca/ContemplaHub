@@ -9,7 +9,7 @@ export type Stage =
     | "diagnostico"
     | "proposta"
     | "negociacao"
-    | "fechamento"
+    | "contrato"
     | "ativo"
     | "perdido";
 

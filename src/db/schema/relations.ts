@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { orgs, profiles } from "./orgs-profiles";
 import { leads, leadStageHistory, activities, notes, attachments } from "./crm";
 import { deals, propostas } from "./deals-propostas";
-import { administradoras, grupos, assembleias, cotas, lances, contemplacoes, contratos, pagamentos } from "./consorcio";
+import { administradoras, grupos, cotas, lances, contemplacoes, contratos, pagamentos } from "./consorcio";
 
 export const orgsRelations = relations(orgs, ({ many }) => ({
     profiles: many(profiles),
@@ -44,23 +44,16 @@ export const consorcioRelations = {
     })),
     grupos: relations(grupos, ({ one, many }) => ({
         administradora: one(administradoras, { fields: [grupos.administradoraId], references: [administradoras.id] }),
-        assembleias: many(assembleias),
     })),
-    assembleias: relations(assembleias, ({ one, many }) => ({
-        grupo: one(grupos, { fields: [assembleias.grupoId], references: [grupos.id] }),
-        lances: many(lances),
-        contemplacoes: many(contemplacoes),
-    })),
+
     cotas: relations(cotas, ({ one, many }) => ({
         administradora: one(administradoras, { fields: [cotas.administradoraId], references: [administradoras.id] }),
-        grupo: one(grupos, { fields: [cotas.grupoId], references: [grupos.id] }),
         lances: many(lances),
         contemplacao: many(contemplacoes),
         contratos: many(contratos),
     })),
     lances: relations(lances, ({ one }) => ({
         cota: one(cotas, { fields: [lances.cotaId], references: [cotas.id] }),
-        assembleia: one(assembleias, { fields: [lances.assembleiaId], references: [assembleias.id] }),
     })),
     contratos: relations(contratos, ({ one, many }) => ({
         cota: one(cotas, { fields: [contratos.cotaId], references: [cotas.id] }),
