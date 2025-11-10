@@ -4,6 +4,7 @@ import * as React from "react";
 import { InterestSummaryRow } from "./InterestSummaryRow";
 import { InterestDetailsDialog } from "./InterestDetailsDialog";
 import {formatPhoneBR} from "@/lib/formatters";
+import {QuickDiagnosticSheet} from "@/features/diagnostic/QuickDiagnosticSheet";
 
 export type Stage =
     | "novo"
@@ -56,7 +57,9 @@ export function LeadCardItem({
                     </p>
                 </div>
 
-                {lead.interest ? <InterestDetailsDialog interest={lead.interest} phone={lead.telefone ?? null}/> : null}
+                {lead.interest ? (
+                    <QuickDiagnosticSheet interest={lead.interest} phone={lead.telefone ?? null} />
+                ) : null}
             </div>
 
             <InterestSummaryRow lead={lead as any} />
