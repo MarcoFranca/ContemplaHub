@@ -107,8 +107,13 @@ export default async function LeadsKanbanPage(props: PageProps) {
                     metrics={{
                         avgDays: metrics?.avgDays as Partial<Record<Stage, number>>,
                         conversion: metrics?.conversion as Partial<Record<Stage, number>>,
+                        readinessAvg: metrics?.readinessAvg as Partial<Record<Stage, number>>,
+                        diagCompletionPct: metrics?.diagCompletionPct as Partial<
+                            Record<Stage, number>
+                        >,
                     }}
                 />
+
             </div>
         </div>
     );

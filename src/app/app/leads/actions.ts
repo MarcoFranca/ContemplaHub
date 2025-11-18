@@ -4,6 +4,15 @@ import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/server";
+import { backendFetch } from "@/lib/backend";
+
+import type {
+    Stage,
+    LeadCard,
+    CanalOrigem,
+    LeadCardInterest,
+    KanbanColumns,
+} from "./types";
 
 // ====== Supabase SR client ======
 function srv() {
@@ -13,68 +22,6 @@ function srv() {
         { auth: { persistSession: false } }
     );
 }
-
-/**
- * Lê métricas do Kanban via RPC `get_kanban_metrics` (definida na migration SQL).
- * Retorna no formato esperado pelo KanbanBoard:
- * { avgDays?: Record<Stage, number>, conversion?: Record<Stage, number> }
- */
-export async function getKanbanMetricsFromDB(): Promise<{
-    avgDays?: Record<string, number>;
-    conversion?: Record<string, number>;
-}> {
-    const me = await getCurrentProfile();
-    if (!me?.orgId) throw new Error("Sem organização.");
-
-    const s = srv();
-    const { data, error } = await s.rpc("get_kanban_metrics", { p_org: me.orgId });
-    if (error) throw error;
-    return (data ?? {}) as {
-        avgDays?: Record<string, number>;
-        conversion?: Record<string, number>;
-    };
-}
-
-// ====== Tipos ======
-export type Stage =
-    | "novo"
-    | "diagnostico"
-    | "proposta"
-    | "negociacao"
-    | "contrato"
-    | "ativo"
-    | "perdido";
-
-
-export type CanalOrigem = "lp" | "whatsapp" | "indicacao" | "orgânico" | "pago" | "outro";
-
-export type LeadCardInterest = {
-    produto?: string | null;
-    valorTotal?: string | null;   // numeric como string
-    prazoMeses?: number | null;
-    objetivo?: string | null;
-    perfilDesejado?: string | null;
-    observacao?: string | null;
-};
-
-export type LeadCard = {
-    id: string;
-    nome: string | null;
-    telefone?: string | null;
-    email?: string | null;
-    etapa: Stage;
-    owner_id: string | null;
-    created_at: string;
-    utm_source?: string | null;
-    origem?: CanalOrigem | null;
-
-    // (legado) pode existir no leads antigo
-    valor_interesse?: string | null;
-    prazo_meses?: number | null;
-
-    // resumo do interesse aberto mais recente (lead_interesses)
-    interest?: LeadCardInterest | null;
-};
 
 function normalizeOrigem(input?: string | null): CanalOrigem {
     const allowed: CanalOrigem[] = ["lp", "whatsapp", "indicacao", "orgânico", "pago", "outro"];
@@ -102,182 +49,65 @@ type ListArgs = {
     showActive?: boolean; // mostrar "ativo"
     scope?: "me" | "team"; // "me": só meus leads | "team": todos (se gestor/admin)
 };
+export type { Stage, LeadCard };
 
-export async function listLeadsForKanban(args: ListArgs = {}) {
-    const me = await getCurrentProfile();
-    if (!me?.orgId) throw new Error("Sem organização.");
+export async function listLeadsForKanban(options?: {
+    showActive?: boolean;
+    showLost?: boolean;
+    scope?: "me" | "team"; // mantém compatível com a chamada do page.tsx
+}): Promise<LeadCard[]> {
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) throw new Error("Org inválida");
 
-    const s = srv();
-    let q = s
-        .from("leads")
-        .select(
-            "id, nome, telefone, email, etapa, owner_id, created_at, utm_source, origem, valor_interesse, prazo_meses"
-        )
-        .eq("org_id", me.orgId)
-        .order("created_at", { ascending: false });
+    const params = new URLSearchParams();
+    if (options?.showActive) params.set("show_active", "true");
+    if (options?.showLost) params.set("show_lost", "true");
+    // scope ("me" | "team") por enquanto é ignorado pelo backend,
+    // mas deixamos no tipo para não quebrar o page.tsx.
 
-    // escopo
-    const scope = args.scope ?? "me";
-    const canSeeTeam = !!me.isManager;
-    if (scope === "me" || !canSeeTeam) {
-        q = q.eq("owner_id", me.userId);
-    }
+    const query = params.toString();
+    const path = query ? `/kanban?${query}` : `/kanban`;
 
-    // filtros de etapa
-    const hideLost = !args.showLost;
-    const hideActive = !args.showActive;
-
-    // Base do funil
-    const baseStages: Stage[] = ["novo","diagnostico","proposta","negociacao","contrato"];
-
-// inclui os extras conforme flags
-    const allowed: string[] = [...baseStages];
-    if (args.showActive) allowed.push("ativo");
-    if (args.showLost)   allowed.push("perdido");
-
-    q = q.in("etapa", allowed);
-
-    if (hideLost && hideActive) {
-        q = q.in("etapa", baseStages);
-    } else {
-        const allowed: Stage[] = [...baseStages];
-        if (!hideActive) allowed.push("ativo");
-        if (!hideLost)  allowed.push("perdido");
-        q = q.in("etapa", allowed);
-    }
-
-
-    const { data, error } = await q;
-    if (error) throw error;
-
-    const leads = (data ?? []) as LeadCard[];
-    if (leads.length === 0) return leads;
-
-    // Busca 1 interesse "aberto" mais recente por lead
-    const leadIds = leads.map((l) => l.id);
-    const { data: ints, error: iErr } = await s
-        .from("lead_interesses")
-        .select(
-            "lead_id, produto, valor_total, prazo_meses, objetivo, perfil_desejado, observacao, created_at"
-        )
-        .eq("org_id", me.orgId)
-        .in("lead_id", leadIds)
-        .eq("status", "aberto")
-        .order("created_at", { ascending: false });
-
-    if (iErr) throw iErr;
-
-    const firstByLead = new Map<
-        string,
-        {
-            produto: string | null;
-            valor_total: string | null;
-            prazo_meses: number | null;
-            objetivo: string | null;
-            perfil_desejado: string | null;
-            observacao: string | null;
-        }
-    >();
-
-    (ints ?? []).forEach((row) => {
-        if (!firstByLead.has(row.lead_id)) {
-            firstByLead.set(row.lead_id, {
-                produto: row.produto ?? null,
-                valor_total: row.valor_total ?? null,
-                prazo_meses: row.prazo_meses ?? null,
-                objetivo: row.objetivo ?? null,
-                perfil_desejado: row.perfil_desejado ?? null,
-                observacao: row.observacao ?? null,
-            });
-        }
+    const data = await backendFetch(path, {
+        method: "GET",
+        orgId: profile.orgId,
     });
 
-    // Enriquecimento
-    const enriched = leads.map((l) => {
-        const i = firstByLead.get(l.id);
-        const interest: LeadCardInterest | null = i
-            ? {
-                produto: i.produto,
-                valorTotal: i.valor_total,
-                prazoMeses: i.prazo_meses,
-                objetivo: i.objetivo,
-                perfilDesejado: i.perfil_desejado,
-                observacao: i.observacao,
-            }
-            : null;
+    // Backend devolve: { columns: { [stage]: LeadCard[] } }
+    const columns = data.columns as KanbanColumns;
 
-        return { ...l, interest };
-    });
+    // Achata tudo em um array de linhas (como o page.tsx espera)
+    const rows: LeadCard[] = Object.values(columns).flat();
 
-    return enriched;
+    return rows;
 }
 
 // ====== Movimentação de estágio com histórico ======
-export async function moveLeadStage(payload: { leadId: string; to: Stage; reason?: string; }) {
-    const me = await getCurrentProfile();
-    if (!me?.orgId) throw new Error("Sem organização.");
+export async function moveLeadStage(args: {
+    leadId: string;
+    stage?: Stage;
+    to?: Stage;
+    reason?: string;
+}) {
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) throw new Error("Org inválida");
 
-    const s = srv();
+    const { leadId, stage, to, reason } = args;
+    const newStage = stage ?? to;
+    if (!newStage) throw new Error("Stage (stage/to) é obrigatório");
 
-    // 1) etapa atual
-    const { data: current, error: cErr } = await s
-        .from("leads")
-        .select("id, etapa, org_id")
-        .eq("id", payload.leadId)
-        .eq("org_id", me.orgId)
-        .single();
-    if (cErr) throw cErr;
+    const data = await backendFetch(`/leads/${leadId}/stage`, {
+        method: "PATCH",
+        orgId: profile.orgId,
+        body: JSON.stringify({ stage: newStage, reason }),
+    });
 
-    const fromStage = (current?.etapa ?? null) as Stage | null;
-
-    // 2) muda etapa
-    const { error: uErr, data: updated } = await s
-        .from("leads")
-        .update({ etapa: payload.to, updated_at: new Date().toISOString() })
-        .eq("id", payload.leadId)
-        .eq("org_id", me.orgId)
-        .select("id, etapa")
-        .single();
-    if (uErr) throw uErr;
-
-    // 3) histórico
-    const { error: hErr } = await s.from("lead_stage_history").insert([{
-        lead_id: payload.leadId,
-        from_stage: fromStage,
-        to_stage: payload.to,
-        moved_by: me.userId,
-        reason: payload.reason ?? null,
-    }]);
-    if (hErr) throw hErr;
-
-    // 4) ✅ se foi pra ATIVO e não existe cota, cria uma cota mínima
-    if (payload.to === "ativo") {
-        const { data: already, error: chkErr } = await s
-            .from("cotas")
-            .select("id")
-            .eq("org_id", me.orgId)
-            .eq("lead_id", payload.leadId)
-            .maybeSingle();
-        if (chkErr) throw chkErr;
-
-        if (!already) {
-            const { error: iErr } = await s.from("cotas").insert({
-                org_id: me.orgId,
-                lead_id: payload.leadId,
-                situacao: "ativa",        // chave pra Carteira
-                // campos opcionais que não sabemos aqui ficam null
-                // administradora_id, grupo_id, valor_carta, produto, ...
-                created_at: new Date().toISOString(),
-            });
-            if (iErr) throw iErr;
-        }
-    }
-
-    // 5) revalidate
+    // 🔄 força o Next a buscar o Kanban de novo do backend
     revalidatePath("/app/leads");
-    revalidatePath("/app/carteira"); // 👈 garante que a carteira re-renderize
-    revalidatePath("/app");
-    return updated;
+    // se seu dashboard principal depende das etapas, vale revalidar /app também:
+    // revalidatePath("/app");
+
+    return data; // { ok, lead, ... }
 }
 
 // ====== Cadastro manual de lead (recebe FormData) ======

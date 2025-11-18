@@ -23,8 +23,11 @@ type Props = {
     onMove: (leadId: string, to: Stage) => Promise<void>;
     contractOptions: { administradoras: AdminOption[] };
     metrics?: {
-        avgDays?: Partial<Record<Stage, number>>;     // tempo médio em dias por etapa
-        conversion?: Partial<Record<Stage, number>>;  // % de leads que avançam dessa etapa
+        avgDays?: Partial<Record<Stage, number>>;
+        conversion?: Partial<Record<Stage, number>>;
+        readinessAvg?: Partial<Record<Stage, number>>;
+        diagCompletionPct?: Partial<Record<Stage, number>>;
+        tFirstContactAvgMin?: Partial<Record<Stage, number>>;
     };
 };
 
@@ -47,6 +50,9 @@ export default function KanbanBoard({
                                     }: Props) {
     const avgDays = metrics?.avgDays ?? {};
     const conversion = metrics?.conversion ?? {};
+    const readinessAvg = metrics?.readinessAvg ?? {};
+    const diagCompletionPct = metrics?.diagCompletionPct ?? {};
+    const tFirstContactAvgMin = metrics?.tFirstContactAvgMin ?? {};
     const [, start] = useTransition();
     const [columns, setColumns] = useOptimistic<Record<Stage, Lead[]>, OptimisticAction>(
         initialColumns,
@@ -179,36 +185,24 @@ export default function KanbanBoard({
         <>
             <div
                 ref={containerRef}
-                className="
-          relative h-full
-          overflow-x-auto overflow-y-hidden
-          flex flex-nowrap gap-3 md:gap-4
-          [scrollbar-width:thin]
-          will-change-[scroll-position]
-          bg-[radial-gradient(1200px_600px_at_10%_-10%,rgba(16,185,129,0.06),transparent_60%),radial-gradient(1000px_500px_at_90%_110%,rgba(59,130,246,0.05),transparent_60%)]
-          bg-no-repeat
-        "
+                className="relative h-full overflow-x-auto overflow-y-hidden flex flex-nowrap gap-3 md:gap-4 [scrollbar-width:thin] will-change-[scroll-position] bg-[radial-gradient(1200px_600px_at_10%_-10%,rgba(16,185,129,0.06),transparent_60%),radial-gradient(1000px_500px_at_90%_110%,rgba(59,130,246,0.05),transparent_60%)] bg-no-repeat"
             >
                 {stages.map((s) => (
-                    <Card
-                        key={s}
-                        className="
-              bg-white/5 border-white/10 overflow-hidden
-              flex-none
-              w-[70vw] xs:w-[72vw] sm:w-[260px] md:w-[280px] xl:w-[300px]
-              h-full
-            "
-                    >
+                    <Card key={s} className="bg-white/5 border-white/10 overflow-hidden flex-none w-[70vw] xs:w-[72vw] sm:w-[260px] md:w-[280px] xl:w-[300px] h-full">
                         <ColumnHeaderStats
+                            stage={s}
                             count={columns[s].length}
                             avgDays={avgDays[s]}
+                            readinessAvg={readinessAvg[s]}
+                            diagCompletionPct={diagCompletionPct[s]}
+                            tFirstContactAvgMin={tFirstContactAvgMin[s]}
                             conversion={conversion[s]}
                         />
 
-                        <CardHeader
-
-                            className={`text-sm p-4 text-center font-semibold tracking-wide capitalize ${stageLabels[s].color}`}>
-                            <CardTitle className="text-sm font-semibold tracking-wide capitalize">{s}</CardTitle>
+                        <CardHeader className={`text-sm p-4 text-center font-semibold tracking-wide capitalize ${stageLabels[s].color}`}>
+                            <CardTitle className="text-sm font-semibold tracking-wide capitalize">
+                                {s}
+                            </CardTitle>
                         </CardHeader>
 
                         <CardContent
