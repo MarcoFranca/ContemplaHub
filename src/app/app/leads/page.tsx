@@ -1,3 +1,5 @@
+// page.tsx
+
 import { KanbanBoard, CreateLeadDialog } from "./ui";
 import {
     listLeadsForKanban,
@@ -9,6 +11,7 @@ import {
 import { getCurrentProfile } from "@/lib/auth/server";
 import { getKanbanMetricsFromDB } from "./metrics-actions";
 import { LeadsToolbar } from "./ui/LeadsToolbar";
+import type { KanbanMetrics } from "./types";   // 👈 importa o tipo
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,20 +19,17 @@ export const dynamic = "force-dynamic";
 // Estágios base do funil (pré-contrato)
 const STAGES_BASE: Stage[] = ["novo","diagnostico","proposta","negociacao","contrato"];
 
-/** type guard para Stage */
 function isStage(v: string): v is Stage {
     const all: Stage[] = ["novo","diagnostico","proposta","negociacao","contrato","ativo","perdido"];
     return all.includes(v as Stage);
 }
 
-/** normaliza valores vindos do BD/legado para um Stage válido */
 function normalizeStage(raw: string | null | undefined): Stage {
     const s = (raw ?? "").toString().toLowerCase();
-    if (s === "fechamento") return "contrato"; // legado -> novo
+    if (s === "fechamento") return "contrato";
     return isStage(s) ? (s as Stage) : "novo";
 }
 
-/** agrupa leads por etapa já normalizada (apenas as exibidas) */
 function columnsByStage(rows: LeadCard[], stages: Stage[]) {
     const cols = stages.reduce<Record<Stage, LeadCard[]>>((acc, s) => {
         acc[s] = [];
@@ -44,7 +44,6 @@ function columnsByStage(rows: LeadCard[], stages: Stage[]) {
     return cols;
 }
 
-// 👇 ATENÇÃO: searchParams é Promise no Next 15
 type PageProps = {
     searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -59,38 +58,31 @@ export default async function LeadsKanbanPage(props: PageProps) {
         );
     }
 
-    // ✅ Desempacota os searchParams (Promise → objeto)
     const sp = await props.searchParams;
 
-    // Helpers para boolean de QS
     const getFlag = (key: string) => {
         const v = sp?.[key];
         if (Array.isArray(v)) return v.includes("1");
         return v === "1";
     };
 
-    // Flags de exibição vindas da URL (?ativos=1&perdidos=1)
     const showActive = getFlag("ativos");
     const showLost = getFlag("perdidos");
 
-    // Monta a lista de colunas conforme flags
     const STAGES: Stage[] = [
         ...STAGES_BASE,
         ...(showActive ? (["ativo"] as const) : []),
         ...(showLost ? (["perdido"] as const) : []),
     ];
 
-    // 1) Dados dos cards
     const rows = await listLeadsForKanban({ showActive, showLost, scope: "me" });
     const columns = columnsByStage(rows as LeadCard[], STAGES);
 
-    // 2) Métricas do Kanban
-    const metrics = await getKanbanMetricsFromDB();
+    // 2) Métricas do Kanban – já no shape novo
+    const metrics: KanbanMetrics | null = await getKanbanMetricsFromDB();
 
-    // 3) Opções para o Drawer de contrato
     const contractOptions = await listContractOptions();
 
-    // 4) Handler de movimento
     async function onMove(leadId: string, to: Stage) {
         "use server";
         await moveLeadStage({ leadId, to });
@@ -104,16 +96,8 @@ export default async function LeadsKanbanPage(props: PageProps) {
                     stages={STAGES}
                     onMove={onMove}
                     contractOptions={contractOptions}
-                    metrics={{
-                        avgDays: metrics?.avgDays as Partial<Record<Stage, number>>,
-                        conversion: metrics?.conversion as Partial<Record<Stage, number>>,
-                        readinessAvg: metrics?.readinessAvg as Partial<Record<Stage, number>>,
-                        diagCompletionPct: metrics?.diagCompletionPct as Partial<
-                            Record<Stage, number>
-                        >,
-                    }}
+                    metrics={metrics ?? undefined}
                 />
-
             </div>
         </div>
     );

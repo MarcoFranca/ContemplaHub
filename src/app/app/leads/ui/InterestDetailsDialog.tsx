@@ -2,48 +2,40 @@
 
 import { Button } from "@/components/ui/button";
 import {
-    Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Pill } from "./Pill";
 import { buildWhatsAppLink, formatMoneyBR, parseMoneyBR } from "@/lib/formatters";
 import { Calendar, ClipboardList, FileSignature, MessageCircle } from "lucide-react";
+import type { Interest, InterestInsight } from "@/app/app/leads/types"; // 👈 usa tipos centrais
 
-/** Mantém compatibilidade com o que já vem do backend */
-type Interest = {
-    produto?: string | null;
-    valorTotal?: string | null;   // "250000" | "250.000" | "250.000,00"
-    prazoMeses?: number | null;   // 120 / 180
-    objetivo?: string | null;
-    perfilDesejado?: string | null;
-    observacao?: string | null;
-};
+// --- helpers de máscara/parse ---
 
-// --- helpers de máscara/parse (mesma linha que usamos no restante) ---
-
-/** Converte qualquer entrada (com pontos/virgulas ou só dígitos) para número em REAIS. */
 function toValorNumber(v: string | null | undefined): number | null {
     if (!v) return null;
     const n = parseMoneyBR(v);
-    if (n != null) return n; // já era "1.234,56" etc.
-    // fallback: trata como REAIS inteiros em dígitos ("250000" => 250000.00)
+    if (n != null) return n;
     const digits = String(v).replace(/[^\d]/g, "");
     if (!digits) return null;
     const asNumber = Number(digits);
     return Number.isFinite(asNumber) ? asNumber : null;
 }
 
-/** Apresenta em "R$ 250.000,00" sempre. Aproveita o formatMoneyBR (que opera com CENTAVOS). */
 function presentValorBR(val: string | null | undefined): string | null {
     const n = toValorNumber(val);
     if (n == null) return null;
-    // formatMoneyBR lê dígitos como centavos → multiplicamos por 100 e passamos como string.
     const centsDigits = Math.round(n * 100).toString();
     return formatMoneyBR(centsDigits);
 }
 
-// --- heurística/UX ---
+// --- heurísticas locais (fallback) ---
 
-function scoreInterest(i: Interest) {
+function scoreInterestFallback(i: Interest) {
     let s = 0;
     if (i.produto) s += 20;
     if (i.prazoMeses && i.prazoMeses >= 60) s += 15;
@@ -60,18 +52,17 @@ function scoreInterest(i: Interest) {
     return Math.min(100, s);
 }
 
-function missingFields(i: Interest) {
+function missingFieldsFallback(i: Interest) {
     const miss: string[] = [];
     if (!i.produto) miss.push("Produto");
     if (!i.prazoMeses) miss.push("Prazo");
     if (!i.valorTotal) miss.push("Valor da carta");
     if (!i.objetivo) miss.push("Objetivo");
-    if (!i.perfilDesejado) miss.push("Perfil");
+    if (!i.perfilDesejado) miss.push("Perfil desejado");
     return miss;
 }
 
-function nextBestAction(i: Interest) {
-    // estratégia simples por produto/valor/prazo
+function nextBestActionFallback(i: Interest) {
     const v = toValorNumber(i.valorTotal) ?? 0;
     if (i.produto === "imobiliario") {
         if (v >= 300_000 && (i.prazoMeses ?? 0) >= 120) {
@@ -85,7 +76,7 @@ function nextBestAction(i: Interest) {
     return "Esclarecer produto e objetivo antes da simulação; oferecer call rápida de 10 min.";
 }
 
-function suggestedQuestions(i: Interest) {
+function suggestedQuestionsFallback(i: Interest) {
     const base = [
         "Qual é o objetivo principal com essa carta?",
         "Qual o prazo ideal de parcelas que você imagina?",
@@ -102,7 +93,7 @@ function suggestedQuestions(i: Interest) {
     return base;
 }
 
-function likelyObjections(i: Interest) {
+function likelyObjectionsFallback(i: Interest) {
     return [
         "Valor de parcela vs. orçamento mensal",
         "Prazo percebido como longo",
@@ -114,17 +105,29 @@ function likelyObjections(i: Interest) {
 // --- Componente ---
 
 export function InterestDetailsDialog({
+                                          insight,
                                           interest,
                                           phone,
                                       }: {
     interest: Interest;
+    insight?: InterestInsight | null;
     phone?: string | null;
 }) {
     const { produto, valorTotal, prazoMeses, objetivo, perfilDesejado, observacao } = interest;
 
-    const valorMasked = presentValorBR(valorTotal); // 👈 sempre “R$ 250.000,00”
-    const score = scoreInterest(interest);
-    const miss = missingFields(interest);
+    const valorMasked = presentValorBR(valorTotal);
+
+    // 👇 agora usamos SEMPRE o backend, com fallback local
+    const score = insight?.score ?? scoreInterestFallback(interest);
+    const miss = (insight?.missing_fields?.length ? insight.missing_fields : null)
+        ?? missingFieldsFallback(interest);
+    const nextBest = insight?.next_best_action ?? nextBestActionFallback(interest);
+    const questions =
+        (insight?.suggested_questions?.length ? insight.suggested_questions : null) ??
+        suggestedQuestionsFallback(interest);
+    const objections =
+        (insight?.likely_objections?.length ? insight.likely_objections : null) ??
+        likelyObjectionsFallback(interest);
 
     const waText =
         `Oi! 😊 Sou da Autentika. Revisei seu interesse: ${produto ?? "—"} • ` +
@@ -139,10 +142,12 @@ export function InterestDetailsDialog({
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="h-7 px-2 text-xs">Ver interesse</Button>
+                <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
+                    Ver interesse
+                </Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-lg md:max-w-xl">
+            <DialogContent className="sm:max-w-lg md:max-w-xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
                         <span>Diagnóstico rápido</span>
@@ -168,7 +173,9 @@ export function InterestDetailsDialog({
                     {observacao && (
                         <div className="space-y-1">
                             <div className="text-muted-foreground text-xs">Observação</div>
-                            <div className="font-medium whitespace-pre-wrap break-words">{observacao}</div>
+                            <div className="font-medium whitespace-pre-wrap break-words">
+                                {observacao}
+                            </div>
                         </div>
                     )}
 
@@ -177,38 +184,54 @@ export function InterestDetailsDialog({
                         <div className="text-muted-foreground text-xs">Checklist pré-reunião</div>
                         <ul className="list-disc ml-5 space-y-1">
                             {miss.length === 0 ? (
-                                <li className="text-emerald-300">Tudo pronto para apresentar proposta.</li>
+                                <li className="text-emerald-300">
+                                    Tudo pronto para apresentar proposta.
+                                </li>
                             ) : (
-                                miss.map((m) => <li key={m}>{m} — confirmar com o cliente.</li>)
+                                miss.map((m) => (
+                                    <li key={m}>{m} — confirmar com o cliente.</li>
+                                ))
                             )}
                         </ul>
                     </div>
 
                     {/* Estratégia sugerida */}
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                        <div className="text-[11px] text-muted-foreground mb-1">Próxima jogada sugerida</div>
-                        <div className="text-sm">{nextBestAction(interest)}</div>
+                        <div className="text-[11px] text-muted-foreground mb-1">
+                            Próxima jogada sugerida
+                        </div>
+                        <div className="text-sm">{nextBest}</div>
                     </div>
 
-                    {/* 5 perguntas-chaves */}
+                    {/* Perguntas-chave */}
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                        <div className="text-[11px] text-muted-foreground mb-1">Perguntas para qualificar</div>
+                        <div className="text-[11px] text-muted-foreground mb-1">
+                            Perguntas para qualificar
+                        </div>
                         <ol className="list-decimal ml-5 space-y-1">
-                            {suggestedQuestions(interest).map((q) => <li key={q}>{q}</li>)}
+                            {questions.map((q) => (
+                                <li key={q}>{q}</li>
+                            ))}
                         </ol>
                     </div>
 
                     {/* Objeções prováveis */}
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                        <div className="text-[11px] text-muted-foreground mb-1">Objeções prováveis</div>
+                        <div className="text-[11px] text-muted-foreground mb-1">
+                            Objeções prováveis
+                        </div>
                         <ul className="list-disc ml-5 space-y-1">
-                            {likelyObjections(interest).map((o) => <li key={o}>{o}</li>)}
+                            {objections.map((o) => (
+                                <li key={o}>{o}</li>
+                            ))}
                         </ul>
                     </div>
 
                     {/* Anotações */}
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                        <div className="text-[11px] text-muted-foreground mb-1">Anotações rápidas</div>
+                        <div className="text-[11px] text-muted-foreground mb-1">
+                            Anotações rápidas
+                        </div>
                         <textarea
                             className="w-full min-h-[80px] bg-transparent text-sm outline-none"
                             placeholder="Hipóteses de estratégia, riscos, condicionantes…"
@@ -218,19 +241,27 @@ export function InterestDetailsDialog({
                     {/* Ações */}
                     <div className="grid grid-cols-3 gap-2">
                         <Button asChild variant="secondary" className="justify-start gap-2 text-xs">
-                            <a href="/app/agenda/nova"><Calendar className="h-4 w-4" /> Agendar reunião</a>
+                            <a href="/app/agenda/nova">
+                                <Calendar className="h-4 w-4" /> Agendar reunião
+                            </a>
                         </Button>
                         <Button asChild variant="secondary" className="justify-start gap-2 text-xs">
-                            <a href="/app/propostas/nova"><FileSignature className="h-4 w-4" /> Gerar proposta</a>
+                            <a href="/app/propostas/nova">
+                                <FileSignature className="h-4 w-4" /> Gerar proposta
+                            </a>
                         </Button>
                         <Button asChild className="justify-start gap-2 text-xs">
-                            <a href={waLink} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4" /> WhatsApp</a>
+                            <a href={waLink} target="_blank" rel="noreferrer">
+                                <MessageCircle className="h-4 w-4" /> WhatsApp
+                            </a>
                         </Button>
                     </div>
                 </div>
 
                 <DialogFooter>
-                    <Button type="button" variant="outline">Fechar</Button>
+                    <Button type="button" variant="outline">
+                        Fechar
+                    </Button>
                     <Button type="button" asChild>
                         <a href="/app/diagnostico" className="inline-flex items-center gap-2 text-sm">
                             <ClipboardList className="h-4 w-4" /> Abrir diagnóstico completo

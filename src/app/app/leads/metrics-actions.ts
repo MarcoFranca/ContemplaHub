@@ -1,47 +1,62 @@
 // src/app/app/leads/metrics-actions.ts
 "use server";
 
+import { supabaseServer } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/server";
-import { backendFetch } from "@/lib/backend";
+import type { KanbanMetrics, Stage, MetricsByStage } from "./types";
 
-export interface KanbanMetrics {
-    avgDays?: Record<string, number>;
-    conversion?: Record<string, number>;
-    diagCompletionPct?: Record<string, number>;
-    readinessAvg?: Record<string, number>;
-    tFirstContactAvgMin?: Record<string, number>;
-    raw?: unknown;
-}
-
-export async function getKanbanMetricsFromDB(): Promise<KanbanMetrics> {
+export async function getKanbanMetricsFromDB(): Promise<KanbanMetrics | null> {
     const profile = await getCurrentProfile();
-    if (!profile?.orgId) throw new Error("Org inválida");
+    if (!profile?.orgId) return null;
 
-    const data = await backendFetch(`/kanban/metrics`, {
-        method: "GET",
-        orgId: profile.orgId,
-    });
+    const supabase = await supabaseServer();
 
-    const raw = (data as any)?.raw;
-    const rows: any[] = Array.isArray(raw?.rows) ? raw.rows : [];
+    const { data, error } = await supabase
+        .rpc("get_kanban_metrics", { p_org: profile.orgId })
+        .throwOnError(); // se preferir, remove e trata manualmente
 
-    const avgDays: Record<string, number> = {};
-    const conversion: Record<string, number> = {};
-    const diagCompletionPct: Record<string, number> = {};
-    const readinessAvg: Record<string, number> = {};
-    const tFirstContactAvgMin: Record<string, number> = {};
+    if (error) {
+        console.error("getKanbanMetricsFromDB error:", error);
+        return null;
+    }
+
+    // data pode vir:
+    // - como array de linhas: [{ etapa, avgDays, ... }]
+    // - ou como { rows: [...] }
+    const rows: any[] = Array.isArray(data)
+        ? data
+        : Array.isArray((data as any)?.rows)
+            ? (data as any).rows
+            : [];
+
+    if (!rows.length) {
+        return {
+            avgDays: {},
+            conversion: {},
+            diagCompletionPct: {},
+            readinessAvg: {},
+            tFirstContactAvgMin: {},
+            raw: data,
+        };
+    }
+
+    const avgDays: MetricsByStage = {};
+    const conversion: MetricsByStage = {};
+    const diagCompletionPct: MetricsByStage = {};
+    const readinessAvg: MetricsByStage = {};
+    const tFirstContactAvgMin: MetricsByStage = {};
 
     for (const r of rows) {
-        const etapa = r.etapa as string;
+        const etapa = r.etapa as Stage;
         if (!etapa) continue;
-        if (typeof r.avgDays === "number") avgDays[etapa] = r.avgDays;
-        if (typeof r.conversion === "number") conversion[etapa] = r.conversion;
-        if (typeof r.diagnosticCompletionPct === "number")
-            diagCompletionPct[etapa] = r.diagnosticCompletionPct;
-        if (typeof r.readinessAvg === "number")
-            readinessAvg[etapa] = r.readinessAvg;
-        if (typeof r.tFirstContactAvgMin === "number")
-            tFirstContactAvgMin[etapa] = r.tFirstContactAvgMin;
+
+        if (r.avgDays != null) avgDays[etapa] = Number(r.avgDays);
+        if (r.conversion != null) conversion[etapa] = Number(r.conversion);
+        if (r.readinessAvg != null) readinessAvg[etapa] = Number(r.readinessAvg);
+        if (r.tFirstContactAvgMin != null)
+            tFirstContactAvgMin[etapa] = Number(r.tFirstContactAvgMin);
+        if (r.diagnosticCompletionPct != null)
+            diagCompletionPct[etapa] = Number(r.diagnosticCompletionPct);
     }
 
     return {
@@ -50,8 +65,6 @@ export async function getKanbanMetricsFromDB(): Promise<KanbanMetrics> {
         diagCompletionPct,
         readinessAvg,
         tFirstContactAvgMin,
-        raw,
+        raw: rows,
     };
 }
-
-

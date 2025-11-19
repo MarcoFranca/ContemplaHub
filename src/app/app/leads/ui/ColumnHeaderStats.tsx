@@ -1,8 +1,7 @@
-// src/app/app/leads/ui/ColumnHeaderStats.tsx
 "use client";
 
 import { Clock3, TrendingUp, Users } from "lucide-react";
-import type { Stage } from "./LeadCardItem";
+import type { Stage } from "@/app/app/leads/types";
 
 type Props = {
     stage: Stage;
@@ -10,7 +9,7 @@ type Props = {
     avgDays?: number;
     conversion?: number;
     diagCompletionPct?: number;       // 0..1
-    diagnosticCompletionPct?: number; // 0..1 (alias, se vier com outro nome)
+    diagnosticCompletionPct?: number; // alias
     readinessAvg?: number;            // 0..100
     tFirstContactAvgMin?: number;     // minutos
 };
@@ -19,7 +18,6 @@ function formatFirstContact(min?: number) {
     if (min == null || Number.isNaN(min)) return "—";
 
     if (min >= 1440) {
-        // mais de 1 dia
         return `${(min / 1440).toFixed(1)}d`;
     }
     if (min >= 60) {
@@ -40,11 +38,14 @@ export function ColumnHeaderStats({
                                   }: Props) {
     const label = count === 1 ? "1 lead" : `${count} leads`;
 
-    // aceita tanto diagCompletionPct quanto diagnosticCompletionPct
     const diag = diagCompletionPct ?? diagnosticCompletionPct;
 
     const hasAnyMetric =
-        avgDays != null || diag != null || readinessAvg != null || tFirstContactAvgMin != null || conversion != null;
+        avgDays != null ||
+        diag != null ||
+        readinessAvg != null ||
+        tFirstContactAvgMin != null ||
+        conversion != null;
 
     const diagText = diag != null ? `${Math.round(diag * 100)}%` : "—";
     const readyText = readinessAvg != null ? `${Math.round(readinessAvg)}%` : "—";
@@ -53,7 +54,6 @@ export function ColumnHeaderStats({
 
     return (
         <div className="px-4 pt-3 pb-2 text-[11px] text-muted-foreground space-y-1.5">
-            {/* Linha 1: leads + tempo médio */}
             <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                     <Users className="w-3 h-3 text-emerald-400/80" />
@@ -68,7 +68,6 @@ export function ColumnHeaderStats({
                 )}
             </div>
 
-            {/* Linha 2: chips principais */}
             {hasAnyMetric && (
                 <div className="flex flex-wrap gap-1.5">
                     {diag != null && (
@@ -84,7 +83,6 @@ export function ColumnHeaderStats({
                 </div>
             )}
 
-            {/* Linha 3: 1º contato + conversão */}
             <div className="flex flex-wrap gap-3">
                 {tFirstContactAvgMin != null && (
                     <div className="flex items-center gap-1">

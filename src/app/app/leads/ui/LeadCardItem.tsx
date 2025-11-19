@@ -8,42 +8,15 @@ import { InterestDetailsDialog } from "./InterestDetailsDialog";
 import { DiagnosticPanel } from "@/app/app/leads/ui/DiagnosticPanel";
 import { Button } from "@/components/ui/button";
 
-export type Stage =
-    | "novo"
-    | "diagnostico"
-    | "proposta"
-    | "negociacao"
-    | "contrato"
-    | "ativo"
-    | "perdido";
-
-export type Lead = {
-    id: string;
-    nome: string | null;
-    etapa: Stage;
-    telefone?: string | null;
-    email?: string | null;
-    origem?: string | null;
-    utm_source?: string | null;
-    valor_interesse?: string | null;
-    prazo_meses?: number | null;
-    readiness_score?: number | null;
-    interest?: {
-        produto?: string | null;
-        valorTotal?: string | null;
-        prazoMeses?: number | null;
-        objetivo?: string | null;
-        perfilDesejado?: string | null;
-        observacao?: string | null;
-    } | null;
-};
+// 👇 importa os tipos centrais
+import type { LeadCard } from "@/app/app/leads/types";
 
 export function LeadCardItem({
                                  lead,
                                  onDragStart,
                              }: {
-    lead: Lead;
-    onDragStart: (e: React.DragEvent, l: Lead) => void;
+    lead: LeadCard;
+    onDragStart: (e: React.DragEvent, l: LeadCard) => void;
 }) {
     const ready = lead.readiness_score ?? null;
 
@@ -73,39 +46,40 @@ export function LeadCardItem({
             </div>
 
             {/* ações: diagnóstico + interesse */}
-            <div className="mt-2 flex items-center justify-end gap-2"><Dialog>
-                <DialogTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="lg"
-                        className="h-6 px-2 text-[11px] text-emerald-100 hover:bg-emerald-500/10 hover:text-emerald-50"
-                    >
-                        Diagnóstico
-                    </Button>
-                </DialogTrigger>
+            <div className="mt-2 flex items-center justify-end gap-2">
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="lg"
+                            className="h-6 px-2 text-[11px] text-emerald-100 hover:bg-emerald-500/10 hover:text-emerald-50"
+                        >
+                            Diagnóstico
+                        </Button>
+                    </DialogTrigger>
 
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader className="sr-only">
-                        <DialogTitle>Diagnóstico do lead {lead.nome ?? ""}</DialogTitle>
-                    </DialogHeader>
+                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader className="sr-only">
+                            <DialogTitle>Diagnóstico do lead {lead.nome ?? ""}</DialogTitle>
+                        </DialogHeader>
 
-                    {/* wrapper para dar um respiro nas bordas e permitir scroll suave */}
-                    <div className="space-y-4 pb-2">
-                        <DiagnosticPanel leadId={lead.id} />
-                    </div>
-                </DialogContent>
-            </Dialog>
+                        <div className="space-y-4 pb-2">
+                            <DiagnosticPanel leadId={lead.id} />
+                        </div>
+                    </DialogContent>
+                </Dialog>
 
                 {lead.interest && (
                     <InterestDetailsDialog
                         interest={lead.interest}
+                        insight={lead.interest_insight}
                         phone={lead.telefone ?? null}
                     />
                 )}
             </div>
 
             {/* linhas de interesse */}
-            <InterestSummaryRow lead={lead as any} />
+            <InterestSummaryRow lead={lead} />
         </div>
     );
 }
