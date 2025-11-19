@@ -25,6 +25,8 @@ export type InterestInsight = {
     suggested_questions: string[];
     likely_objections: string[];
     priority: "baixa" | "media" | "alta";
+    strategy_ideas?: string[] | null;
+    suggested_ticket_splits?: string[] | null;
 };
 
 export type LeadCardInterest = Interest;

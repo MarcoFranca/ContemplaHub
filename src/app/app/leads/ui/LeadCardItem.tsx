@@ -1,12 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatPhoneBR } from "@/lib/formatters";
 import { InterestSummaryRow } from "./InterestSummaryRow";
 import { InterestDetailsDialog } from "./InterestDetailsDialog";
-import { DiagnosticPanel } from "@/app/app/leads/ui/DiagnosticPanel";
-import { Button } from "@/components/ui/button";
+import { DiagnosticSheet } from "@/app/app/leads/ui/DiagnosticSheet";
 
 // 👇 importa os tipos centrais
 import type { LeadCard } from "@/app/app/leads/types";
@@ -47,27 +45,7 @@ export function LeadCardItem({
 
             {/* ações: diagnóstico + interesse */}
             <div className="mt-2 flex items-center justify-end gap-2">
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="lg"
-                            className="h-6 px-2 text-[11px] text-emerald-100 hover:bg-emerald-500/10 hover:text-emerald-50"
-                        >
-                            Diagnóstico
-                        </Button>
-                    </DialogTrigger>
-
-                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader className="sr-only">
-                            <DialogTitle>Diagnóstico do lead {lead.nome ?? ""}</DialogTitle>
-                        </DialogHeader>
-
-                        <div className="space-y-4 pb-2">
-                            <DiagnosticPanel leadId={lead.id} />
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <DiagnosticSheet leadId={lead.id} leadName={lead.nome} />
 
                 {lead.interest && (
                     <InterestDetailsDialog

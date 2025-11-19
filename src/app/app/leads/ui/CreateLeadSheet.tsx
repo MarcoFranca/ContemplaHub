@@ -58,7 +58,7 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
     const trigger =
         variant === "fab" ? (
             <Button
-                className=" bottom-4 right-4 md:bottom-6 md:right-6 z-50  h-12 w-12 p-0 shadow-lg bg-emerald-600 hover:bg-emerald-500"
+                className=" bottom-4 right-4 md:bottom-6 md:right-6 z-50  h-8 w-8 p-0 shadow-lg bg-emerald-600 hover:bg-emerald-500"
                 title="Novo lead (N)"
             >
                 <Plus className="h-6 w-6 text-white" />

@@ -1,6 +1,6 @@
 // page.tsx
 
-import { KanbanBoard, CreateLeadDialog } from "./ui";
+import { KanbanBoard } from "./ui";
 import {
     listLeadsForKanban,
     moveLeadStage,
@@ -10,7 +10,6 @@ import {
 } from "./actions";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { getKanbanMetricsFromDB } from "./metrics-actions";
-import { LeadsToolbar } from "./ui/LeadsToolbar";
 import type { KanbanMetrics } from "./types";   // 👈 importa o tipo
 
 export const runtime = "nodejs";
