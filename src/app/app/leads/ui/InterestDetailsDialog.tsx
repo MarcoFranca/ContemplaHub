@@ -131,10 +131,12 @@ export function InterestDetailsDialog({
                                           insight,
                                           interest,
                                           phone,
+                                          leadId,
                                       }: {
     interest: Interest;
     insight?: InterestInsight | null;
     phone?: string | null;
+    leadId: string;
 }) {
     const { produto, valorTotal, prazoMeses, objetivo, perfilDesejado, observacao } =
         interest;
@@ -323,7 +325,7 @@ export function InterestDetailsDialog({
                                         variant="secondary"
                                         className="justify-start gap-2 text-xs bg-white/10 hover:bg-white/20 border border-white/20"
                                     >
-                                        <a href="/app/propostas/nova">
+                                        <a href={`/app/leads/${leadId}/propostas/nova`}>
                                             <FileSignature className="h-4 w-4" /> Gerar proposta
                                         </a>
                                     </Button>

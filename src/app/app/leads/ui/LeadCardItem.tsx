@@ -52,6 +52,7 @@ export function LeadCardItem({
                         interest={lead.interest}
                         insight={lead.interest_insight}
                         phone={lead.telefone ?? null}
+                        leadId={lead.id}
                     />
                 )}
             </div>
