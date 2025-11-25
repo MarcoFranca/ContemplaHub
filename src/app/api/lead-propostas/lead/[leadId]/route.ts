@@ -1,19 +1,43 @@
 // src/app/api/lead-propostas/lead/[leadId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentProfile } from "@/lib/auth/server"; // se estiver usando
+import { getCurrentProfile } from "@/lib/auth/server";
+
 const BACKEND_URL =
-    process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
+    process.env.BACKEND_URL ??
+    process.env.NEXT_PUBLIC_BACKEND_URL ??
+    "http://localhost:8000";
+
+export async function GET(
+    req: NextRequest,
+    ctx: { params: Promise<{ leadId: string }> }
+) {
+    const { leadId } = await ctx.params;
+
+    const profile = await getCurrentProfile().catch(() => null);
+    const orgId = profile?.orgId;
+
+    const res = await fetch(`${BACKEND_URL}/lead-propostas/lead/${leadId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(orgId ? { "X-Org-Id": String(orgId) } : {}),
+        },
+    });
+
+    const data = await res.json();
+    return new NextResponse(JSON.stringify(data), {
+        status: res.status,
+        headers: { "Content-Type": "application/json" },
+    });
+}
 
 export async function POST(
     req: NextRequest,
     ctx: { params: Promise<{ leadId: string }> }
 ) {
-    // 👇 DESENPACOTA o params (Next 15)
     const { leadId } = await ctx.params;
-
     const body = await req.json();
 
-    // se quiser repassar org/user para o backend:
     const profile = await getCurrentProfile().catch(() => null);
     const orgId = profile?.orgId;
     const userId = profile?.userId;
@@ -35,7 +59,6 @@ export async function POST(
     try {
         data = await backendRes.json();
     } catch {
-        // se o backend devolver vazio, evita estourar aqui
         data = null;
     }
 

@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 const BACKEND_URL =
     process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ShareProposalActions } from "./ShareProposalActions";
 
 export const dynamic = "force-dynamic";
+import { PropostaActionsClient } from "./PropostaActionsClient"; // 👈 novo
 
 async function loadProposta(hash: string) {
     try {
@@ -33,17 +36,14 @@ export default async function PropostaPublicaPage({
                                                   }: {
     params: Promise<{ publicHash: string }>;
 }) {
-    // Next 15: params é uma Promise
     const { publicHash } = await params;
 
     const proposta = await loadProposta(publicHash);
 
-    // ⛔ se não achou ou veio zoado, manda 404 elegante
     if (!proposta) {
         notFound();
     }
 
-    // proteção extra caso backend retorne algo inesperado
     const payload = proposta.payload ?? {};
     const cliente = payload.cliente ?? {};
     const cenarios: any[] = Array.isArray(payload.propostas)
@@ -63,7 +63,7 @@ export default async function PropostaPublicaPage({
                             Campanha: {proposta.campanha ?? "—"}
                         </p>
                     </CardHeader>
-                    <CardContent className="space-y-1 text-sm">
+                    <CardContent className="space-y-2 text-sm">
                         <p>
                             Cliente: <b>{cliente.nome ?? "—"}</b>
                         </p>
@@ -73,6 +73,18 @@ export default async function PropostaPublicaPage({
                                 ? new Date(proposta.created_at).toLocaleString("pt-BR")
                                 : "—"}
                         </p>
+
+                        <ShareProposalActions
+                            publicHash={publicHash}
+                            clienteNome={cliente.nome}
+                            phone={cliente.telefone}
+                        />
+
+                        {/* 🔥 ações internas (time) – client component */}
+                        <PropostaActionsClient
+                            propostaId={proposta.id}
+                            currentStatus={proposta.status}
+                        />
                     </CardContent>
                 </Card>
 
@@ -139,8 +151,7 @@ export default async function PropostaPublicaPage({
 
                                 {c.redutor_percent != null && (
                                     <p>
-                                        <b>Redutor:</b> {c.redutor_percent}%{" "}
-                                        {c.com_redutor === false && "(não aplicado)"}
+                                        <b>Redutor:</b> {c.redutor_percent}%
                                     </p>
                                 )}
 

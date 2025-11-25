@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";              // 👈 importa Link
 import { formatPhoneBR } from "@/lib/formatters";
 import { InterestSummaryRow } from "./InterestSummaryRow";
 import { InterestDetailsDialog } from "./InterestDetailsDialog";
@@ -43,6 +44,15 @@ export function LeadCardItem({
                 )}
             </div>
 
+            <div className="mt-2 flex items-center justify-between gap-2">
+                {/* 👇 novo botão de detalhes do lead */}
+                <Link
+                    href={`/app/leads/${lead.id}`}
+                    className="text-[11px] text-emerald-300 hover:text-emerald-100 underline-offset-2 hover:underline"
+                >
+                    Ver lead
+                </Link>
+
             {/* ações: diagnóstico + interesse */}
             <div className="mt-2 flex items-center justify-end gap-2">
                 <DiagnosticSheet leadId={lead.id} leadName={lead.nome} />
@@ -55,6 +65,7 @@ export function LeadCardItem({
                         leadId={lead.id}
                     />
                 )}
+            </div>
             </div>
 
             {/* linhas de interesse */}
