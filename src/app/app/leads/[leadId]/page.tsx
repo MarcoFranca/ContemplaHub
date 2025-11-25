@@ -1,22 +1,19 @@
+// src/app/app/leads/[leadId]/page.tsx
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, FileSignature, Sparkles } from "lucide-react";
-
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
-
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-
-import { LeadPropostasList } from "./LeadPropostasList"; // vamos criar já já
 import { Separator } from "@/components/ui/separator";
+
+import { LeadHeader } from "./LeadHeader";
+import { LeadDiagnosticCard } from "./LeadDiagnosticCard";
+import { LeadPropostasCard } from "./LeadPropostasCard";
+import { LeadInfoCard } from "./LeadInfoCard";
+import { LeadStrategiesCard } from "./LeadStrategiesCard";
+import {LeadCotasCard} from "@/app/app/leads/[leadId]/LeadCotasCard"; // 👈 ADICIONA ISSO
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// -------------------------------
-//  LOAD DO LEAD
-// -------------------------------
 async function loadLead(leadId: string, orgId: string) {
     const supabase = await supabaseServer();
 
@@ -32,9 +29,67 @@ async function loadLead(leadId: string, orgId: string) {
     return data;
 }
 
-// -------------------------------
-//  PAGE
-// -------------------------------
+async function loadDiagnostic(leadId: string, orgId: string) {
+    const supabase = await supabaseServer();
+
+    const { data, error } = await supabase
+        .from("lead_diagnosticos")
+        .select("*")
+        .eq("org_id", orgId)
+        .eq("lead_id", leadId)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data; // pode ser null
+}
+
+async function loadCotas(leadId: string, orgId: string) {
+    const supabase = await supabaseServer();
+
+    const { data, error } = await supabase
+        .from("cotas")
+        .select(`
+            id,
+            org_id,
+            lead_id,
+            administradora_id,
+            valor_carta,
+            produto,
+            situacao,
+            data_adesao,
+            numero_cota,
+            grupo_codigo,
+            valor_parcela,
+            prazo,
+            forma_pagamento,
+            indice_correcao,
+            parcela_reduzida,
+            percentual_reducao,
+            valor_parcela_sem_redutor,
+            embutido_permitido,
+            embutido_max_percent,
+            fgts_permitido
+        `)
+        .eq("org_id", orgId)
+        .eq("lead_id", leadId);
+
+    if (error) throw error;
+    return data ?? [];
+}
+
+async function loadContratos(orgId: string, cotasIds: string[]) {
+    const supabase = await supabaseServer();
+
+    const { data, error } = await supabase
+        .from("contratos")
+        .select("*")
+        .eq("org_id", orgId)
+        .in("cota_id", cotasIds);
+
+    if (error) throw error;
+    return data ?? [];
+}
+
 export default async function LeadDetailsPage({
                                                   params,
                                               }: {
@@ -47,106 +102,48 @@ export default async function LeadDetailsPage({
         throw new Error("Org inválida");
     }
 
-    const lead = await loadLead(leadId, profile.orgId);
+    const [lead, diagnostico, cotas] = await Promise.all([
+        loadLead(leadId, profile.orgId),
+        loadDiagnostic(leadId, profile.orgId),
+        loadCotas(leadId, profile.orgId),
+    ]);
+
+    const contratos = await loadContratos(
+        profile.orgId,
+        cotas.map((c: any) => c.id)
+    );
+
     if (!lead) notFound();
 
     return (
         <div className="h-full overflow-auto">
-            <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+            <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+                <LeadHeader lead={lead} />
+                <Separator />
+                <main className="grid gap-6 lg:grid-cols-[1.7fr_1.1fr]">
+                    {/* COLUNA ESQUERDA */}
+                    <div className="space-y-4">
+                        <LeadDiagnosticCard
+                            leadId={leadId}
+                            leadName={lead.nome}
+                            diagnostico={diagnostico}
+                        />
 
-                {/* ----------------------- HEADER ----------------------- */}
-                <header className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href="/app/leads"
-                            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                        >
-                            <ArrowLeft className="h-3 w-3" />
-                            Voltar
-                        </Link>
-
-                        <div className="h-5 w-px bg-border" />
-
-                        <div className="flex flex-col">
-                            <span className="text-xs font-medium uppercase tracking-[0.15em] text-emerald-400">
-                                Lead
-                            </span>
-                            <span className="text-lg font-semibold">{lead.nome}</span>
-                        </div>
+                        <LeadPropostasCard leadId={leadId} />
                     </div>
 
-                    <Badge variant="outline" className="text-[11px]">
-                        Origem: {lead.origem ?? "—"}
-                    </Badge>
-                </header>
+                    {/* COLUNA DIREITA */}
+                    <div className="space-y-4">
+                        <LeadInfoCard lead={lead} />
 
-                <Separator />
+                        {/* 👇 NOVO CARD DE ESTRATÉGIAS */}
+                        <LeadStrategiesCard lead={lead} />
+                    </div>
+                    <div className="space-y-4">
+                        <LeadInfoCard lead={lead}/>
+                        <LeadCotasCard cotas={cotas} contratos={contratos} />
+                    </div>
 
-                {/* ----------------------- GRID PRINCIPAL ----------------------- */}
-                <main className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-
-                    {/* -------- LEFT: PROPOSTAS -------- */}
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-base font-semibold">
-                                    Propostas
-                                </CardTitle>
-
-                                <Link
-                                    href={`/app/leads/${leadId}/propostas/nova`}
-                                    className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-500"
-                                >
-                                    <FileSignature className="h-3.5 w-3.5" />
-                                    Nova proposta
-                                </Link>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent>
-                            <LeadPropostasList leadId={leadId} />
-                        </CardContent>
-                    </Card>
-
-                    {/* -------- RIGHT: INFORMAÇÕES DO LEAD -------- */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base font-semibold">
-                                Informações do cliente
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-
-                            <div>
-                                <strong>Telefone:</strong> {lead.telefone ?? "—"}
-                            </div>
-
-                            <div>
-                                <strong>Email:</strong> {lead.email ?? "—"}
-                            </div>
-
-                            <div>
-                                <strong>Valor de interesse:</strong>{" "}
-                                {lead.valor_interesse ?? "—"}
-                            </div>
-
-                            <div>
-                                <strong>Prazo desejado:</strong>{" "}
-                                {lead.prazo_meses ? `${lead.prazo_meses} meses` : "—"}
-                            </div>
-
-                            <Separator className="my-4" />
-
-                            <CardTitle className="text-xs flex items-center gap-1 text-emerald-400">
-                                <Sparkles className="h-3.5 w-3.5" />
-                                Estratégia rápida
-                            </CardTitle>
-                            <p className="text-muted-foreground text-xs">
-                                Em breve conectamos essa seção ao painel de estratégias.
-                            </p>
-
-                        </CardContent>
-                    </Card>
                 </main>
             </div>
         </div>
