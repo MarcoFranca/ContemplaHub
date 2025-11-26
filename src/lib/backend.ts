@@ -24,7 +24,6 @@ export async function backendFetch(
             "X-Org-Id": orgId,
             ...(headers || {}),
         },
-        // importante: server actions normalmente rodam no server, então está ok
         cache: "no-store",
     });
 
@@ -34,5 +33,18 @@ export async function backendFetch(
         throw new Error(`Backend error ${res.status}: ${text}`);
     }
 
-    return res.json();
+    // 👇 se não tiver body (204, 205, etc.), só retorna null
+    if (res.status === 204 || res.status === 205) {
+        return null;
+    }
+
+    // tenta parsear JSON, mas de forma segura
+    const text = await res.text();
+    if (!text) return null;
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        return null;
+    }
 }

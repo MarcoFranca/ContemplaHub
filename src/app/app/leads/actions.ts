@@ -23,6 +23,7 @@ function srv() {
     );
 }
 
+
 function normalizeOrigem(input?: string | null): CanalOrigem {
     const allowed: CanalOrigem[] = ["lp", "whatsapp", "indicacao", "orgânico", "pago", "outro"];
     const v = (input ?? "").toLowerCase();
@@ -357,3 +358,18 @@ export async function createContractFromLead(formData: FormData): Promise<void> 
     console.log("Contrato criado:", cotaId);
 }
 
+// ====== EXCLUIR LEAD (com cascata no backend) ======
+export async function deleteLead(leadId: string) {
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) {
+        throw new Error("Org inválida");
+    }
+
+    await backendFetch(`/leads/${leadId}`, {
+        method: "DELETE",
+        orgId: profile.orgId,
+    });
+
+    // se não lançou erro, está tudo certo
+    return { ok: true };
+}

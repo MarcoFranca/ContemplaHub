@@ -9,6 +9,7 @@ import { DiagnosticSheet } from "@/app/app/leads/ui/DiagnosticSheet";
 
 // 👇 importa os tipos centrais
 import type { LeadCard } from "@/app/app/leads/types";
+import {DeleteLeadButton} from "@/app/app/leads/ui/DeleteLeadButton";
 
 export function LeadCardItem({
                                  lead,
@@ -67,9 +68,12 @@ export function LeadCardItem({
                 )}
             </div>
             </div>
+            {/* botão de excluir lead */}
+            <DeleteLeadButton leadId={lead.id} leadName={lead.nome} />
 
             {/* linhas de interesse */}
             <InterestSummaryRow lead={lead} />
+
         </div>
     );
 }
