@@ -37,14 +37,16 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
         }
 
         function onKey(e: KeyboardEvent) {
-            const key = e.key.toLowerCase();
+            const key = (e.key || "").toLowerCase();
 
-            // só abre com "n", sem modificadores, sheet fechado e fora de campos editáveis
+            // Novo atalho: CTRL + N
             if (
-                key === "n" &&
-                !e.metaKey && !e.ctrlKey && !e.altKey &&
-                !open &&
-                !isTypingInEditable(e)
+                key === "c" &&
+                e.ctrlKey &&            // 👈 agora precisa de CTRL
+                !e.metaKey &&           // evita conflito no Mac
+                !e.altKey &&
+                !isTypingInEditable(e) &&
+                !open
             ) {
                 e.preventDefault();
                 setOpen(true);
@@ -94,7 +96,7 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
             </span>
                         Novo lead
                         <span className="ml-2 rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70 ring-1 ring-white/10">
-              Atalho: N
+              Atalho: ctr + C
             </span>
                     </SheetTitle>
                 </SheetHeader>
@@ -103,18 +105,27 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
                 <form
                     action={async (fd: FormData) => {
                         const masked = fd.get("valorTotal")?.toString() || "";
-                        const parsed = parseMoneyBR(masked);       // ex.: "250.000,00" -> 250000.00
+                        const parsed = parseMoneyBR(masked);
                         if (masked && parsed == null) {
                             toast.error("Valor total inválido.");
                             return;
                         }
                         if (parsed != null) {
-                            fd.set("valorTotal", String(Math.round(parsed))); // envia REAIS inteiros (250000)
+                            fd.set("valorTotal", String(Math.round(parsed)));
                         }
 
+                        toast.dismiss(); // limpa qualquer toast pendente
                         toast.loading("Salvando lead…");
-                        await createLeadManual(fd);
+
+                        const result = await createLeadManual(fd);
+
                         toast.dismiss();
+
+                        if (!result.ok) {
+                            toast.error(result.error);
+                            return;
+                        }
+
                         toast.success("Lead criado com sucesso!");
                         setOpen(false);
                     }}
@@ -177,7 +188,7 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
                             <div className="mt-3 grid gap-3 md:grid-cols-2">
                                 <div className="space-y-1.5 min-w-0">
                                     <Label className="text-xs">Produto</Label>
-                                    <Select name="produto" defaultValue="__produto">
+                                    <Select name="produto" defaultValue="none">
                                         <SelectTrigger className="h-9 min-w-0 truncate">
                                             <SelectValue placeholder="—" />
                                         </SelectTrigger>
@@ -186,7 +197,7 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
                                             sideOffset={6}
                                             className="z-[70] min-w-[--radix-select-trigger-width] rounded-xl border-white/10 bg-slate-900/95 backdrop-blur-md"
                                         >
-                                            <SelectItem value="__produto">—</SelectItem>
+                                            <SelectItem value="none">—</SelectItem>
                                             <SelectItem value="imobiliario">Imobiliário</SelectItem>
                                             <SelectItem value="auto">Auto</SelectItem>
                                         </SelectContent>
@@ -213,7 +224,7 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
 
                                 <div className="space-y-1.5 min-w-0">
                                     <Label className="text-xs">Perfil</Label>
-                                    <Select name="perfilDesejado" defaultValue="__perfil">
+                                    <Select name="perfilDesejado" defaultValue="none">
                                         <SelectTrigger className="h-9 min-w-0 truncate">
                                             <SelectValue placeholder="—" />
                                         </SelectTrigger>
@@ -222,7 +233,7 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
                                             sideOffset={6}
                                             className="z-[70] min-w-[--radix-select-trigger-width] rounded-xl border-white/10 bg-slate-900/95 backdrop-blur-md"
                                         >
-                                            <SelectItem value="__perfil">—</SelectItem>
+                                            <SelectItem value="none">—</SelectItem>
                                             <SelectItem value="disciplinado_acumulador">Disciplinado acumulador</SelectItem>
                                             <SelectItem value="sonhador_familiar">Sonhador familiar</SelectItem>
                                             <SelectItem value="corporativo_racional">Corporativo racional</SelectItem>

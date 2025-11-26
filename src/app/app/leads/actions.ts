@@ -2,7 +2,6 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { backendFetch } from "@/lib/backend";
 
@@ -10,7 +9,6 @@ import type {
     Stage,
     LeadCard,
     CanalOrigem,
-    LeadCardInterest,
     KanbanColumns,
 } from "./types";
 
@@ -112,39 +110,32 @@ export async function moveLeadStage(args: {
 }
 
 // ====== Cadastro manual de lead (recebe FormData) ======
-export async function createLeadManual(formData: FormData): Promise<void> {
+export async function createLeadManual(formData: FormData): Promise<{ ok: boolean; error?: string }> {
     const me = await getCurrentProfile();
-    if (!me?.orgId) throw new Error("Sem organização.");
+    if (!me?.orgId) return { ok: false, error: "Organização inválida." };
 
     const s = srv();
 
-    // ---- Campos do LEAD ----
-    const nome = String(formData.get("nome") ?? "").trim();
-    const emailRaw = String(formData.get("email") ?? "").trim();
-    const telefoneRaw = String(formData.get("telefone") ?? "").trim();
-    const origemRaw = String(formData.get("origem") ?? "orgânico").trim();
+    try {
+        // ----------------------------
+        // LEAD
+        // ----------------------------
+        const nome = String(formData.get("nome") ?? "").trim();
+        const emailRaw = String(formData.get("email") ?? "").trim();
+        const telefoneRaw = String(formData.get("telefone") ?? "").trim();
+        const origemRaw = String(formData.get("origem") ?? "orgânico").trim();
 
-    if (!nome) redirect("/app/leads?err=" + encodeURIComponent("Informe o nome do lead."));
-    if (!telefoneRaw && !emailRaw) {
-        redirect("/app/leads?err=" + encodeURIComponent("Informe telefone ou e-mail."));
-    }
+        if (!nome)
+            return { ok: false, error: "Informe o nome do lead." };
 
-    const telefone = telefoneRaw ? telefoneRaw.replace(/\D+/g, "") : null;
-    const email = emailRaw || null;
-    const origem = normalizeOrigem(origemRaw);
+        if (!telefoneRaw && !emailRaw)
+            return { ok: false, error: "Informe telefone ou e-mail." };
 
-    // ---- Campos do INTERESSE (opcionais) ----
-    const produto = (formData.get("produto") ?? "") as string; // ex.: 'imobiliario'
-    const valorTotalRaw = String(formData.get("valorTotal") ?? "").trim();
-    const prazoMesesRaw = String(formData.get("prazoMeses") ?? "").trim();
-    const objetivo = String(formData.get("objetivo") ?? "").trim();
-    const perfilDesejado = String(formData.get("perfilDesejado") ?? "").trim();
-    const observacao = String(formData.get("observacao") ?? "").trim();
+        const telefone = telefoneRaw ? telefoneRaw.replace(/\D+/g, "") : null;
+        const email = emailRaw || null;
+        const origem = normalizeOrigem(origemRaw);
 
-    // cria o lead
-    const { data: leadRow, error: leadErr } = await s
-        .from("leads")
-        .insert({
+        const leadPayload = {
             org_id: me.orgId,
             nome,
             telefone,
@@ -154,45 +145,84 @@ export async function createLeadManual(formData: FormData): Promise<void> {
             etapa: "novo",
             owner_id: me.userId,
             created_by: me.userId,
-        })
-        .select("id")
-        .single();
+        };
 
-    if (leadErr) {
-        if (leadErr.code === "23505") {
-            redirect("/app/leads?err=" + encodeURIComponent("Já existe um lead com esse telefone/e-mail."));
+        const { data: leadRow, error: leadErr } = await s
+            .from("leads")
+            .insert(leadPayload)
+            .select("id")
+            .single();
+
+        if (leadErr) {
+            console.error("Erro ao criar lead:", leadErr);
+
+            // ERRO DE DUPLICIDADE (unique)
+            if (leadErr.code === "23505") {
+                return { ok: false, error: "Já existe um lead com esse telefone/e-mail." };
+            }
+
+            return { ok: false, error: "Erro ao criar o lead. Tente novamente." };
         }
-        redirect("/app/leads?err=" + encodeURIComponent(leadErr.message));
-    }
 
-    // se veio algum dado de interesse, cria interesse "aberto"
-    const hasInterest =
-        produto || valorTotalRaw || prazoMesesRaw || objetivo || perfilDesejado || observacao;
+        // ---- Campos do INTERESSE (opcionais) ----
+        const rawProduto = String(formData.get("produto") ?? "").trim();           // 'imobiliario' | 'auto' | '__produto' | 'none'
+        const rawValorTotal = String(formData.get("valorTotal") ?? "").trim();
+        const rawPrazoMeses = String(formData.get("prazoMeses") ?? "").trim();
+        const objetivo = String(formData.get("objetivo") ?? "").trim();
 
-    if (hasInterest) {
-        const valorTotal = valorTotalRaw ? valorTotalRaw.replace(/\./g, "").replace(",", ".") : null;
-        const prazoMeses = prazoMesesRaw ? Number(prazoMesesRaw) : null;
+        const rawPerfil = String(formData.get("perfilDesejado") ?? "").trim();    // 'disciplinado_acumulador' | '__perfil' | 'none'
+        const observacao = String(formData.get("observacao") ?? "").trim();
 
-        const { error: intErr } = await s.from("lead_interesses").insert({
-            org_id: me.orgId,
-            lead_id: leadRow!.id,
-            produto: produto || null,
-            valor_total: valorTotal,
-            prazo_meses: prazoMeses,
-            objetivo: objetivo || null,
-            perfil_desejado: perfilDesejado || null,
-            observacao: observacao || null,
-            status: "aberto",
-            created_by: me.userId,
-        });
+// normaliza produto/ perfil para null quando for "vazio"
+        const produto =
+            !rawProduto || rawProduto === "__produto" || rawProduto === "none"
+                ? null
+                : rawProduto;
 
-        if (intErr) {
-            redirect("/app/leads?err=" + encodeURIComponent(intErr.message));
+        const perfilDesejadoDb =
+            !rawPerfil || rawPerfil === "__perfil" || rawPerfil === "none"
+                ? null
+                : rawPerfil;
+
+
+        const hasInterest =
+            produto || rawValorTotal || rawPrazoMeses || objetivo || rawPerfil || observacao;
+
+        if (hasInterest) {
+            const valorTotal = rawValorTotal
+                ? rawValorTotal.replace(/\./g, "").replace(",", ".")
+                : null;
+            const prazoMeses = rawPrazoMeses ? Number(rawPrazoMeses) : null;
+
+            const { error: intErr } = await s.from("lead_interesses").insert({
+                org_id: me.orgId,
+                lead_id: leadRow!.id,
+                produto,                          // já vem normalizado (string | null)
+                valor_total: valorTotal,
+                prazo_meses: prazoMeses,
+                objetivo: objetivo || null,
+                perfil_desejado: perfilDesejadoDb,
+                observacao: observacao || null,
+                status: "aberto",
+                created_by: me.userId,
+            });
+
+            if (intErr) {
+                console.error("Erro ao criar interesse:", intErr);
+                return { ok: false, error: "Erro ao salvar interesse do lead." };
+            }
         }
-    }
 
-    revalidatePath("/app/leads");
+        // revalidate
+        revalidatePath("/app/leads");
+
+        return { ok: true };
+    } catch (err) {
+        console.error("Erro inesperado em createLeadManual:", err);
+        return { ok: false, error: "Erro interno ao criar lead." };
+    }
 }
+
 
 // ====== Opções para o modal (administradoras + grupos) ======
 export type AdminOption = { id: string; nome: string };
