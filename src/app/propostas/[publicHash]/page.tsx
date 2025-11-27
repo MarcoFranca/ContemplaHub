@@ -66,7 +66,6 @@ export async function generateMetadata(
 ): Promise<Metadata> {
     const { publicHash } = await params;
 
-    // opcional: buscar a proposta pra personalizar título/descrição
     let titulo = "Proposta de Consórcio";
     let clienteNome: string | undefined;
 
@@ -85,7 +84,7 @@ export async function generateMetadata(
             titulo = proposta.titulo ?? titulo;
         }
     } catch {
-        // se der erro, seguimos com título genérico
+        // segue com título genérico
     }
 
     const baseUrl =
@@ -110,7 +109,7 @@ export async function generateMetadata(
             type: "website",
             images: [
                 {
-                    url: "/og/proposta-cover.png",
+                    url: `${baseUrl}/og/proposta-cover.png`,
                     width: 1200,
                     height: 630,
                     alt: "Proposta personalizada de consórcio",
@@ -121,7 +120,7 @@ export async function generateMetadata(
             card: "summary_large_image",
             title: fullTitle,
             description,
-            images: ["/og/proposta-cover.png"],
+            images: [`${baseUrl}/og/proposta-cover.png`],
         },
     };
 }

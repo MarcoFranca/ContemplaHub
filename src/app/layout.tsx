@@ -10,7 +10,11 @@ import {GlobalNetTracker} from "@/components/system/GlobalNetTracker";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const APP_URL =
+    process.env.NEXT_PUBLIC_APP_URL || "https://app.contemplahub.com";
+
 export const metadata: Metadata = {
+    metadataBase: new URL(APP_URL),
     title: "ContemplaHub",
     description: "Consórcio com estratégia e clareza.",
     openGraph: {
@@ -19,7 +23,7 @@ export const metadata: Metadata = {
         type: "website",
         images: [
             {
-                url: "/og/proposta-cover.png",
+                url: "/og/proposta-cover.png", // vira https://app.contemplahub.com/og/proposta-cover.png
                 width: 1200,
                 height: 630,
                 alt: "Proposta personalizada de consórcio",
@@ -33,6 +37,7 @@ export const metadata: Metadata = {
         images: ["/og/proposta-cover.png"],
     },
 };
+
 
 
 // aplica 'dark' antes da hidratação para evitar flash
