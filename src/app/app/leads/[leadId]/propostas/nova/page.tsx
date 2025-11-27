@@ -1,35 +1,27 @@
 // src/app/app/leads/[leadId]/propostas/nova/page.tsx
-import { Suspense } from "react";
-import { getCurrentProfile } from "@/lib/auth/server";
-import { supabaseServer } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+import { getCurrentProfile } from "@/lib/auth/server";
+import { supabaseServer } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { NovaPropostaForm } from "./NovaPropostaForm";
+import { Separator } from "@/components/ui/separator";
+
+import { NewProposalForm } from "./NovaPropostaForm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function loadLead(leadId: string, orgId: string) {
     const supabase = await supabaseServer();
-
-    console.log("DEBUG loadLead params", { leadId, orgId });
-
     const { data, error } = await supabase
         .from("leads")
-        .select("id, nome, telefone, email, origem, valor_interesse, prazo_meses")
+        .select("*")
         .eq("org_id", orgId)
         .eq("id", leadId)
         .maybeSingle();
 
-    if (error) {
-        console.error("ERROR loadLead:", error);
-        throw error;
-    }
-    if (!data) return null;
+    if (error) throw error;
     return data;
 }
 
@@ -41,94 +33,65 @@ export default async function NovaPropostaPage({
     const { leadId } = await params;
 
     const profile = await getCurrentProfile();
-    if (!profile?.orgId) {
-        throw new Error("Org inválida");
-    }
+    if (!profile?.orgId) throw new Error("Org inválida");
 
-    const lead = await loadLead(leadId, String(profile.orgId));
-    if (!lead) {
-        notFound();
-    }
-
-    const nome = lead.nome ?? "Cliente";
-    const origem = lead.origem ?? "—";
+    const lead = await loadLead(leadId, profile.orgId);
+    if (!lead) notFound();
 
     return (
-        // 🔥 ocupa 100% da altura do main do AppShell
-        <div className="h-full">
-            {/* container interno vira uma coluna flexível */}
-            <div className="max-w-5xl mx-auto h-full flex flex-col px-4 py-6 md:py-8">
-                {/* HEADER FIXO DENTRO DA PÁGINA */}
-                <header className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href={`/app/leads/${leadId}`}
-                            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                        >
-                            <ArrowLeft className="h-3 w-3" />
-                            Voltar para o lead
-                        </Link>
-                        <div className="h-5 w-px bg-border" />
-                        <div className="flex flex-col">
-              <span className="text-xs font-medium uppercase tracking-[0.15em] text-emerald-400">
-                Nova proposta
-              </span>
-                            <span className="text-sm md:text-base font-semibold">
-                {nome}
-              </span>
+        <div className="h-full isolate overflow-auto relative text-slate-50">
+            <div className="h-full isolate overflow-auto relative text-slate-50">
+
+                <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+                    {/* breadcrumb + título */}
+                    <header className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-sm text-slate-300">
+                            <Link
+                                href={`/app/leads/${leadId}`}
+                                className="text-xs text-slate-400 hover:text-slate-100"
+                            >
+                                ← Voltar para o lead
+                            </Link>
                         </div>
-                    </div>
 
-                    <Badge variant="outline" className="text-[11px]">
-                        Origem: {origem}
-                    </Badge>
-                </header>
+                        <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-emerald-200">
+            Nova Proposta
+          </span>
+                    </header>
 
-                {/* 🔥 área que realmente rola: flex-1 + overflow-y-auto */}
-                <main className="mt-4 flex-1 overflow-y-auto">
-                    <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr] items-start pb-8">
-                        {/* CARD ESQUERDA - FORM */}
-                        <Card className="md:col-span-1">
-                            <CardHeader>
-                                <CardTitle className="text-sm md:text-base">
-                                    Configurar proposta
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <Suspense fallback={<div>Carregando formulário...</div>}>
-                                    <NovaPropostaForm
-                                        leadId={leadId}
-                                        defaultNomeCliente={nome}
-                                        defaultValorInteresse={lead.valor_interesse}
-                                        defaultPrazoMeses={lead.prazo_meses}
-                                    />
-                                </Suspense>
-                            </CardContent>
-                        </Card>
+                    {/* card com info do cliente */}
+                    <Card className="border-emerald-500/20 bg-slate-950/80">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base flex items-center justify-between gap-3">
+                                <span>{lead.nome ?? "Cliente sem nome"}</span>
+                                <span className="text-xs text-slate-400">
+                Origem: {lead.origem ?? "—"}
+              </span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-xs text-slate-300 flex flex-wrap gap-4">
+                            <div>
+                                <span className="font-semibold text-slate-100">Telefone</span>{" "}
+                                <span>{lead.telefone ?? "—"}</span>
+                            </div>
+                            <div>
+                                <span className="font-semibold text-slate-100">E-mail</span>{" "}
+                                <span>{lead.email ?? "—"}</span>
+                            </div>
+                            <div>
+              <span className="font-semibold text-slate-100">
+                Valor interesse
+              </span>{" "}
+                                <span>{lead.valor_interesse ?? "—"}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        {/* CARD DIREITA - ORIENTAÇÕES */}
-                        <Card className="md:col-span-1">
-                            <CardHeader>
-                                <CardTitle className="text-sm md:text-base">
-                                    Orientações rápidas
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3 text-sm text-muted-foreground">
-                                <p>
-                                    Use esta tela para transformar o interesse do cliente em uma
-                                    proposta consultiva, com 1 ou mais cenários de carta.
-                                </p>
-                                <ul className="list-disc ml-5 space-y-1">
-                                    <li>Comece com o cenário “raiz” (ex.: 1x carta 500k com redutor).</li>
-                                    <li>Adicione cenários alternativos (2 cartas, sem redutor, prazo menor…).</li>
-                                    <li>
-                                        Preencha o comentário do consultor com a lógica por trás da estratégia.
-                                    </li>
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </main>
+                    <Separator className="bg-slate-700/70" />
+
+                    {/* formulário bonito de proposta */}
+                    <NewProposalForm leadId={leadId} leadName={lead.nome ?? ""} />
+                </div>
             </div>
         </div>
     );

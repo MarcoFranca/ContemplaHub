@@ -1,734 +1,652 @@
-// src/app/app/leads/[leadId]/propostas/nova/NovaPropostaForm.tsx
+// src/app/app/leads/[leadId]/propostas/nova/NewProposalForm.tsx
 "use client";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { z } from "zod";
+import { toast } from "sonner";
+import { Plus, Trash2 } from "lucide-react";
 
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import {
     Select,
-    SelectTrigger,
-    SelectValue,
     SelectContent,
     SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
-import {
-    Card,
-    CardHeader,
-    CardTitle,
-    CardContent,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Loader2 } from "lucide-react";
-import { toast } from "sonner"; // 👈 aqui em vez de useToast
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
-const scenarioSchema = z.object({
-    id: z.string().min(1),
-    titulo: z.string().min(1),
-    produto: z.enum(["imobiliario", "auto", "outro"]).default("imobiliario"),
-    administradora: z.string().optional(),
-    valor_carta: z.coerce.number(),
-    prazo_meses: z.coerce.number(),
-    com_redutor: z.coerce.boolean().optional(),
+import { MoneyInput } from "@/components/form/MoneyInput";
+import { parseMoneyBRCents } from "@/lib/masks";
+import { fireConfetti } from "@/lib/ui/confetti";
 
-    parcela_cheia: z.coerce.number().optional().nullable(),
-    parcela_reduzida: z.coerce.number().optional().nullable(),
-    taxa_admin_anual: z.coerce.number().optional().nullable(),
+type Produto = "imobiliario" | "auto";
 
-    redutor_percent: z.coerce.number().optional().nullable(),
-    fundo_reserva_pct: z.coerce.number().optional().nullable(),
-    seguro_prestamista: z.coerce.boolean().optional(),
+type ScenarioFormState = {
+    titulo: string;
+    produto: Produto;
+    administradora: string;
+    prazoMeses: string;
+    valorCarta: string; // "1.000.000,00"
+    parcelaReduzida: string;
+    parcelaCheia: string;
+    taxaAdminAnual: string;
+    redutorPercent: string;
+    fundoReservaPercent: string;
+    taxaAdminTotal: string;
+    seguroPrestamista: "sim" | "nao";
+    lanceFixo1: string;
+    lanceFixo2: string;
+    permiteEmbutido: "sim" | "nao";
+    maxEmbutidoPercent: string;
+    comRedutor: "sim" | "nao";
+    estrategia: string;
+};
 
-    lance_fixo_pct_1: z.coerce.number().optional().nullable(),
-    lance_fixo_pct_2: z.coerce.number().optional().nullable(),
-
-    permite_lance_embutido: z.coerce.boolean().optional(),
-    lance_embutido_pct_max: z.coerce.number().optional().nullable(),
-
-    observacoes: z.string().optional(),
+const emptyScenario = (): ScenarioFormState => ({
+    titulo: "1x carta principal",
+    produto: "imobiliario",
+    administradora: "",
+    prazoMeses: "",
+    valorCarta: "",
+    parcelaReduzida: "",
+    parcelaCheia: "",
+    taxaAdminAnual: "",
+    redutorPercent: "",
+    fundoReservaPercent: "",
+    taxaAdminTotal: "",
+    seguroPrestamista: "sim",
+    lanceFixo1: "",
+    lanceFixo2: "",
+    permiteEmbutido: "sim",
+    maxEmbutidoPercent: "",
+    comRedutor: "sim",
+    estrategia: "",
 });
 
-const formSchema = z.object({
-    titulo: z.string().min(3),
-    campanha: z.string().optional(),
-    status: z.enum(["rascunho", "enviado"]).default("rascunho"),
-    metaCampanha: z.string().optional(),
-    metaComentarioConsultor: z.string().optional(),
-    metaValidadeDias: z.coerce.number().optional(),
-    clienteOverrideNome: z.string().optional(),
-    clienteOverrideObs: z.string().optional(),
-    cenarios: z.array(scenarioSchema).min(1, "Adicione pelo menos um cenário"),
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
-export function NovaPropostaForm({
-                                     leadId,
-                                     defaultNomeCliente,
-                                     defaultValorInteresse,
-                                     defaultPrazoMeses,
-                                 }: {
+type Props = {
     leadId: string;
-    defaultNomeCliente?: string | null;
-    defaultValorInteresse?: number | null;
-    defaultPrazoMeses?: number | null;
-}) {
+    leadName: string;
+};
+
+interface BackendErrorDetail {
+    msg?: string;
+    // permite outros campos sem usar any
+    [key: string]: unknown;
+}
+
+interface BackendErrorBody {
+    detail?: BackendErrorDetail[] | string;
+    [key: string]: unknown;
+}
+
+
+function parsePercentToNumber(raw: string | null | undefined): number | null {
+    if (!raw) return null;
+    // deixa só dígitos, vírgula, ponto
+    const cleaned = String(raw).replace(/[^\d,.-]/g, "").replace(",", ".");
+    const num = Number(cleaned);
+    return Number.isFinite(num) ? num : null;
+}
+
+function parseIntOrNull(raw: string | null | undefined): number | null {
+    if (!raw) return null;
+    const cleaned = String(raw).replace(/[^\d-]/g, "");
+    if (!cleaned) return null;
+    const num = Number(cleaned);
+    return Number.isInteger(num) ? num : null;
+}
+
+
+export function NewProposalForm({ leadId, leadName }: Props) {
     const router = useRouter();
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const [values, setValues] = useState<FormValues>({
-        titulo: `Estratégia de consórcio - ${defaultNomeCliente ?? "Cliente"}`,
-        campanha: "",
-        status: "rascunho",
-        metaCampanha: "",
-        metaComentarioConsultor: "",
-        metaValidadeDias: 5,
-        clienteOverrideNome: defaultNomeCliente ?? "",
-        clienteOverrideObs: "",
-        cenarios: [
-            {
-                id: "c1",
-                titulo: "1x carta principal",
-                produto: "imobiliario",
-                administradora: "Porto",
-                valor_carta: defaultValorInteresse ?? 500000,
-                prazo_meses: defaultPrazoMeses ?? 200,
-                com_redutor: true,
-                redutor_percent: 40,           // ex.: 40% redutor
-                parcela_cheia: undefined,
-                parcela_reduzida: undefined,
-                taxa_admin_anual: 18.5,        // taxa total (%)
-                fundo_reserva_pct: 2,          // ex.: 2%
-                seguro_prestamista: true,
-                lance_fixo_pct_1: 40,
-                lance_fixo_pct_2: undefined,
-                permite_lance_embutido: true,
-                lance_embutido_pct_max: 30,
-                observacoes: "",
-            },
-        ],
-    });
+    const [nomeParaExibir, setNomeParaExibir] = React.useState(leadName);
+    const [obsCliente, setObsCliente] = React.useState("");
+    const [campanha, setCampanha] = React.useState("");
+    const [cenarios, setCenarios] = React.useState<ScenarioFormState[]>([
+        emptyScenario(),
+    ]);
 
-    const [submitting, setSubmitting] = useState(false);
-
-    function updateScenario(
+    function updateScenario<T extends keyof ScenarioFormState>(
         index: number,
-        patch: Partial<FormValues["cenarios"][number]>
+        field: T,
+        value: ScenarioFormState[T]
     ) {
-        setValues((prev) => {
-            const copy = [...prev.cenarios];
-            copy[index] = { ...copy[index], ...patch };
-            return { ...prev, cenarios: copy };
+        setCenarios((prev) => {
+            const clone = [...prev];
+            clone[index] = { ...clone[index], [field]: value };
+            return clone;
         });
     }
 
     function addScenario() {
-        setValues((prev) => {
-            const nextIndex = prev.cenarios.length + 1;
-            return {
-                ...prev,
-                cenarios: [
-                    ...prev.cenarios,
-                    {
-                        id: `c${nextIndex}`,
-                        titulo: `Cenário ${nextIndex}`,
-                        produto: "imobiliario",
-                        administradora: prev.cenarios[0]?.administradora ?? "Porto",
-                        valor_carta: prev.cenarios[0]?.valor_carta ?? 500000,
-                        prazo_meses: prev.cenarios[0]?.prazo_meses ?? 200,
-                        com_redutor: true,
-                        parcela_cheia: undefined,
-                        parcela_reduzida: undefined,
-                        taxa_admin_anual: prev.cenarios[0]?.taxa_admin_anual ?? 0.19,
-                        observacoes: "",
-                    },
-                ],
-            };
-        });
+        setCenarios((prev) => [...prev, emptyScenario()]);
     }
 
     function removeScenario(index: number) {
-        setValues((prev) => {
-            if (prev.cenarios.length === 1) return prev;
-            const copy = [...prev.cenarios];
-            copy.splice(index, 1);
-            return { ...prev, cenarios: copy };
-        });
+        setCenarios((prev) => prev.filter((_, i) => i !== index));
     }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        const parsed = formSchema.safeParse(values);
-        if (!parsed.success) {
-            console.error(parsed.error.flatten());
-            toast.error("Erro no formulário", {
-                description: "Revise os campos obrigatórios da proposta.",
-            });
-
-            return;
-        }
-
-        const v = parsed.data;
-
-        const payload = {
-            titulo: v.titulo,
-            campanha: v.campanha || undefined,
-            status: v.status,
-            meta: {
-                campanha: v.metaCampanha || v.campanha || undefined,
-                comentario_consultor: v.metaComentarioConsultor || undefined,
-                validade_dias: v.metaValidadeDias ?? 5,
-            },
-            cliente_overrides: {
-                ...(v.clienteOverrideNome
-                    ? { nome: v.clienteOverrideNome }
-                    : {}),
-                ...(v.clienteOverrideObs
-                    ? { observacao: v.clienteOverrideObs }
-                    : {}),
-            },
-            cenarios: v.cenarios.map((c) => ({
-                id: c.id,
-                titulo: c.titulo,
-                produto: c.produto,
-                administradora: c.administradora || undefined,
-                valor_carta: c.valor_carta,
-                prazo_meses: c.prazo_meses,
-                com_redutor: c.com_redutor,
-
-                parcela_cheia: c.parcela_cheia ?? undefined,
-                parcela_reduzida: c.parcela_reduzida ?? undefined,
-                taxa_admin_anual: c.taxa_admin_anual ?? undefined,
-
-                redutor_percent: c.redutor_percent ?? undefined,
-                fundo_reserva_pct: c.fundo_reserva_pct ?? undefined,
-                seguro_prestamista: c.seguro_prestamista,
-
-                lance_fixo_pct_1: c.lance_fixo_pct_1 ?? undefined,
-                lance_fixo_pct_2: c.lance_fixo_pct_2 ?? undefined,
-
-                permite_lance_embutido: c.permite_lance_embutido,
-                lance_embutido_pct_max: c.lance_embutido_pct_max ?? undefined,
-
-                observacoes: c.observacoes || undefined,
-            })),
-        };
+        if (isSubmitting) return;
 
         try {
-            setSubmitting(true);
-            const res = await fetch(
-                `/api/lead-propostas/lead/${encodeURIComponent(leadId)}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                }
-            );
+            setIsSubmitting(true);
+            toast.loading("Gerando proposta...");
 
-            const data = await res.json();
+            // monta payload esperado pelo backend (ajuste se necessário)
+            const payload = {
+                titulo: `Proposta para ${nomeParaExibir || leadName}`,
+                campanha: campanha || null,
+                status: "rascunho",
+                cliente_overrides: {
+                    nome_exibicao: nomeParaExibir || null,
+                    observacao_cliente: obsCliente || null,
+                },
+                cenarios: cenarios.map((c, idx) => ({
+                    id: `c-${idx + 1}`,
+                    titulo: c.titulo || `Cenário ${idx + 1}`,
+                    produto: c.produto,
+                    administradora: c.administradora || null,
+                    prazo_meses: parseIntOrNull(c.prazoMeses),
+                    valor_carta: c.valorCarta ? parseMoneyBRCents(c.valorCarta) ?? null : null,
+                    parcela_reduzida: c.parcelaReduzida
+                        ? parseMoneyBRCents(c.parcelaReduzida) ?? null
+                        : null,
+                    parcela_cheia: c.parcelaCheia
+                        ? parseMoneyBRCents(c.parcelaCheia) ?? null
+                        : null,
 
-            if (!res.ok) {
-                console.error("Erro ao criar proposta:", data);
-                toast.error("Erro ao criar proposta", {
-                    description: "Revise os campos obrigatórios da proposta.",
-                });
+                    taxa_admin_anual: parsePercentToNumber(c.taxaAdminAnual),
+                    redutor_percent: parsePercentToNumber(c.redutorPercent),
+                    fundo_reserva_pct: parsePercentToNumber(c.fundoReservaPercent),
+                    taxa_admin_total: parsePercentToNumber(c.taxaAdminTotal),
 
-                return;
-            }
+                    seguro_prestamista: c.seguroPrestamista === "sim",
+                    lance_fixo_pct_1: parsePercentToNumber(c.lanceFixo1),
+                    lance_fixo_pct_2: parsePercentToNumber(c.lanceFixo2),
 
-            toast.success("Proposta criada", {
-                description: "A proposta consultiva foi registrada para este lead.",
+                    permite_lance_embutido: c.permiteEmbutido === "sim",
+                    lance_embutido_pct_max: parsePercentToNumber(c.maxEmbutidoPercent),
+
+                    com_redutor: c.comRedutor === "sim",
+                    observacoes: c.estrategia || null,
+                })),
+            };
+
+            // 🔗 CHAMADA PRO BACKEND
+            // Ajuste este fetch/server action conforme sua estrutura atual
+            const res = await fetch(`/api/lead-propostas/lead/${leadId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
             });
 
-            // redirecionar para tela do lead ou para a página pública
-            if (data.public_hash) {
+            if (!res.ok) {
+                let backendMessage = "Falha ao criar proposta.";
+
+                const raw = await res.text(); // lê UMA vez só
+
+                try {
+                    const data: BackendErrorBody = JSON.parse(raw);
+                    console.error("Erro ao criar proposta (JSON):", data);
+
+                    if (Array.isArray(data.detail) && data.detail.length > 0) {
+                        backendMessage = data.detail[0]?.msg || backendMessage;
+                    } else if (typeof data.detail === "string") {
+                        backendMessage = data.detail;
+                    }
+                } catch {
+                    console.error("Erro ao criar proposta (body texto):", raw);
+                }
+
+                throw new Error(backendMessage);
+            }
+
+            const data = await res.json();
+            toast.dismiss();
+            toast.success("Proposta criada com sucesso!");
+            await fireConfetti();
+
+            // se seu backend devolver public_hash:
+            if (data?.public_hash) {
                 router.push(`/propostas/${data.public_hash}`);
             } else {
                 router.push(`/app/leads/${leadId}`);
             }
-        } catch (err) {
+        } catch (err: unknown) {
             console.error(err);
-            toast.error("Erro inesperado", {
-                description: "Não foi possível criar a proposta agora.",
-            });
+            toast.dismiss();
 
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : "Erro ao criar proposta.";
+
+            toast.error(message);
         } finally {
-            setSubmitting(false);
+            setIsSubmitting(false);
         }
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-            {/* Cabeçalho da proposta */}
-            <div className="space-y-2">
-                <Label htmlFor="titulo">Título da proposta</Label>
+        <form
+            onSubmit={handleSubmit}
+            className="space-y-6 rounded-2xl border border-emerald-500/20 bg-slate-950/90 p-5 shadow-xl shadow-emerald-500/10"
+        >
+            {/* Cabeçalho do form */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="space-y-2">
+                    <h2 className="text-sm font-semibold tracking-wide text-emerald-200 uppercase">
+                        Configuração da proposta
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                        Ajuste o nome que aparecerá para o cliente, a campanha e os
+                        cenários de carta.
+                    </p>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2 min-w-[240px]">
+                    <div className="space-y-1">
+                        <Label className="text-[11px] text-slate-300">
+                            Nome para exibir na proposta
+                        </Label>
+                        <Input
+                            value={nomeParaExibir}
+                            onChange={(e) => setNomeParaExibir(e.target.value)}
+                            placeholder={leadName}
+                            className="h-8 text-sm bg-slate-900/80 border-slate-700/70"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-[11px] text-slate-300">
+                            Campanha / etiqueta
+                        </Label>
+                        <Input
+                            value={campanha}
+                            onChange={(e) => setCampanha(e.target.value)}
+                            placeholder="Ex.: Campanha Porto Imóvel 500k"
+                            className="h-8 text-sm bg-slate-900/80 border-slate-700/70"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Observação do cliente */}
+            <div className="space-y-1">
+                <Label className="text-[11px] text-slate-300">
+                    Observação do cliente
+                </Label>
                 <Input
-                    id="titulo"
-                    value={values.titulo}
-                    onChange={(e) =>
-                        setValues((prev) => ({ ...prev, titulo: e.target.value }))
-                    }
+                    value={obsCliente}
+                    onChange={(e) => setObsCliente(e.target.value)}
+                    placeholder="Ex.: Prefere parcelas em torno de R$ 4.000, usa FGTS, foco em moradia principal…"
+                    className="h-8 text-xs bg-slate-900/80 border-slate-700/70"
                 />
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-                <div className="space-y-2">
-                    <Label htmlFor="campanha">Campanha</Label>
-                    <Input
-                        id="campanha"
-                        placeholder="Porto Imobiliário 40% redutor"
-                        autoComplete="off"
-                        value={values.campanha ?? ""}
-                        onChange={(e) =>
-                            setValues((prev) => ({ ...prev, campanha: e.target.value }))
-                        }
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select
-                        value={values.status}
-                        onValueChange={(val: "rascunho" | "enviado") =>
-                            setValues((prev) => ({ ...prev, status: val }))
-                        }
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="rascunho">Rascunho</SelectItem>
-                            <SelectItem value="enviado">Enviada ao cliente</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="validade">Validade (dias)</Label>
-                    <Input
-                        id="validade"
-                        type="number"
-                        min={1}
-                        value={values.metaValidadeDias ?? ""}
-                        onChange={(e) =>
-                            setValues((prev) => ({
-                                ...prev,
-                                metaValidadeDias: Number(e.target.value || 0),
-                            }))
-                        }
-                    />
-                </div>
-            </div>
-
-            {/* Comentário do consultor */}
-            <div className="space-y-2">
-                <Label htmlFor="comentario">Comentário do consultor</Label>
-                <Textarea
-                    id="comentario"
-                    rows={3}
-                    placeholder="Contexto da estratégia, foco em moradia vs renda, visão de lance, etc."
-                    value={values.metaComentarioConsultor ?? ""}
-                    onChange={(e) =>
-                        setValues((prev) => ({
-                            ...prev,
-                            metaComentarioConsultor: e.target.value,
-                        }))
-                    }
-                />
-            </div>
-
-            {/* Overrides do cliente */}
-            <div className="grid gap-3 md:grid-cols-2">
-                <div className="space-y-2">
-                    <Label htmlFor="clienteNome">Nome para exibir na proposta</Label>
-                    <Input
-                        id="clienteNome"
-                        value={values.clienteOverrideNome ?? ""}
-                        onChange={(e) =>
-                            setValues((prev) => ({
-                                ...prev,
-                                clienteOverrideNome: e.target.value,
-                            }))
-                        }
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="clienteObs">Observação do cliente</Label>
-                    <Input
-                        id="clienteObs"
-                        placeholder="Ex.: Prefere parcelas em torno de R$ 2.600."
-                        autoComplete="off"
-                        value={values.clienteOverrideObs ?? ""}
-                        onChange={(e) =>
-                            setValues((prev) => ({
-                                ...prev,
-                                clienteOverrideObs: e.target.value,
-                            }))
-                        }
-                    />
-                </div>
             </div>
 
             {/* Cenários */}
-            <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                    <Label>Cenários de carta</Label>
+            <Card className="border-slate-700/60 bg-slate-950/80">
+                <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
+                    <CardTitle className="text-sm font-semibold text-slate-100">
+                        Cenários de carta
+                    </CardTitle>
                     <Button
                         type="button"
                         size="sm"
                         variant="outline"
+                        className="h-8 border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/10"
                         onClick={addScenario}
-                        className="h-7 gap-1 text-xs"
                     >
-                        <Plus className="h-3 w-3" /> Adicionar cenário
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        Adicionar cenário
                     </Button>
-                </div>
+                </CardHeader>
 
-                <div className="space-y-3">
-                    {values.cenarios.map((c, idx) => (
-                        <Card key={c.id} className="border-dashed border-muted-foreground/40">
-                            <CardHeader className="flex flex-row items-center justify-between gap-2 py-2 px-3">
-                                <CardTitle className="text-xs">
-                                    {c.titulo || `Cenário ${idx + 1}`}
-                                </CardTitle>
-                                {values.cenarios.length > 1 && (
-                                    <Button
+                <CardContent className="space-y-4">
+                    {cenarios.map((c, idx) => (
+                        <div
+                            key={idx}
+                            className="rounded-xl border border-slate-700/70 bg-slate-900/80 p-4 space-y-4"
+                        >
+                            <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-semibold text-slate-200">
+                  {idx + 1}x {c.titulo || "Cenário de carta"}
+                </span>
+                                {cenarios.length > 1 && (
+                                    <button
                                         type="button"
-                                        size="icon"
-                                        variant="ghost"
                                         onClick={() => removeScenario(idx)}
+                                        className="inline-flex items-center gap-1 text-[11px] text-red-300 hover:text-red-200"
                                     >
-                                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                                    </Button>
+                                        <Trash2 className="h-3 w-3" />
+                                        Remover
+                                    </button>
                                 )}
-                            </CardHeader>
-                            <CardContent className="space-y-3 py-3 px-3 text-[13px]">
-                                <div className="space-y-1.5">
-                                    <Label>Título do cenário</Label>
+                            </div>
+
+                            {/* Título */}
+                            <div className="space-y-1">
+                                <Label className="text-[11px] text-slate-300">
+                                    Título do cenário
+                                </Label>
+                                <Input
+                                    value={c.titulo}
+                                    onChange={(e) =>
+                                        updateScenario(idx, "titulo", e.target.value)
+                                    }
+                                    placeholder="Ex.: 1x carta principal"
+                                    className="h-8 text-sm bg-slate-950/70 border-slate-700/70"
+                                />
+                            </div>
+
+                            {/* Grid principal */}
+                            <div className="grid gap-3 md:grid-cols-4">
+                                {/* Produto */}
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Produto
+                                    </Label>
+                                    <Select
+                                        value={c.produto}
+                                        onValueChange={(v: Produto) =>
+                                            updateScenario(idx, "produto", v)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-8 text-xs bg-slate-950/70 border-slate-700/70">
+                                            <SelectValue placeholder="Selecione" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-950 border-slate-700">
+                                            <SelectItem value="imobiliario">
+                                                Imobiliário
+                                            </SelectItem>
+                                            <SelectItem value="auto">Auto</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Administradora */}
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Administradora
+                                    </Label>
                                     <Input
-                                        value={c.titulo}
+                                        value={c.administradora}
                                         onChange={(e) =>
-                                            updateScenario(idx, { titulo: e.target.value })
+                                            updateScenario(idx, "administradora", e.target.value)
                                         }
+                                        placeholder="Ex.: Porto"
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
                                     />
                                 </div>
 
-                                <div className="grid gap-2 md:grid-cols-3">
-                                    <div className="space-y-1.5">
-                                        <Label>Produto</Label>
-                                        <Select
-                                            value={c.produto}
-                                            onValueChange={(val: "imobiliario" | "auto" | "outro") =>
-                                                updateScenario(idx, { produto: val })
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="imobiliario">Imobiliário</SelectItem>
-                                                <SelectItem value="auto">Auto</SelectItem>
-                                                <SelectItem value="outro">Outro</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <Label>Administradora</Label>
-                                        <Input
-                                            value={c.administradora ?? ""}
-                                            onChange={(e) =>
-                                                updateScenario(idx, { administradora: e.target.value })
-                                            }
-                                        />
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <Label>Prazo (meses)</Label>
-                                        <Input
-                                            type="number"
-                                            min={1}
-                                            value={c.prazo_meses}
-                                            onChange={(e) =>
-                                                updateScenario(idx, {
-                                                    prazo_meses: Number(e.target.value || 0),
-                                                })
-                                            }
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-2 md:grid-cols-3">
-                                    <div className="space-y-1.5">
-                                        <Label>Valor da carta</Label>
-                                        <Input
-                                            type="number"
-                                            min={1}
-                                            value={c.valor_carta}
-                                            onChange={(e) =>
-                                                updateScenario(idx, {
-                                                    valor_carta: Number(e.target.value || 0),
-                                                })
-                                            }
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label>Parcela com redutor</Label>
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            value={c.parcela_reduzida ?? ""}
-                                            onChange={(e) =>
-                                                updateScenario(idx, {
-                                                    parcela_reduzida: e.target.value
-                                                        ? Number(e.target.value)
-                                                        : undefined,
-                                                })
-                                            }
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label>Parcela sem redutor</Label>
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            value={c.parcela_cheia ?? ""}
-                                            onChange={(e) =>
-                                                updateScenario(idx, {
-                                                    parcela_cheia: e.target.value
-                                                        ? Number(e.target.value)
-                                                        : undefined,
-                                                })
-                                            }
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-2 md:grid-cols-2">
-                                    <div className="space-y-1.5">
-                                        <Label>Taxa admin. anual (%)</Label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            value={
-                                                c.taxa_admin_anual != null
-                                                    ? c.taxa_admin_anual
-                                                    : ""
-                                            }
-                                            onChange={(e) =>
-                                                updateScenario(idx, {
-                                                    taxa_admin_anual: e.target.value
-                                                        ? Number(e.target.value)
-                                                        : undefined,
-                                                })
-                                            }
-                                        />
-                                    </div>
-                                    {/* Condições da administradora */}
-                                    <div className="grid gap-2 md:grid-cols-3">
-                                        <div className="space-y-1.5">
-                                            <Label>Redutor (%)</Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                max={100}
-                                                value={c.redutor_percent ?? ""}
-                                                onChange={(e) =>
-                                                    updateScenario(idx, {
-                                                        redutor_percent: e.target.value
-                                                            ? Number(e.target.value)
-                                                            : undefined,
-                                                    })
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <Label>Fundo de reserva (%)</Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                max={100}
-                                                value={c.fundo_reserva_pct ?? ""}
-                                                onChange={(e) =>
-                                                    updateScenario(idx, {
-                                                        fundo_reserva_pct: e.target.value
-                                                            ? Number(e.target.value)
-                                                            : undefined,
-                                                    })
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <Label>Taxa adm. total (%)</Label>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                value={c.taxa_admin_anual ?? ""}
-                                                onChange={(e) =>
-                                                    updateScenario(idx, {
-                                                        taxa_admin_anual: e.target.value
-                                                            ? Number(e.target.value)
-                                                            : undefined,
-                                                    })
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-2 md:grid-cols-3">
-                                        <div className="space-y-1.5">
-                                            <Label>Seguro prestamista?</Label>
-                                            <Select
-                                                value={String(c.seguro_prestamista ?? "false")}
-                                                onValueChange={(val) =>
-                                                    updateScenario(idx, {
-                                                        seguro_prestamista: val === "true",
-                                                    })
-                                                }
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="true">Sim</SelectItem>
-                                                    <SelectItem value="false">Não</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <Label>Lance fixo 1 (%)</Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                max={100}
-                                                value={c.lance_fixo_pct_1 ?? ""}
-                                                onChange={(e) =>
-                                                    updateScenario(idx, {
-                                                        lance_fixo_pct_1: e.target.value
-                                                            ? Number(e.target.value)
-                                                            : undefined,
-                                                    })
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <Label>Lance fixo 2 (%)</Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                max={100}
-                                                value={c.lance_fixo_pct_2 ?? ""}
-                                                onChange={(e) =>
-                                                    updateScenario(idx, {
-                                                        lance_fixo_pct_2: e.target.value
-                                                            ? Number(e.target.value)
-                                                            : undefined,
-                                                    })
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-2 md:grid-cols-2">
-                                        <div className="space-y-1.5">
-                                            <Label>Permite lance embutido?</Label>
-                                            <Select
-                                                value={String(c.permite_lance_embutido ?? "false")}
-                                                onValueChange={(val) =>
-                                                    updateScenario(idx, {
-                                                        permite_lance_embutido: val === "true",
-                                                    })
-                                                }
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="true">Sim</SelectItem>
-                                                    <SelectItem value="false">Não</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <Label>Máx. embutido (%)</Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                max={100}
-                                                value={c.lance_embutido_pct_max ?? ""}
-                                                onChange={(e) =>
-                                                    updateScenario(idx, {
-                                                        lance_embutido_pct_max: e.target.value
-                                                            ? Number(e.target.value)
-                                                            : undefined,
-                                                    })
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label>Com redutor?</Label>
-                                        <Select
-                                            value={String(c.com_redutor ?? "true")}
-                                            onValueChange={(val) =>
-                                                updateScenario(idx, {
-                                                    com_redutor: val === "true",
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="true">Sim</SelectItem>
-                                                <SelectItem value="false">Não</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <Label>Estratégia deste cenário</Label>
-                                    <Textarea
-                                        rows={2}
-                                        value={c.observacoes ?? ""}
+                                {/* Prazo */}
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Prazo (meses)
+                                    </Label>
+                                    <Input
+                                        value={c.prazoMeses}
                                         onChange={(e) =>
-                                            updateScenario(idx, { observacoes: e.target.value })
+                                            updateScenario(idx, "prazoMeses", e.target.value)
                                         }
-                                        placeholder="Ex.: Foco em moradia principal, mantendo parcela confortável."
+                                        inputMode="numeric"
+                                        placeholder="200"
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
                                     />
                                 </div>
-                            </CardContent>
-                        </Card>
+
+                                {/* Valor da carta */}
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Valor da carta
+                                    </Label>
+                                    <MoneyInput
+                                        value={c.valorCarta}
+                                        onChange={(val) =>
+                                            updateScenario(idx, "valorCarta", val ?? "")
+                                        }
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Parcelas */}
+                            <div className="grid gap-3 md:grid-cols-3">
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Parcela com redutor
+                                    </Label>
+                                    <MoneyInput
+                                        value={c.parcelaReduzida}
+                                        onChange={(val) =>
+                                            updateScenario(idx, "parcelaReduzida", val ?? "")
+                                        }
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Parcela sem redutor
+                                    </Label>
+                                    <MoneyInput
+                                        value={c.parcelaCheia}
+                                        onChange={(val) =>
+                                            updateScenario(idx, "parcelaCheia", val ?? "")
+                                        }
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Taxa adm. total (%)
+                                    </Label>
+                                    <Input
+                                        value={c.taxaAdminTotal}
+                                        onChange={(e) =>
+                                            updateScenario(idx, "taxaAdminTotal", e.target.value)
+                                        }
+                                        inputMode="decimal"
+                                        placeholder="17,5"
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Taxas e redutor */}
+                            <div className="grid gap-3 md:grid-cols-4">
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Taxa adm. anual (%)
+                                    </Label>
+                                    <Input
+                                        value={c.taxaAdminAnual}
+                                        onChange={(e) =>
+                                            updateScenario(idx, "taxaAdminAnual", e.target.value)
+                                        }
+                                        inputMode="decimal"
+                                        placeholder="17,5"
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Redutor (%)
+                                    </Label>
+                                    <Input
+                                        value={c.redutorPercent}
+                                        onChange={(e) =>
+                                            updateScenario(idx, "redutorPercent", e.target.value)
+                                        }
+                                        inputMode="decimal"
+                                        placeholder="40"
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Fundo de reserva (%)
+                                    </Label>
+                                    <Input
+                                        value={c.fundoReservaPercent}
+                                        onChange={(e) =>
+                                            updateScenario(idx, "fundoReservaPercent", e.target.value)
+                                        }
+                                        inputMode="decimal"
+                                        placeholder="2"
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Seguro prestamista?
+                                    </Label>
+                                    <Select
+                                        value={c.seguroPrestamista}
+                                        onValueChange={(v: "sim" | "nao") =>
+                                            updateScenario(idx, "seguroPrestamista", v)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-8 text-xs bg-slate-950/70 border-slate-700/70">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-950 border-slate-700">
+                                            <SelectItem value="sim">Sim</SelectItem>
+                                            <SelectItem value="nao">Não</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Lances / embutido */}
+                            <div className="grid gap-3 md:grid-cols-4">
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Lance fixo 1 (%)
+                                    </Label>
+                                    <Input
+                                        value={c.lanceFixo1}
+                                        onChange={(e) =>
+                                            updateScenario(idx, "lanceFixo1", e.target.value)
+                                        }
+                                        inputMode="decimal"
+                                        placeholder="40"
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Lance fixo 2 (%)
+                                    </Label>
+                                    <Input
+                                        value={c.lanceFixo2}
+                                        onChange={(e) =>
+                                            updateScenario(idx, "lanceFixo2", e.target.value)
+                                        }
+                                        inputMode="decimal"
+                                        placeholder="20"
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Permite lance embutido?
+                                    </Label>
+                                    <Select
+                                        value={c.permiteEmbutido}
+                                        onValueChange={(v: "sim" | "nao") =>
+                                            updateScenario(idx, "permiteEmbutido", v)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-8 text-xs bg-slate-950/70 border-slate-700/70">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-950 border-slate-700">
+                                            <SelectItem value="sim">Sim</SelectItem>
+                                            <SelectItem value="nao">Não</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Máx. embutido (%)
+                                    </Label>
+                                    <Input
+                                        value={c.maxEmbutidoPercent}
+                                        onChange={(e) =>
+                                            updateScenario(idx, "maxEmbutidoPercent", e.target.value)
+                                        }
+                                        inputMode="decimal"
+                                        placeholder="30"
+                                        className="h-8 text-xs bg-slate-950/70 border-slate-700/70"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Flag com redutor */}
+                            <div className="grid gap-3 md:grid-cols-3">
+                                <div className="space-y-1">
+                                    <Label className="text-[11px] text-slate-300">
+                                        Com redutor?
+                                    </Label>
+                                    <Select
+                                        value={c.comRedutor}
+                                        onValueChange={(v: "sim" | "nao") =>
+                                            updateScenario(idx, "comRedutor", v)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-8 text-xs bg-slate-950/70 border-slate-700/70">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-950 border-slate-700">
+                                            <SelectItem value="sim">Sim</SelectItem>
+                                            <SelectItem value="nao">Não</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Estratégia */}
+                            <div className="space-y-1">
+                                <Label className="text-[11px] text-slate-300">
+                                    Estratégia deste cenário
+                                </Label>
+                                <Textarea
+                                    value={c.estrategia}
+                                    onChange={(e) =>
+                                        updateScenario(idx, "estrategia", e.target.value)
+                                    }
+                                    placeholder="Ex.: Foco em moradia principal, mantendo parcela confortável."
+                                    className="min-h-[80px] text-xs bg-slate-950/70 border-slate-700/70"
+                                />
+                            </div>
+                        </div>
                     ))}
-                </div>
-            </div>
+                </CardContent>
+            </Card>
 
-            {/* Botões de ação */}
-            <div className="flex items-center justify-end gap-2 pt-2">
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2">
                 <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => router.back()}
-                    disabled={submitting}
+                    className="text-sm"
+                    onClick={() => router.push(`/app/leads/${leadId}`)}
                 >
                     Cancelar
                 </Button>
                 <Button
                     type="submit"
-                    className="gap-2"
-                    disabled={submitting}
+                    disabled={isSubmitting}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-sm"
                 >
-                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Salvar proposta
+                    {isSubmitting ? "Salvando..." : "Salvar proposta"}
                 </Button>
             </div>
         </form>

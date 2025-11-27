@@ -28,13 +28,22 @@ export function unformatPhoneBR(v: string) {
 }
 
 /** Moeda com CENTAVOS "dinâmica": digita 123456 -> "1.234,56". */
-export function maskMoneyBRCents(raw: string) {
-    const digits = onlyDigits(raw);
-    if (!digits) return "";
-    const int = digits.slice(0, -2) || "0";
-    const cents = digits.slice(-2).padStart(2, "0");
-    const withDots = int.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return `${withDots},${cents}`;
+export function maskMoneyBRCents(raw: string): string {
+    const digitsOnly = raw.replace(/\D/g, "");
+
+    if (!digitsOnly) return "";
+
+    let intPart = digitsOnly.slice(0, -2);
+    let cents = digitsOnly.slice(-2);
+
+    if (!intPart) intPart = "0";
+
+    intPart = String(parseInt(intPart, 10) || 0);
+    cents = cents.padStart(2, "0");
+
+    const intWithThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+    return `${intWithThousands},${cents}`;
 }
 
 /** Converte "1.234,56" em número JS (1234.56). Retorna null se inválido. */
