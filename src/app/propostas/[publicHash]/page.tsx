@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ShareProposalActions } from "./ShareProposalActions";
+import {Metadata} from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,70 @@ interface PropostaPublica {
     payload?: PropostaPayload | null;
 }
 
+export async function generateMetadata(
+    { params }: { params: Promise<{ publicHash: string }> }
+): Promise<Metadata> {
+    const { publicHash } = await params;
+
+    // opcional: buscar a proposta pra personalizar título/descrição
+    let titulo = "Proposta de Consórcio";
+    let clienteNome: string | undefined;
+
+    try {
+        const res = await fetch(
+            `${BACKEND_URL}/lead-propostas/p/${encodeURIComponent(publicHash)}`,
+            { cache: "no-store" }
+        );
+
+        if (res.ok) {
+            const proposta = await res.json();
+            const payload = proposta.payload ?? {};
+            const cliente = payload.cliente ?? {};
+
+            clienteNome = cliente.nome;
+            titulo = proposta.titulo ?? titulo;
+        }
+    } catch {
+        // se der erro, seguimos com título genérico
+    }
+
+    const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL || "https://app.contemplahub.com";
+
+    const pageUrl = `${baseUrl}/propostas/${publicHash}`;
+
+    const fullTitle = clienteNome
+        ? `${titulo} – ${clienteNome}`
+        : titulo;
+
+    const description =
+        "Veja os detalhes da sua proposta personalizada de consórcio, com parcelas planejadas e estratégia de contemplação.";
+
+    return {
+        title: fullTitle,
+        description,
+        openGraph: {
+            title: fullTitle,
+            description,
+            url: pageUrl,
+            type: "website",
+            images: [
+                {
+                    url: "/og/proposta-cover.png",
+                    width: 1200,
+                    height: 630,
+                    alt: "Proposta personalizada de consórcio",
+                },
+            ],
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: fullTitle,
+            description,
+            images: ["/og/proposta-cover.png"],
+        },
+    };
+}
 
 async function loadProposta(hash: string): Promise<PropostaPublica | null> {
     try {
@@ -120,6 +185,7 @@ export default async function PropostaPublicaPage({
         : [];
 
     const mainScenario = cenarios[0];
+
 
 
     return (
