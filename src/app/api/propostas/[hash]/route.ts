@@ -1,14 +1,26 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+const BACKEND_URL =
+    process.env.BACKEND_URL ??
+    process.env.NEXT_PUBLIC_BACKEND_URL ??
+    "http://localhost:8000";
 
 export async function GET(
-    req: Request,
-    { params }: { params: { hash: string } }
+    req: NextRequest,
+    { params }: { params: Promise<{ hash: string }> }  // 👈 note o Promise aqui
 ) {
-    const supabaseUrl = process.env.BACKEND_URL!;
-    const res = await fetch(`${supabaseUrl}/lead-propostas/p/${params.hash}`);
+    const { hash } = await params; // 👈 desestrutura depois de resolver o Promise
+
+    const res = await fetch(`${BACKEND_URL}/lead-propostas/p/${encodeURIComponent(hash)}`, {
+        // como é API route, sempre bom evitar cache
+        cache: "no-store",
+    });
 
     if (!res.ok) {
-        return NextResponse.json({ error: "Proposta não encontrada" }, { status: 404 });
+        return NextResponse.json(
+            { error: "Proposta não encontrada" },
+            { status: 404 }
+        );
     }
 
     const data = await res.json();
