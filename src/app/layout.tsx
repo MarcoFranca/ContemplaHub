@@ -9,9 +9,11 @@ import { GlobalNetTracker } from "@/components/system/GlobalNetTracker";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const APP_URL =
+    process.env.NEXT_PUBLIC_APP_URL || "https://contempla-hub.vercel.app";
+
 export const metadata: Metadata = {
-    // 👇 força o domínio para gerar URLs absolutas
-    metadataBase: new URL("https://contempla-hub.vercel.app"),
+    metadataBase: new URL(APP_URL),
     title: "ContemplaHub",
     description: "Consórcio com estratégia e clareza.",
     openGraph: {
@@ -20,7 +22,7 @@ export const metadata: Metadata = {
         type: "website",
         images: [
             {
-                url: "/og/proposta-cover.png", // vira https://contempla-hub.vercel.app/og/proposta-cover.png
+                url: "/og/proposta-cover.png", // com metadataBase vira URL absoluta
                 width: 1200,
                 height: 630,
                 alt: "Proposta personalizada de consórcio",
