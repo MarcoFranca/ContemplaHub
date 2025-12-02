@@ -62,9 +62,9 @@ interface PropostaPublica {
 }
 
 export async function generateMetadata(
-    { params }: { params: Promise<{ publicHash: string }> }
+    { params }: { params: { publicHash: string } }
 ): Promise<Metadata> {
-    const { publicHash } = await params;
+    const { publicHash } = params;
 
     let titulo = "Proposta de Consórcio";
     let clienteNome: string | undefined;
@@ -84,13 +84,8 @@ export async function generateMetadata(
             titulo = proposta.titulo ?? titulo;
         }
     } catch {
-        // segue com título genérico
+        // se der erro, segue genérico
     }
-
-    const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "https://app.contemplahub.com";
-
-    const pageUrl = `${baseUrl}/propostas/${publicHash}`;
 
     const fullTitle = clienteNome
         ? `${titulo} – ${clienteNome}`
@@ -102,25 +97,15 @@ export async function generateMetadata(
     return {
         title: fullTitle,
         description,
+        // não precisa repetir images aqui – herda do layout
         openGraph: {
             title: fullTitle,
             description,
-            url: pageUrl,
-            type: "website",
-            images: [
-                {
-                    url: `${baseUrl}/og/proposta-cover.png`,
-                    width: 1200,
-                    height: 630,
-                    alt: "Proposta personalizada de consórcio",
-                },
-            ],
         },
         twitter: {
             card: "summary_large_image",
             title: fullTitle,
             description,
-            images: [`${baseUrl}/og/proposta-cover.png`],
         },
     };
 }

@@ -1,20 +1,17 @@
-// src/app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { SonnerProvider } from "./providers/sonner-provider";
-import {GlobalPending} from "@/components/system/GlobalPending";
-import {GlobalNetTracker} from "@/components/system/GlobalNetTracker";
+import { GlobalPending } from "@/components/system/GlobalPending";
+import { GlobalNetTracker } from "@/components/system/GlobalNetTracker";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-const APP_URL =
-    process.env.NEXT_PUBLIC_APP_URL || "https://app.contemplahub.com";
-
 export const metadata: Metadata = {
-    metadataBase: new URL(APP_URL),
+    // 👇 força o domínio para gerar URLs absolutas
+    metadataBase: new URL("https://contempla-hub.vercel.app"),
     title: "ContemplaHub",
     description: "Consórcio com estratégia e clareza.",
     openGraph: {
@@ -23,7 +20,7 @@ export const metadata: Metadata = {
         type: "website",
         images: [
             {
-                url: "/og/proposta-cover.png", // vira https://app.contemplahub.com/og/proposta-cover.png
+                url: "/og/proposta-cover.png", // vira https://contempla-hub.vercel.app/og/proposta-cover.png
                 width: 1200,
                 height: 630,
                 alt: "Proposta personalizada de consórcio",
@@ -37,8 +34,6 @@ export const metadata: Metadata = {
         images: ["/og/proposta-cover.png"],
     },
 };
-
-
 
 // aplica 'dark' antes da hidratação para evitar flash
 const setInitialTheme = `
@@ -58,9 +53,16 @@ const setInitialTheme = `
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="pt-BR" suppressHydrationWarning>
-        <head><script dangerouslySetInnerHTML={{ __html: setInitialTheme }} /></head>
+        <head>
+            <script dangerouslySetInnerHTML={{ __html: setInitialTheme }} />
+        </head>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="autentika-theme">
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            storageKey="autentika-theme"
+        >
             {children}
             <SonnerProvider />
             <GlobalNetTracker />
