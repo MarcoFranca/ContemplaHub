@@ -27,6 +27,14 @@ export function AcceptProposalSection({ publicHash, clienteNome }: Props) {
 
             const res = await fetch(`/api/propostas/${publicHash}/accept`, {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    source: "public_proposal_page",
+                    user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+                    ip: null, // se quiser depois podemos preencher isso via backend
+                }),
             });
 
             if (!res.ok) {
@@ -35,12 +43,23 @@ export function AcceptProposalSection({ publicHash, clienteNome }: Props) {
                 throw new Error();
             }
 
+            const data = await res.json();
+
             toast.dismiss();
+
+            // se o backend mandou o link do cadastro, redireciona o cliente pra lá
+            if (data.cadastro_url) {
+                window.location.href = data.cadastro_url;
+                return;
+            }
+
+            // fallback (se por algum motivo não veio o link)
             toast.success("Proposta confirmada!", {
                 description:
                     "Nossa equipe vai entrar em contato para os próximos passos de formalização.",
             });
-        } catch {
+        } catch (err) {
+            console.error(err);
             toast.dismiss();
             toast.error(
                 "Não foi possível registrar o aceite agora. Tente novamente em instantes."
