@@ -1,4 +1,4 @@
-// app/propostas/[hash]/page.tsx
+
 import { notFound } from "next/navigation";
 import { ArrowLeft, MessageCircle, Timer, HomeIcon } from "lucide-react";
 import Link from "next/link";

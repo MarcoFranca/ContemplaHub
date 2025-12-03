@@ -29,8 +29,18 @@ const statusClass: Record<string, string> = {
     inativa: "bg-zinc-900/60 text-zinc-300 border-zinc-700",
 };
 
+// tipinho mínimo pra evitar "any"
+type LeadProposalListItem = {
+    id: string;
+    titulo: string | null;
+    campanha: string | null;
+    status: string | null;
+    created_at: string | null;
+    public_hash: string | null;
+};
+
 export function LeadPropostasList({ leadId }: { leadId: string }) {
-    const { data, error, isLoading, mutate } = useSWR(
+    const { data, error, isLoading, mutate } = useSWR<LeadProposalListItem[]>(
         `/api/lead-propostas/lead/${leadId}`,
         fetcher
     );
@@ -80,7 +90,7 @@ export function LeadPropostasList({ leadId }: { leadId: string }) {
 
     return (
         <div className="space-y-3">
-            {data.map((p: any) => {
+            {data.map((p) => {
                 const status = p.status ?? "rascunho";
                 const createdAt = p.created_at
                     ? new Date(p.created_at).toLocaleString("pt-BR")
@@ -93,36 +103,40 @@ export function LeadPropostasList({ leadId }: { leadId: string }) {
                     >
                         <div className="flex flex-col gap-1 min-w-0">
                             <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm truncate">
-                                    {p.titulo ?? "Proposta sem título"}
-                                </span>
+                <span className="font-medium text-sm truncate">
+                  {p.titulo ?? "Proposta sem título"}
+                </span>
                                 <span
-                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] border ${statusClass[status] ?? statusClass.rascunho}`}
+                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] border ${
+                                        statusClass[status] ?? statusClass.rascunho
+                                    }`}
                                 >
-                                    {statusLabel[status] ?? status}
-                                </span>
+                  {statusLabel[status] ?? status}
+                </span>
                             </div>
 
                             <span className="text-[11px] text-muted-foreground truncate">
-                                {p.campanha ?? "—"}
-                            </span>
+                {p.campanha ?? "—"}
+              </span>
 
                             {createdAt && (
                                 <span className="text-[10px] text-muted-foreground">
-                                    Criada em {createdAt}
-                                </span>
+                  Criada em {createdAt}
+                </span>
                             )}
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                            {/* Abrir proposta pública */}
-                            <Link
-                                href={`/propostas/${p.public_hash}`}
-                                className="text-xs inline-flex items-center gap-1 text-emerald-400 hover:underline"
-                            >
-                                <FileSignature className="h-3.5 w-3.5" />
-                                Abrir
-                            </Link>
+                            {/* Abrir visão do cliente */}
+                            {p.public_hash && (
+                                <Link
+                                    href={`/propostas/${p.public_hash}`}
+                                    className="text-xs inline-flex items-center gap-1 text-emerald-400 hover:underline"
+                                >
+                                    <FileSignature className="h-3.5 w-3.5" />
+                                    Ver como cliente
+                                </Link>
+                            )}
 
                             {/* Ações rápidas de status */}
                             <button
@@ -133,6 +147,16 @@ export function LeadPropostasList({ leadId }: { leadId: string }) {
                                 <Send className="h-3 w-3" />
                                 Enviar
                             </button>
+
+                            {/* 🔥 Nova rota interna da proposta */}
+                            {p.public_hash && (
+                                <Link
+                                    href={`/app/leads/${leadId}/propostas/${p.id}`}
+                                    className="text-[11px] text-sky-300 hover:text-sky-200"
+                                >
+                                    Detalhes internos
+                                </Link>
+                            )}
 
                             <button
                                 type="button"

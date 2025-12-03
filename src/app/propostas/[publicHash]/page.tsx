@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ShareProposalActions } from "./ShareProposalActions";
 import {Metadata} from "next";
+import {AcceptProposalSection} from "@/app/propostas/[publicHash]/AcceptProposalSection";
 
 export const dynamic = "force-dynamic";
 
@@ -501,11 +502,23 @@ export default async function PropostaPublicaPage({
                             no seu momento de vida.
                         </p>
 
-                        <ShareProposalActions
-                            publicHash={publicHash}
-                            clienteNome={cliente.nome}
-                            phone={cliente.telefone}
-                        />
+                        {/*<ShareProposalActions*/}
+                        {/*    publicHash={publicHash}*/}
+                        {/*    clienteNome={cliente.nome}*/}
+                        {/*    phone={cliente.telefone}*/}
+                        {/*/>*/}
+                        <section className="space-y-3 mb-6">
+                            <h2 className="text-sm font-semibold text-slate-100">
+                                Próximos passos
+                            </h2>
+                            <p className="text-xs text-slate-400 max-w-xl">
+                                Se esta proposta fizer sentido para você, basta confirmar abaixo que
+                                deseja seguir com este plano. Nossa equipe vai entrar em contato para
+                                os próximos passos e formalização do contrato.
+                            </p>
+
+                            <AcceptProposalSection publicHash={publicHash} clienteNome={cliente.nome}/>
+                        </section>
                     </section>
                 </div>
             </div>
