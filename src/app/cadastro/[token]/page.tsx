@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 const BACKEND_URL =
     process.env.BACKEND_URL ??
     process.env.NEXT_PUBLIC_BACKEND_URL ??
-    "http://localhost:8000";
+    "http://localhost:8080";
 
 type LeadCadastroPublic = {
     id: string;
@@ -25,16 +25,21 @@ type LeadCadastroPublic = {
 };
 
 async function loadCadastroByToken(token: string): Promise<LeadCadastroPublic> {
-    const res = await fetch(
-        `${BACKEND_URL}/lead-cadastros/p/${encodeURIComponent(token)}`,
-        { cache: "no-store" },
-    );
+    const url = `${BACKEND_URL}/lead-cadastros/p/${encodeURIComponent(token)}`;
+    console.log("loadCadastroByToken -> URL chamada:", url);
+
+    const res = await fetch(url, { cache: "no-store" });
+
+    console.log("loadCadastroByToken -> status:", res.status);
 
     if (res.status === 404) {
+        console.error("Cadastro não encontrado no backend:", token);
         notFound();
     }
 
     if (!res.ok) {
+        const txt = await res.text();
+        console.error("Erro ao carregar cadastro:", res.status, txt);
         throw new Error(`Falha ao carregar cadastro: ${res.status} ${res.statusText}`);
     }
 
