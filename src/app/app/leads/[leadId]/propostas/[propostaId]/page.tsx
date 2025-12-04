@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ShareProposalActions } from "@/app/propostas/[publicHash]/ShareProposalActions";
 import { PropostaActionsClient } from "@/app/propostas/[publicHash]/PropostaActionsClient";
+import {CadastroPFCard} from "@/app/app/leads/[leadId]/propostas/[propostaId]/CadastroPFCard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -239,142 +240,171 @@ export default async function LeadPropostaDetailPage({
 
                 <Separator className="bg-slate-800/80" />
 
-                {/* Cenários da proposta (resumo interno) */}
-                <section className="space-y-3 mb-6">
+                <section className="space-y-4 mb-10">
                     <h2 className="text-sm font-semibold text-slate-100">
-                        Cenários de carta
+                        Análise interna
                     </h2>
+                    <p className="text-xs text-slate-400 max-w-xl">
+                        Use os cenários para negociar com o cliente e a ficha cadastral para
+                        lançar o contrato na administradora sem ficar alternando telas.
+                    </p>
 
-                    {cenarios.length === 0 && (
-                        <p className="text-xs text-slate-400">
-                            Nenhum cenário encontrado no payload desta proposta.
-                        </p>
-                    )}
+                    <div className="grid gap-6 lg:grid-cols-[1.4fr,1.2fr]">
+                        {/* Coluna esquerda: Cenários */}
+                        <div className="space-y-3">
+                            <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                Cenários de carta
+                            </h3>
 
-                    {mainScenario && (
-                        <Card className="border-emerald-500/30 bg-slate-900/80">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm flex items-center justify-between gap-2">
-                                    <span>{mainScenario.titulo ?? "Cenário principal"}</span>
-                                    <span className="text-[11px] text-slate-400">
-                    {mainScenario.produto === "imobiliario"
-                        ? "Imobiliário"
-                        : mainScenario.produto === "auto"
-                            ? "Auto"
-                            : "Consórcio"}
-                  </span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2 text-xs text-slate-300">
-                                <div className="grid gap-3 sm:grid-cols-3">
-                                    <p>
-                    <span className="font-semibold text-slate-100">
-                      Valor da carta:{" "}
-                    </span>
-                                        {typeof mainScenario.valor_carta === "number"
-                                            ? mainScenario.valor_carta.toLocaleString("pt-BR", {
-                                                style: "currency",
-                                                currency: "BRL",
-                                            })
-                                            : "—"}
-                                    </p>
-                                    <p>
-                    <span className="font-semibold text-slate-100">
-                      Prazo:{" "}
-                    </span>
-                                        {mainScenario.prazo_meses
-                                            ? `${mainScenario.prazo_meses} meses`
-                                            : "—"}
-                                    </p>
-                                    <p>
-                    <span className="font-semibold text-slate-100">
-                      Parcela estimada:{" "}
-                    </span>
-                                        {typeof mainScenario.parcela_reduzida === "number"
-                                            ? mainScenario.parcela_reduzida.toLocaleString("pt-BR", {
-                                                style: "currency",
-                                                currency: "BRL",
-                                            })
-                                            : typeof mainScenario.parcela_cheia === "number"
-                                                ? mainScenario.parcela_cheia.toLocaleString("pt-BR", {
-                                                    style: "currency",
-                                                    currency: "BRL",
-                                                })
-                                                : "—"}
-                                    </p>
-                                </div>
+                            {cenarios.length === 0 && (
+                                <p className="text-xs text-slate-400">
+                                    Nenhum cenário encontrado no payload desta proposta.
+                                </p>
+                            )}
 
-                                {mainScenario.observacoes && (
-                                    <p className="text-[11px] text-slate-400 italic">
-                                        {mainScenario.observacoes}
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
+                            {mainScenario && (
+                                <Card className="border-emerald-500/30 bg-slate-900/80 shadow-lg shadow-emerald-500/10">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm flex items-center justify-between gap-2">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span>{mainScenario.titulo ?? "Cenário principal"}</span>
+                                                <span className="text-[11px] text-slate-400">
+                  {mainScenario.produto === "imobiliario"
+                      ? "Imobiliário"
+                      : mainScenario.produto === "auto"
+                          ? "Auto"
+                          : "Consórcio"}
+                </span>
+                                            </div>
+                                            {mainScenario.administradora && (
+                                                <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-emerald-200">
+                  {mainScenario.administradora}
+                </span>
+                                            )}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3 text-xs text-slate-300">
+                                        <div className="grid gap-3 sm:grid-cols-3">
+                                            <p>
+                <span className="font-semibold text-slate-100">
+                  Valor da carta:{" "}
+                </span>
+                                                {typeof mainScenario.valor_carta === "number"
+                                                    ? mainScenario.valor_carta.toLocaleString("pt-BR", {
+                                                        style: "currency",
+                                                        currency: "BRL",
+                                                    })
+                                                    : "—"}
+                                            </p>
+                                            <p>
+                <span className="font-semibold text-slate-100">
+                  Prazo:{" "}
+                </span>
+                                                {mainScenario.prazo_meses
+                                                    ? `${mainScenario.prazo_meses} meses`
+                                                    : "—"}
+                                            </p>
+                                            <p>
+                <span className="font-semibold text-slate-100">
+                  Parcela estimada:{" "}
+                </span>
+                                                {typeof mainScenario.parcela_reduzida === "number"
+                                                    ? mainScenario.parcela_reduzida.toLocaleString("pt-BR", {
+                                                        style: "currency",
+                                                        currency: "BRL",
+                                                    })
+                                                    : typeof mainScenario.parcela_cheia === "number"
+                                                        ? mainScenario.parcela_cheia.toLocaleString("pt-BR", {
+                                                            style: "currency",
+                                                            currency: "BRL",
+                                                        })
+                                                        : "—"}
+                                            </p>
+                                        </div>
 
-                    {cenarios.slice(1).map((c) => (
-                        <Card
-                            key={c.id}
-                            className="bg-slate-900/70 border border-slate-800"
-                        >
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm flex items-center justify-between gap-2">
-                                    <span>{c.titulo}</span>
-                                    <span className="text-[11px] text-slate-400">
-                    {c.produto === "imobiliario"
-                        ? "Imobiliário"
-                        : c.produto === "auto"
-                            ? "Auto"
-                            : "Consórcio"}
-                  </span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2 text-xs text-slate-300">
-                                <div className="grid gap-3 sm:grid-cols-3">
-                                    <p>
-                    <span className="font-semibold text-slate-100">
-                      Valor da carta:{" "}
-                    </span>
-                                        {typeof c.valor_carta === "number"
-                                            ? c.valor_carta.toLocaleString("pt-BR", {
-                                                style: "currency",
-                                                currency: "BRL",
-                                            })
-                                            : "—"}
-                                    </p>
-                                    <p>
-                    <span className="font-semibold text-slate-100">
-                      Prazo:{" "}
-                    </span>
-                                        {c.prazo_meses ? `${c.prazo_meses} meses` : "—"}
-                                    </p>
-                                    <p>
-                    <span className="font-semibold text-slate-100">
-                      Parcela estimada:{" "}
-                    </span>
-                                        {typeof c.parcela_reduzida === "number"
-                                            ? c.parcela_reduzida.toLocaleString("pt-BR", {
-                                                style: "currency",
-                                                currency: "BRL",
-                                            })
-                                            : typeof c.parcela_cheia === "number"
-                                                ? c.parcela_cheia.toLocaleString("pt-BR", {
-                                                    style: "currency",
-                                                    currency: "BRL",
-                                                })
-                                                : "—"}
-                                    </p>
-                                </div>
+                                        {mainScenario.observacoes && (
+                                            <p className="text-[11px] text-slate-400 italic">
+                                                {mainScenario.observacoes}
+                                            </p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
 
-                                {c.observacoes && (
-                                    <p className="text-[11px] text-slate-400 italic">
-                                        {c.observacoes}
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
+                            {cenarios.slice(1).map((c) => (
+                                <Card
+                                    key={c.id}
+                                    className="bg-slate-900/70 border border-slate-800 hover:border-emerald-500/40 transition-colors"
+                                >
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm flex items-center justify-between gap-2">
+                                            <span>{c.titulo}</span>
+                                            <span className="text-[11px] text-slate-400">
+                {c.produto === "imobiliario"
+                    ? "Imobiliário"
+                    : c.produto === "auto"
+                        ? "Auto"
+                        : "Consórcio"}
+              </span>
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-xs text-slate-300">
+                                        <div className="grid gap-3 sm:grid-cols-3">
+                                            <p>
+                <span className="font-semibold text-slate-100">
+                  Valor da carta:{" "}
+                </span>
+                                                {typeof c.valor_carta === "number"
+                                                    ? c.valor_carta.toLocaleString("pt-BR", {
+                                                        style: "currency",
+                                                        currency: "BRL",
+                                                    })
+                                                    : "—"}
+                                            </p>
+                                            <p>
+                <span className="font-semibold text-slate-100">
+                  Prazo:{" "}
+                </span>
+                                                {c.prazo_meses ? `${c.prazo_meses} meses` : "—"}
+                                            </p>
+                                            <p>
+                <span className="font-semibold text-slate-100">
+                  Parcela estimada:{" "}
+                </span>
+                                                {typeof c.parcela_reduzida === "number"
+                                                    ? c.parcela_reduzida.toLocaleString("pt-BR", {
+                                                        style: "currency",
+                                                        currency: "BRL",
+                                                    })
+                                                    : typeof c.parcela_cheia === "number"
+                                                        ? c.parcela_cheia.toLocaleString("pt-BR", {
+                                                            style: "currency",
+                                                            currency: "BRL",
+                                                        })
+                                                        : "—"}
+                                            </p>
+                                        </div>
+
+                                        {c.observacoes && (
+                                            <p className="text-[11px] text-slate-400 italic">{c.observacoes}</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+
+                        {/* Coluna direita: Ficha cadastral */}
+                        <div className="space-y-3 lg:sticky lg:top-4 self-start">
+                            <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                Ficha cadastral – PF
+                            </h3>
+                            <CadastroPFCard
+                                propostaId={proposta.id}
+                                clienteNome={cliente.nome ?? undefined}
+                                clienteTelefone={cliente.telefone ?? undefined}
+                            />
+                        </div>
+                    </div>
                 </section>
             </div>
         </div>
