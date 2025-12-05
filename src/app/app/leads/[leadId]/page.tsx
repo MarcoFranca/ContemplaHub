@@ -110,7 +110,7 @@ export default async function LeadDetailsPage({
 
     const contratos = await loadContratos(
         profile.orgId,
-        cotas.map((c: any) => c.id)
+        cotas.map((c: any) => c.id),
     );
 
     if (!lead) notFound();
@@ -120,7 +120,9 @@ export default async function LeadDetailsPage({
             <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
                 <LeadHeader lead={lead} />
                 <Separator />
-                <main className="grid gap-6 lg:grid-cols-[1.7fr_1.1fr]">
+
+                {/* 2 colunas no desktop, empilhado no mobile */}
+                <main className="grid gap-6 lg:grid-cols-[1.3fr_1.2fr]">
                     {/* COLUNA ESQUERDA */}
                     <div className="space-y-4">
                         <LeadDiagnosticCard
@@ -130,22 +132,19 @@ export default async function LeadDetailsPage({
                         />
 
                         <LeadPropostasCard leadId={leadId} />
+
+                        {/* Cotas entra aqui, embaixo das propostas */}
+                        <LeadCotasCard cotas={cotas} contratos={contratos} />
                     </div>
 
                     {/* COLUNA DIREITA */}
                     <div className="space-y-4">
                         <LeadInfoCard lead={lead} />
-
-                        {/* 👇 NOVO CARD DE ESTRATÉGIAS */}
                         <LeadStrategiesCard lead={lead} />
                     </div>
-                    <div className="space-y-4">
-                        <LeadInfoCard lead={lead}/>
-                        <LeadCotasCard cotas={cotas} contratos={contratos} />
-                    </div>
-
                 </main>
             </div>
         </div>
     );
 }
+
