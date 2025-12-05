@@ -55,7 +55,6 @@ async function loadCotas(leadId: string, orgId: string) {
             administradora_id,
             valor_carta,
             produto,
-            situacao,
             data_adesao,
             numero_cota,
             grupo_codigo,

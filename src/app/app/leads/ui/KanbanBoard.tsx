@@ -5,7 +5,7 @@ import { useOptimistic, useTransition } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { LeadCardItem } from "./LeadCardItem";
 import { toast } from "sonner";
-import { ContractDrawer } from "@/components/app/ContractDrawer";
+import { ContractSheet } from "@/components/app/ContractSheet";
 import { fireConfetti } from "@/lib/ui/confetti";
 import { ColumnHeaderStats } from "@/app/app/leads/ui/ColumnHeaderStats";
 
@@ -232,7 +232,7 @@ export default function KanbanBoard({
 
             {/* Drawer de contrato quando soltar em “contrato” */}
             {contractLead && (
-                <ContractDrawer
+                <ContractSheet
                     open={!!contractLead}
                     onOpenChange={(v) => !v && closeContractDrawer()}
                     leadId={contractLead.id}

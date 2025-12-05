@@ -261,29 +261,16 @@ export async function listContractOptions(): Promise<{
     };
 }
 
-// ====== Criar contrato + cota e mover lead para "ativo" (versão compatível com novo schema) ======
+// ====== Criar contrato a partir do lead (chama backend) ======
 export async function createContractFromLead(formData: FormData): Promise<void> {
     const me = await getCurrentProfile();
     if (!me?.orgId) throw new Error("Sem organização.");
 
-    const s = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { persistSession: false } }
-    );
-
-    // helpers
-    const parseMoney = (raw: string | null): number | null => {
-        if (!raw) return null;
-        const v = raw.replace(/\./g, "").replace(",", ".");
-        const n = Number(v);
-        return Number.isFinite(n) ? n : null;
-    };
-    const getBool = (name: string) => formData.get(name) ? true : false;
     const getStr = (name: string) => {
         const v = formData.get(name);
         return v ? String(v).trim() : null;
     };
+    const getBool = (name: string) => !!formData.get(name);
     const getInt = (name: string) => {
         const v = getStr(name);
         if (!v) return null;
@@ -291,101 +278,74 @@ export async function createContractFromLead(formData: FormData): Promise<void> 
         return Number.isFinite(n) ? Math.trunc(n) : null;
     };
 
-    // campos do formulário (NOVOS)
-    const leadId          = getStr("leadId");
-    const administradoraId= getStr("administradoraId");
+    const payload = {
+        lead_id: getStr("leadId"),
+        administradora_id: getStr("administradoraId"),
 
-    const numeroCota      = getStr("numeroCota");      // obrigatório
-    const grupoCodigo     = getStr("grupoCodigo");     // obrigatório
-    const produto         = (getStr("produto") ?? "imobiliario") as "imobiliario" | "auto" | "pesados";
+        numero_cota: getStr("numeroCota"),
+        grupo_codigo: getStr("grupoCodigo"),
+        produto: (getStr("produto") ?? "imobiliario") as
+            | "imobiliario"
+            | "auto"
+            | "pesados",
 
-    const valorCarta      = parseMoney(getStr("valorCarta"));
-    const prazo           = getInt("prazo");
-    const formaPagamento  = getStr("formaPagamento");
-    const indiceCorrecao  = getStr("indiceCorrecao");
+        valor_carta: getStr("valorCarta") ?? "",
+        prazo: getInt("prazo"),
+        forma_pagamento: getStr("formaPagamento"),
+        indice_correcao: getStr("indiceCorrecao"),
 
-    const parcelaReduzida = getBool("parcelaReduzida");
-    const fgtsPermitido   = getBool("fgtsPermitido");
-    const embutidoPermitido = getBool("embutidoPermitido");
-    const autorizacaoGestao = getBool("autorizacaoGestao");
+        parcela_reduzida: getBool("parcelaReduzida"),
+        fgts_permitido: getBool("fgtsPermitido"),
+        embutido_permitido: getBool("embutidoPermitido"),
+        autorizacao_gestao: getBool("autorizacaoGestao"),
 
-    const dataAdesao      = getStr("dataAdesao");      // yyyy-mm-dd ou null
-    const dataAssinatura  = getStr("dataAssinatura");  // yyyy-mm-dd ou null
-    const numeroContrato  = getStr("numero");
+        data_adesao: getStr("dataAdesao"),
+        data_assinatura: getStr("dataAssinatura"),
+        numero_contrato: getStr("numero"),
+    };
 
-    // valida mínimas obrigatórias
-    if (!leadId || !administradoraId || !numeroCota || !grupoCodigo || !valorCarta) {
+    if (
+        !payload.lead_id ||
+        !payload.administradora_id ||
+        !payload.numero_cota ||
+        !payload.grupo_codigo ||
+        !payload.valor_carta
+    ) {
         throw new Error("Campos obrigatórios ausentes.");
     }
 
-    // valida lead pertence à org
-    {
-        const { data: lead, error: leadErr } = await s
-            .from("leads")
-            .select("id, org_id")
-            .eq("id", leadId)
-            .single();
-        if (leadErr) throw leadErr;
-        if (lead?.org_id !== me.orgId) throw new Error("Lead de outra organização.");
-    }
-
-    // 1) cria COTA (conforme novo schema)
-    const { data: cota, error: cErr } = await s
-        .from("cotas")
-        .insert({
-            org_id: me.orgId,
-            lead_id: leadId,
-            administradora_id: administradoraId,
-
-            numero_cota: numeroCota,
-            grupo_codigo: grupoCodigo,
-
-            valor_carta: valorCarta,
-            prazo: prazo,
-            forma_pagamento: formaPagamento,
-            indice_correcao: indiceCorrecao,
-
-            parcela_reduzida: parcelaReduzida,
-            // percentual_reducao / valor_parcela / valor_parcela_sem_redutor podem ser adicionados depois via edição
-
-            embutido_permitido: embutidoPermitido,
-            fgts_permitido: fgtsPermitido,
-            autorizacao_gestao: autorizacaoGestao,
-
-            produto: produto,
-            data_adesao: dataAdesao ?? null,
-            situacao: "ativa",
-        })
-        .select("id")
-        .single();
-    if (cErr) throw cErr;
-
-    // 2) cria CONTRATO (opcional, mas mantemos como antes)
-    const { error: kErr } = await s.from("contratos").insert({
-        org_id: me.orgId,
-        deal_id: null,
-        cota_id: cota.id,
-        numero: numeroContrato,
-        data_assinatura: dataAssinatura ?? null,
-        status: "ativo",
+    await backendFetch("/contracts/from-lead", {
+        method: "POST",
+        orgId: me.orgId,
+        body: JSON.stringify(payload),
     });
-    if (kErr) throw kErr;
 
-    // 3) move LEAD para "ativo" + atualiza updated_at
-    const { error: uErr } = await s
-        .from("leads")
-        .update({ etapa: "ativo", updated_at: new Date().toISOString() })
-        .eq("id", leadId)
-        .eq("org_id", me.orgId);
-    if (uErr) throw uErr;
+    revalidatePath("/app/leads");
+}
 
+// ====== Atualizar status do contrato ======
+export type ContractStatus =
+    | "pendente_assinatura"
+    | "pendente_pagamento"
+    | "alocado"
+    | "ativo"
+    | "cancelado";
 
-    // revalidate
+export async function updateContractStatus(
+    contractId: string,
+    status: ContractStatus
+) {
+    const me = await getCurrentProfile();
+    if (!me?.orgId) throw new Error("Sem organização.");
+
+    await backendFetch(`/contracts/${contractId}/status`, {
+        method: "PATCH",
+        orgId: me.orgId,
+        body: JSON.stringify({ status }),
+    });
+
     revalidatePath("/app/leads");
     revalidatePath("/app/carteira");
-    revalidatePath("/app");
-    const cotaId = "...";
-    console.log("Contrato criado:", cotaId);
 }
 
 // ====== EXCLUIR LEAD (com cascata no backend) ======
