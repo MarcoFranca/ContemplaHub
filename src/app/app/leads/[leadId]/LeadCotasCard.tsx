@@ -67,7 +67,7 @@ export function LeadCotasCard({
         pendente_assinatura: "Pendente assinatura",
         pendente_pagamento: "Pendente pagamento",
         alocado: "Alocado",
-        ativo: "Ativo",
+        contemplado: "Contemplado",
         cancelado: "Cancelado",
     };
 
@@ -75,22 +75,26 @@ export function LeadCotasCard({
         pendente_assinatura: "bg-amber-900/40 text-amber-200 border-amber-700",
         pendente_pagamento: "bg-yellow-900/40 text-yellow-200 border-yellow-700",
         alocado: "bg-emerald-900/40 text-emerald-200 border-emerald-700",
-        ativo: "bg-blue-900/40 text-blue-200 border-blue-700",
+        contemplado: "bg-indigo-900/40 text-indigo-200 border-indigo-700",
         cancelado: "bg-red-900/40 text-red-200 border-red-700",
     };
 
     async function handleChangeStatus(
         contratoId: string,
-        status: ContractStatus
+        currentStatus: ContractStatus,
+        newStatus: ContractStatus
     ) {
+        if (currentStatus === newStatus) return; // 👈 evita cancelado→cancelado, etc.
+
         try {
-            await updateContractStatus(contratoId, status);
+            await updateContractStatus(contratoId, newStatus);
             toast.success("Status do contrato atualizado.");
         } catch (err) {
             console.error(err);
             toast.error("Erro ao atualizar status do contrato.");
         }
     }
+
 
     return (
         <Card className="bg-slate-950/70 border-slate-800/80">
@@ -183,10 +187,10 @@ export function LeadCotasCard({
                                         <Select
                                             defaultValue={currentStatus}
                                             onValueChange={(v) =>
-                                                handleChangeStatus(contrato.id, v as ContractStatus)
+                                                handleChangeStatus(contrato.id, currentStatus, v as ContractStatus)
                                             }
                                         >
-                                            <SelectTrigger className="h-8 text-xs bg-slate-950/60 border-slate-700">
+                                        <SelectTrigger className="h-8 text-xs bg-slate-950/60 border-slate-700">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -197,7 +201,6 @@ export function LeadCotasCard({
                                                     Pendente pagamento
                                                 </SelectItem>
                                                 <SelectItem value="alocado">Alocado</SelectItem>
-                                                <SelectItem value="ativo">Ativo</SelectItem>
                                                 <SelectItem value="cancelado">Cancelado</SelectItem>
                                             </SelectContent>
                                         </Select>

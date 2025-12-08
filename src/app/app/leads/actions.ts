@@ -328,8 +328,9 @@ export type ContractStatus =
     | "pendente_assinatura"
     | "pendente_pagamento"
     | "alocado"
-    | "ativo"
+    | "contemplado"
     | "cancelado";
+
 
 export async function updateContractStatus(
     contractId: string,

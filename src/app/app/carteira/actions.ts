@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentProfile } from "@/lib/auth/server";
 
-/** Client com Service Role para rodar no server (honra RLS nas policies) */
+/** Client com Service Role */
 function srv() {
     return createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,105 +12,101 @@ function srv() {
     );
 }
 
-/** Tipos retornados pelo SELECT do Supabase */
-type RowCon = {
-    motivo: string | null;
-    data: string | null;
-};
-
-type Row = {
-    id: string;
-    valor_carta: string | null;
-    situacao: string | null;
-    created_at: string | null;
-    administradora: { nome: string | null } | null;
-    lead: { nome: string | null; telefone: string | null } | null;
-    contemplacoes: RowCon[] | null; // array opcional
-};
-
-/** Objeto final que o front consome */
+/** Formato final consumido pelo front */
 export type CarteiraItem = {
-    id: string;
+    contratoId: string;
+    cotaId: string;
+    leadId: string;
+
     nome: string;
     telefone: string | null;
+
     administradora: string | null;
-    valorCarta: string | null;
+    valorCarta: number | null;
+
     status: string;
-    motivo: string | null;
-    assembleia: string | null; // data da contemplação, se houver
-    createdAt: string | null;  // ISO vindo do BD
+    dataAssinatura: string | null;
 };
 
 export type ListCarteiraArgs = {
-    situacao?: string; // ativa | contemplada | quitada | cancelada
-    orderBy?: "created_at" | "valor_carta";
+    status?: string;            // pendente_assinatura | pendente_pagamento | alocado | cancelado
+    orderBy?: "data_assinatura" | "valor_carta";
     asc?: boolean;
     limit?: number;
     offset?: number;
 };
 
 /**
- * Lista a carteira (cotas) da organização do usuário atual.
- * Junta: administradora, lead e (se existir) contemplação.
+ * Lista a carteira REAL baseada em CONTRATOS.
+ * Junta: contratos → cotas → administradoras → leads
  */
 export async function listCarteira(
     args: ListCarteiraArgs = {}
 ): Promise<CarteiraItem[]> {
+
     const me = await getCurrentProfile();
     if (!me?.orgId) throw new Error("Sem organização.");
 
     const s = srv();
-    const orderCol = args.orderBy ?? "created_at";
+
+    const orderCol = args.orderBy ?? "data_assinatura";
     const asc = !!args.asc;
 
-    // nova query sem assembleia_id
     let q = s
-        .from("cotas")
+        .from("contratos")
         .select(`
+    id,
+    status,
+    data_assinatura,
+    cota_id,
+    cotas (
       id,
       valor_carta,
-      situacao,
-      created_at,
-      administradora:administradoras(nome),
-      lead:leads(nome, telefone),
-      contemplacoes(
-        motivo,
-        data
-      )
-    `)
+      administradora_id,
+      lead_id,
+      administradoras (nome),
+      leads (nome, telefone)
+    )
+  `)
         .eq("org_id", me.orgId)
         .order(orderCol, { ascending: asc });
 
-    if (args.situacao) q = q.eq("situacao", args.situacao);
-
-    if (typeof args.limit === "number" && typeof args.offset === "number") {
-        q = q.range(args.offset, args.offset + args.limit - 1);
-    } else if (typeof args.limit === "number") {
-        q = q.limit(args.limit);
+// 🔹 Se não passar filtro explícito, só mostra o que faz sentido na carteira
+    if (args.status) {
+        q = q.eq("status", args.status);
+    } else {
+        q = q.in("status", ["pendente_pagamento", "alocado"]);
     }
 
     const { data, error } = await q;
     if (error) throw error;
 
-    const rows = (data ?? []) as unknown as Row[];
+    const rows = (data ?? []) as any[];
 
-    return rows.map<CarteiraItem>((r) => {
-        const c =
-            Array.isArray(r.contemplacoes) && r.contemplacoes.length > 0
-                ? r.contemplacoes[0]
-                : null;
-        const dtCont = c?.data ?? null;
+    return rows.map<CarteiraItem>((r: any) => {
+        // Supabase às vezes devolve objeto, às vezes array pra relação.
+        const cotaRaw = r.cotas;
+        const cota = Array.isArray(cotaRaw) ? cotaRaw[0] : cotaRaw;
+
+        const admRaw = cota?.administradoras;
+        const administradora = Array.isArray(admRaw) ? admRaw[0] : admRaw;
+
+        const leadRaw = cota?.leads;
+        const lead = Array.isArray(leadRaw) ? leadRaw[0] : leadRaw;
 
         return {
-            id: r.id,
-            nome: r.lead?.nome ?? "—",
-            telefone: r.lead?.telefone ?? null,
-            administradora: r.administradora?.nome ?? null,
-            valorCarta: r.valor_carta ?? null,
-            status: r.situacao ?? "ativa",
-            motivo: c?.motivo ?? null,
-            assembleia: dtCont ? new Date(dtCont).toLocaleDateString("pt-BR") : null,
-            createdAt: r.created_at ?? null,
+            contratoId: r.id,
+            cotaId: cota?.id ?? "",
+            leadId: cota?.lead_id ?? "",
+
+            nome: lead?.nome ?? "—",
+            telefone: lead?.telefone ?? null,
+
+            administradora: administradora?.nome ?? null,
+            valorCarta: cota?.valor_carta ?? null,
+
+            status: r.status,
+            dataAssinatura: r.data_assinatura ?? null,
         };
     });
 }
