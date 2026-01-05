@@ -4,16 +4,25 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Section } from "./Section";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Mail, ArrowUpRight, ShieldCheck, MapPin, Building2, Linkedin } from "lucide-react";
-import Image from "next/image";
+import {
+    MessageCircle,
+    Mail,
+    ArrowUpRight,
+    ShieldCheck,
+    MapPin,
+    Building2,
+    Linkedin,
+} from "lucide-react";
 
 type Props = {
-    waPhone?: string;          // ex: process.env.NEXT_PUBLIC_WA_PHONE
-    email?: string;            // ex: "contato@autentikaseguros.com.br"
-    cnpj?: string;             // ex: "00.000.000/0001-00"
-    linkedinUrl?: string;      // opcional
+    waPhone?: string; // ex: process.env.NEXT_PUBLIC_WA_PHONE
+    email?: string; // ex: "contato@autentikaseguros.com.br"
+    cnpj?: string; // ex: "00.000.000/0001-00"
+    linkedinUrl?: string; // opcional
+    siteUrl?: string; // opcional (recomendado quando tiver domínio)
 };
 
 export function SiteFooter({
@@ -21,6 +30,7 @@ export function SiteFooter({
                                email = "contato@autentikaseguros.com.br",
                                cnpj,
                                linkedinUrl,
+                               siteUrl = "https://autentika.example.com", // ajuste quando tiver domínio
                            }: Props) {
     const wa = new URL(`https://wa.me/${waPhone}`);
     wa.searchParams.set("text", "Olá! Gostaria de falar com a Autentika sobre consórcio.");
@@ -28,8 +38,15 @@ export function SiteFooter({
     wa.searchParams.set("utm_medium", "footer_cta");
 
     return (
-        <footer className="border-t-2 border-white/10 bg-white/[0.02]">
-            <Section className=" relative py-12 isolate">
+        <footer
+            className="
+    border-t border-border
+    bg-background/80
+    backdrop-blur-sm
+    dark:bg-white/[0.02]
+  "
+        >
+            <Section className="relative isolate py-12">
                 {/* JSON-LD Organization */}
                 <script
                     type="application/ld+json"
@@ -40,7 +57,7 @@ export function SiteFooter({
                             "@type": "Organization",
                             name: "Autentika Seguros",
                             slogan: "Planeje hoje, conquiste sempre.",
-                            url: "https://autentika.example.com", // ajuste quando tiver domínio
+                            url: siteUrl,
                             sameAs: linkedinUrl ? [linkedinUrl] : [],
                             contactPoint: [
                                 {
@@ -55,6 +72,7 @@ export function SiteFooter({
                         }),
                     }}
                 />
+
                 <div className="grid gap-10 md:grid-cols-4">
                     {/* Coluna 1: Marca / propósito */}
                     <div>
@@ -66,15 +84,17 @@ export function SiteFooter({
                                 height={32}
                                 className="h-8 w-8"
                             />
-                            <p className="font-semibold">Autentika Corretora</p>
+                            <p className="font-semibold text-foreground">Autentika Corretora</p>
                         </div>
-                        <p className="mt-3 text-sm text-slate-400 max-w-sm">
-                            Soluções inteligentes de consórcio e proteção patrimonial — método, previsibilidade e disciplina.
+
+                        <p className="mt-3 max-w-sm text-sm text-muted-foreground">
+                            Soluções inteligentes de consórcio e proteção patrimonial — método, previsibilidade e
+                            disciplina.
                         </p>
 
                         {cnpj && (
-                            <p className="mt-3 inline-flex items-center gap-2 text-xs text-slate-500">
-                                <Building2 className="h-4 w-4 text-emerald-400" aria-hidden />
+                            <p className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground/80">
+                                <Building2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden/>
                                 CNPJ {cnpj}
                             </p>
                         )}
@@ -82,46 +102,69 @@ export function SiteFooter({
 
                     {/* Coluna 2: Navegação rápida */}
                     <nav aria-label="Navegação" className="grid content-start gap-2 text-sm">
-                        <p className="font-semibold text-white">Navegue</p>
-                        <Link className="text-slate-400 hover:text-white inline-flex items-center gap-1" href="#como-funciona">
-                            Como funciona <ArrowUpRight className="h-3.5 w-3.5" />
+                        <p className="font-semibold text-foreground">Navegue</p>
+
+                        <Link
+                            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                            href="#como-funciona"
+                        >
+                            Como funciona <ArrowUpRight className="h-3.5 w-3.5"/>
                         </Link>
-                        <Link className="text-slate-400 hover:text-white inline-flex items-center gap-1" href="#depoimentos">
-                            Depoimentos <ArrowUpRight className="h-3.5 w-3.5" />
+
+                        <Link
+                            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                            href="#depoimentos"
+                        >
+                            Depoimentos <ArrowUpRight className="h-3.5 w-3.5"/>
                         </Link>
-                        <Link className="text-slate-400 hover:text-white inline-flex items-center gap-1" href="#guia">
-                            Guia Estratégico <ArrowUpRight className="h-3.5 w-3.5" />
+
+                        <Link
+                            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                            href="#guia"
+                        >
+                            Guia Estratégico <ArrowUpRight className="h-3.5 w-3.5"/>
                         </Link>
-                        <Link className="text-slate-400 hover:text-white inline-flex items-center gap-1" href="#diagnostico">
-                            Diagnóstico <ArrowUpRight className="h-3.5 w-3.5" />
+
+                        <Link
+                            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                            href="#diagnostico"
+                        >
+                            Diagnóstico <ArrowUpRight className="h-3.5 w-3.5"/>
                         </Link>
                     </nav>
 
                     {/* Coluna 3: Cobertura / SEO Local */}
                     <div className="grid content-start gap-2 text-sm">
-                        <p className="font-semibold text-white">Atendimento</p>
-                        <p className="inline-flex items-center gap-2 text-slate-400">
-                            <MapPin className="h-4 w-4 text-emerald-400" aria-hidden />
+                        <p className="font-semibold text-foreground">Atendimento</p>
+                        <p className="inline-flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden/>
                             SP e RJ — capitais e cidades-chave
                         </p>
-                        <p className="text-slate-500 text-xs">
-                            São Paulo, Campinas, Ribeirão Preto, São José dos Campos, Rio de Janeiro, Niterói, Petrópolis, Juiz de Fora.
+                        <p className="text-xs text-muted-foreground/80">
+                            São Paulo, Campinas, Ribeirão Preto, São José dos Campos, Rio de Janeiro, Niterói,
+                            Petrópolis, Juiz de Fora.
                         </p>
                     </div>
 
                     {/* Coluna 4: Contato / CTAs */}
                     <div className="grid content-start gap-3">
-                        <p className="font-semibold text-white">Fale com a gente</p>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <p className="font-semibold text-foreground">Fale com a gente</p>
+
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                             <Button asChild className="bg-emerald-500 text-black hover:bg-emerald-400">
                                 <Link href={wa.toString()} target="_blank" rel="noopener noreferrer">
-                                    <MessageCircle className="mr-2 h-4 w-4" />
+                                    <MessageCircle className="mr-2 h-4 w-4"/>
                                     WhatsApp
                                 </Link>
                             </Button>
-                            <Button asChild variant="outline" className="border-white/20 text-slate-100 hover:bg-white/10">
+
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="border-border text-foreground hover:bg-muted"
+                            >
                                 <a href={`mailto:${email}`}>
-                                    <Mail className="mr-2 h-4 w-4" />
+                                    <Mail className="mr-2 h-4 w-4"/>
                                     {email}
                                 </a>
                             </Button>
@@ -132,9 +175,9 @@ export function SiteFooter({
                                 href={linkedinUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white"
+                                className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
                             >
-                                <Linkedin className="h-4 w-4" />
+                                <Linkedin className="h-4 w-4"/>
                                 LinkedIn
                             </Link>
                         )}
@@ -143,14 +186,15 @@ export function SiteFooter({
 
                 {/* Linha de compliance */}
                 <div className="mt-10 grid gap-6 md:grid-cols-2">
-                    <div className="text-sm text-slate-400">
-                        <p className="inline-flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4 text-emerald-400" aria-hidden />
+                    <div className="text-sm text-muted-foreground">
+                        <p className="inline-flex items-center gap-2 text-foreground">
+                            <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden/>
                             LGPD & Compliance
                         </p>
-                        <ul className="mt-2 space-y-1 text-xs text-slate-500">
+
+                        <ul className="mt-2 space-y-1 text-xs text-muted-foreground/80">
                             <li>
-                                <Link href="/privacidade" className="underline">
+                                <Link href="/privacidade" className="underline underline-offset-2">
                                     Política de Privacidade
                                 </Link>{" "}
                                 e registro de consentimento.
@@ -160,14 +204,18 @@ export function SiteFooter({
                         </ul>
                     </div>
 
-                    <p className="text-sm text-slate-400 md:text-right">
+                    <p className="text-sm text-muted-foreground md:text-right">
                         “O propósito da Autentika não é vender consórcio, é construir liberdade com método.”
                     </p>
                 </div>
 
-                {/* Copy final */}
-                <div className="mt-8 text-xs text-slate-500">
-                    © {new Date().getFullYear()} Autentika Corretora. Todos os direitos reservados.
+                {/* Copy final (evita mismatch na hidratação) */}
+                <div className="mt-8 text-xs text-muted-foreground/80">
+                    ©{" "}
+                    <span suppressHydrationWarning>
+            {new Date().getFullYear()}
+          </span>{" "}
+                    Autentika Corretora. Todos os direitos reservados.
                 </div>
             </Section>
         </footer>

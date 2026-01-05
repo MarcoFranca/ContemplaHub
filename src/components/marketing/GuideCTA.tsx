@@ -17,36 +17,88 @@ export function GuideCTA() {
         show: {
             opacity: 1,
             y: 0,
-            transition: { duration: reduce ? 0 : 0.55, ease: [0.16, 1, 0.3, 1], staggerChildren: reduce ? 0 : 0.08 },
+            transition: {
+                duration: reduce ? 0 : 0.55,
+                ease: [0.16, 1, 0.3, 1],
+                staggerChildren: reduce ? 0 : 0.08,
+            },
         },
     };
 
     const item: Variants = {
         hidden: { opacity: 0, y: 10 },
-        show: { opacity: 1, y: 0, transition: { duration: reduce ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] } },
+        show: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: reduce ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] },
+        },
     };
 
-    const wa = new URL(`https://wa.me/${process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999"}`);
-    wa.searchParams.set("text", "Olá! Quero receber o Guia Estratégico do Consórcio e tirar dúvidas sobre o meu plano.");
-    wa.searchParams.set("utm_source", "lp_home");
-    wa.searchParams.set("utm_medium", "cta_guide");
+    const waHref = (() => {
+        const wa = new URL(
+            `https://wa.me/${process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999"}`
+        );
+        wa.searchParams.set(
+            "text",
+            "Olá! Quero receber o Guia Estratégico do Consórcio e tirar dúvidas sobre o meu plano."
+        );
+        wa.searchParams.set("utm_source", "lp_home");
+        wa.searchParams.set("utm_medium", "cta_guide");
+        return wa.toString();
+    })();
 
     return (
-        <Section id="guia" aria-labelledby="guide-title" className="relative isolate py-28 md:py-32">
-            {/* FX elegante: mesh neutro + vinheta (sem listras/pontos) */}
-            {/* Fade superior para preparar o próximo divider */}
+        <Section
+            id="guia"
+            aria-labelledby="guide-title"
+            className="relative isolate py-28 md:py-32"
+        >
+            {/* Costura superior: LIGHT vs DARK */}
             <div
                 aria-hidden
-                className="absolute -top-16 left-0 right-0 h-16 -z-10 pointer-events-none"
+                className="absolute -top-16 left-0 right-0 h-16 -z-10 pointer-events-none dark:hidden"
                 style={{
-                    background: "linear-gradient(to bottom, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(0,0,0,1) 100%)",
+                    background:
+                        "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(15,23,42,0.06) 45%, rgba(15,23,42,0.10) 100%)",
                 }}
             />
-            <SectionFX preset="mesh" variant="neutral" showGrid={false} showLines={false} className="[--mesh-a:#0b1822] [--mesh-b:#101827]" />
             <div
                 aria-hidden
-                className="pointer-events-none absolute inset-0 -z-10"
-                style={{ background: "radial-gradient(120% 80% at 50% 40%, rgba(0,0,0,0.40) 0%, transparent 70%)" }}
+                className="absolute -top-16 left-0 right-0 h-16 -z-10 pointer-events-none hidden dark:block"
+                style={{
+                    background:
+                        "linear-gradient(to bottom, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(0,0,0,1) 100%)",
+                }}
+            />
+
+            {/* FX: no DARK mantém seu palco; no LIGHT usa mesh claro premium */}
+            <SectionFX
+                preset="mesh"
+                variant="neutral"
+                showGrid={false}
+                showLines={false}
+                className="
+          dark:[--mesh-a:#0b1822] dark:[--mesh-b:#101827]
+          [--mesh-a:#f7faf9] [--mesh-b:#eef6f2]
+        "
+            />
+
+            {/* Vinheta: LIGHT mais suave, DARK como estava */}
+            <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 -z-10 dark:hidden"
+                style={{
+                    background:
+                        "radial-gradient(120% 80% at 50% 40%, rgba(15,23,42,0.06) 0%, transparent 72%)",
+                }}
+            />
+            <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 -z-10 hidden dark:block"
+                style={{
+                    background:
+                        "radial-gradient(120% 80% at 50% 40%, rgba(0,0,0,0.40) 0%, transparent 70%)",
+                }}
             />
 
             {/* JSON-LD do material (CreativeWork) */}
@@ -58,7 +110,11 @@ export function GuideCTA() {
                         "@context": "https://schema.org",
                         "@type": "CreativeWork",
                         name: "Guia Estratégico do Consórcio",
-                        about: ["Consórcio Imobiliário", "Estratégias de lance", "Planejamento patrimonial"],
+                        about: [
+                            "Consórcio Imobiliário",
+                            "Estratégias de lance",
+                            "Planejamento patrimonial",
+                        ],
                         inLanguage: "pt-BR",
                         isAccessibleForFree: true,
                         publisher: { "@type": "Organization", name: "Autentika Seguros" },
@@ -73,22 +129,37 @@ export function GuideCTA() {
                 whileInView="show"
                 viewport={{ once: true, margin: "-100px" }}
             >
-                {/* Card com borda gradiente e “band” superior */}
-                <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.05] p-8 flex flex-col items-center justify-center text-center backdrop-blur-md md:p-10">
+                {/* Card: LIGHT tokenizado; DARK preserva o visual original */}
+                <div
+                    className="
+            relative overflow-hidden rounded-3xl p-8 md:p-10
+            flex flex-col items-center justify-center text-center
+            border border-border bg-card shadow-sm
+            dark:border-white/10 dark:bg-white/[0.05] dark:shadow-none
+            backdrop-blur-md
+          "
+                >
                     {/* band */}
                     <div
                         aria-hidden
                         className="pointer-events-none absolute inset-x-0 top-0 h-1"
-                        style={{ background: "linear-gradient(90deg, rgba(16,185,129,0.25), rgba(56,189,248,0.25), rgba(16,185,129,0.25))" }}
+                        style={{
+                            background:
+                                "linear-gradient(90deg, rgba(16,185,129,0.25), rgba(56,189,248,0.25), rgba(16,185,129,0.25))",
+                        }}
                     />
+
                     {/* borda gradiente sutil */}
                     <div
                         aria-hidden
                         className="pointer-events-none absolute inset-0 rounded-3xl"
                         style={{
-                            background: "linear-gradient(180deg, rgba(56,189,248,0.18), rgba(16,185,129,0.16))",
-                            mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                            WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                            background:
+                                "linear-gradient(180deg, rgba(56,189,248,0.18), rgba(16,185,129,0.16))",
+                            mask:
+                                "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                            WebkitMask:
+                                "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
                             WebkitMaskComposite: "xor",
                             maskComposite: "exclude",
                             padding: "1px",
@@ -97,74 +168,120 @@ export function GuideCTA() {
                     />
 
                     {/* ícone */}
-                    <motion.div variants={item} className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-400/20">
-                        <BookOpen className="h-6 w-6 text-emerald-300" />
+                    <motion.div
+                        variants={item}
+                        className="
+              mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl
+              bg-emerald-500/10 ring-1 ring-emerald-500/20
+            "
+                    >
+                        <BookOpen className="h-6 w-6 text-emerald-600 dark:text-emerald-300" />
                     </motion.div>
 
                     {/* título + subtítulo */}
-                    <motion.h3 id="guide-title" variants={item} className="mt-3 text-2xl font-semibold text-white md:text-3xl">
+                    <motion.h3
+                        id="guide-title"
+                        variants={item}
+                        className="mt-3 text-2xl font-semibold md:text-3xl text-foreground dark:text-white"
+                    >
                         Baixe o Guia Estratégico do Consórcio
                     </motion.h3>
-                    <motion.p variants={item} className="mt-2 text-slate-200/90 md:text-lg">
+                    <motion.p
+                        variants={item}
+                        className="mt-2 md:text-lg text-muted-foreground dark:text-slate-200/90"
+                    >
                         Entenda como transformar o consórcio em uma estratégia real de alavancagem patrimonial
                         previsível, segura e sem juros.
                     </motion.p>
 
-                    {/* bullets de valor (melhora skim-read) */}
+                    {/* bullets */}
                     <motion.ul
                         variants={item}
-                        className="mx-auto mt-5 grid max-w-2xl grid-cols-1 gap-4 text-left text-sm text-slate-300 sm:grid-cols-2"
+                        className="
+              mx-auto mt-5 grid max-w-2xl grid-cols-1 gap-4 text-left text-sm
+              text-muted-foreground dark:text-slate-300
+              sm:grid-cols-2
+            "
                     >
-                        <li className="inline-flex items-start gap-4">
-                            <CheckCircle2 className="mt-[2px] h-4 w-4 text-emerald-400" />
+                        <li className="inline-flex items-start gap-3">
+                            <CheckCircle2 className="mt-[2px] h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                             Diferença Consórcio x Financiamento
                         </li>
-                        <li className="inline-flex items-start gap-4">
-                            <CheckCircle2 className="mt-[2px] h-4 w-4 text-emerald-400" />
+                        <li className="inline-flex items-start gap-3">
+                            <CheckCircle2 className="mt-[2px] h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                             Estratégias de lance por perfil
                         </li>
-                        <li className="inline-flex items-start gap-4">
-                            <CheckCircle2 className="mt-[2px] h-4 w-4 text-emerald-400" />
+                        <li className="inline-flex items-start gap-3">
+                            <CheckCircle2 className="mt-[2px] h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                             Simulações e cenários práticos
                         </li>
-                        <li className="inline-flex items-start gap-4">
-                            <CheckCircle2 className="mt-[2px] h-4 w-4 text-emerald-400" />
+                        <li className="inline-flex items-start gap-3">
+                            <CheckCircle2 className="mt-[2px] h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                             Checklist LGPD e compliance
                         </li>
                     </motion.ul>
 
                     {/* CTAs */}
-                    <motion.div variants={item} className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                    <motion.div
+                        variants={item}
+                        className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row"
+                    >
                         <Button
                             size="lg"
                             onClick={() => router.push("/guia-consorcio")}
-                            className="bg-emerald-500 text-black hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+                            className="
+                bg-emerald-500 text-black hover:bg-emerald-400
+                focus-visible:ring-2 focus-visible:ring-emerald-400
+                focus-visible:ring-offset-2 focus-visible:ring-offset-background
+                dark:focus-visible:ring-offset-slate-900
+              "
                         >
                             <BookOpen className="mr-2 h-5 w-5" />
                             Baixar meu guia gratuito
                         </Button>
 
-                        <Button asChild size="lg" variant="outline" className="border-white/20 text-slate-100 hover:bg-white/10">
-                            <Link href={wa.toString()} target="_blank" rel="noopener noreferrer">
-                                <ShieldCheck className="mr-2 h-5 w-5" />
+                        <Button
+                            asChild
+                            size="lg"
+                            variant="outline"
+                            className="
+                border-border text-foreground hover:bg-muted
+                dark:border-white/20 dark:text-slate-100 dark:hover:bg-white/10
+              "
+                        >
+                            <Link href={waHref} target="_blank" rel="noopener noreferrer">
+                                <ShieldCheck className="mr-2 h-5 w-5 text-emerald-600 dark:text-current" />
                                 Falar com consultor
                             </Link>
                         </Button>
                     </motion.div>
 
                     {/* LGPD */}
-                    <motion.p variants={item} className="mx-auto mt-4 max-w-md text-xs leading-relaxed text-slate-500">
+                    <motion.p
+                        variants={item}
+                        className="mx-auto mt-4 max-w-md text-xs leading-relaxed text-muted-foreground dark:text-slate-500"
+                    >
                         Material gratuito e educativo. Envio apenas mediante consentimento (LGPD). Não contém promessas de
                         contemplação, apenas métodos, dados e exemplos reais.
                     </motion.p>
                 </div>
             </motion.div>
-            {/* Fade inferior para preparar o próximo divider */}
+
+            {/* Costura inferior: LIGHT vs DARK */}
             <div
                 aria-hidden
-                className="absolute -bottom-16 left-0 right-0 h-16 -z-10 pointer-events-none"
+                className="absolute -bottom-16 left-0 right-0 h-16 -z-10 pointer-events-none dark:hidden"
                 style={{
-                    background: "linear-gradient(to top, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(0,0,0,1) 100%)",
+                    background:
+                        "linear-gradient(to top, rgba(255,255,255,0) 0%, rgba(15,23,42,0.06) 45%, rgba(15,23,42,0.10) 100%)",
+                }}
+            />
+            <div
+                aria-hidden
+                className="absolute -bottom-16 left-0 right-0 h-16 -z-10 pointer-events-none hidden dark:block"
+                style={{
+                    background:
+                        "linear-gradient(to top, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(0,0,0,1) 100%)",
                 }}
             />
         </Section>

@@ -72,8 +72,14 @@ export default function ResetPasswordPage() {
     }
 
     return (
-        <main className="relative flex isolate items-center justify-center min-h-[100dvh] overflow-hidden bg-slate-950 text-slate-50">
-            <SectionFX variant="emerald" preset="mesh" beamsTilt={-12} />
+        <main
+            className="
+    flex isolate items-center justify-center relative min-h-[100dvh] overflow-hidden
+    bg-background text-foreground
+    dark:bg-slate-950 dark:text-slate-50
+  "
+        >
+            <SectionFX variant="emerald" preset="mesh" beamsTilt={-12}/>
             <Section className="relative flex min-h-[100svh] flex-col items-center justify-center px-4">
                 {/* Header */}
                 <motion.div

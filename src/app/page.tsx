@@ -11,7 +11,12 @@ import {SiteHeader} from "@/components/marketing/SiteHeader";
 
 export default function Page() {
     return (
-        <main className="overflow-hidden relative min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-50">
+        <main
+            className="
+        overflow-hidden relative min-h-[100dvh]
+        bg-background text-foreground
+        dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 dark:text-slate-50
+      ">
             <SiteHeader />
             <Hero />
             {/*<SectionDivider />*/}

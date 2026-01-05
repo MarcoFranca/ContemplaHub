@@ -56,26 +56,51 @@ const item: Variants = {
     },
 };
 
-/** Fundo super discreto para legibilidade: sem listras/pontos */
+/**
+ * Fundo discreto e legível:
+ * - Light: claro, premium, sem “sujar” o branco
+ * - Dark: mantém o look original (vinheta mais escura)
+ */
 function CleanBackdrop({ className }: { className?: string }) {
     return (
         <div aria-hidden className={cn("absolute inset-0 -z-10 isolate", className)}>
-            {/* gradiente vertical sutil */}
-            <div
-                className="absolute inset-0"
-                style={{
-                    background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.02) 100%)",
-                }}
-            />
-            {/* vinheta leve p/ reforçar contraste do miolo */}
-            <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                    background:
-                        "radial-gradient(120% 80% at 50% 40%, rgba(0,0,0,0.38) 0%, transparent 70%)",
-                }}
-            />
+            {/* LIGHT */}
+            <div className="absolute inset-0 dark:hidden">
+                {/* gradiente vertical suave (quase imperceptível) */}
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background:
+                            "linear-gradient(180deg, rgba(16,185,129,0.06) 0%, rgba(255,255,255,0.00) 45%, rgba(16,185,129,0.04) 100%)",
+                    }}
+                />
+                {/* vinheta CLARA (só para dar profundidade sem escurecer) */}
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        background:
+                            "radial-gradient(120% 80% at 50% 35%, rgba(15,23,42,0.06) 0%, transparent 70%)",
+                    }}
+                />
+            </div>
+
+            {/* DARK (mantém o comportamento anterior) */}
+            <div className="absolute inset-0 hidden dark:block">
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background:
+                            "linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.02) 100%)",
+                    }}
+                />
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        background:
+                            "radial-gradient(120% 80% at 50% 40%, rgba(0,0,0,0.38) 0%, transparent 70%)",
+                    }}
+                />
+            </div>
         </div>
     );
 }
@@ -99,7 +124,7 @@ export function WhyAutentika() {
                 <motion.h2
                     id="why-title"
                     variants={item}
-                    className="text-3xl font-semibold md:text-4xl text-white"
+                    className="text-3xl font-semibold md:text-4xl text-foreground dark:text-white"
                 >
                     Mais que consórcio, uma estratégia de vida
                 </motion.h2>
@@ -107,12 +132,12 @@ export function WhyAutentika() {
                 <motion.div
                     variants={item}
                     aria-hidden
-                    className="mx-auto mt-3 h-[2px] w-24 rounded-full bg-gradient-to-r from-emerald-400/60 via-teal-300/50 to-emerald-400/60"
+                    className="mx-auto mt-3 h-[2px] w-24 rounded-full bg-gradient-to-r from-emerald-500/50 via-teal-400/40 to-emerald-500/50 dark:from-emerald-400/60 dark:via-teal-300/50 dark:to-emerald-400/60"
                 />
 
                 <motion.p
                     variants={item}
-                    className="mt-4 text-slate-200/90 md:text-lg leading-relaxed"
+                    className="mt-4 md:text-lg leading-relaxed text-muted-foreground dark:text-slate-200/90"
                 >
                     Alavancagem patrimonial com método, previsibilidade e acompanhamento
                     humano.
@@ -133,17 +158,33 @@ export function WhyAutentika() {
                         key={p.title}
                         variants={item}
                         role="listitem"
-                        className="rounded-2xl border border-white/8 bg-white/[0.035] p-5 transition-all hover:-translate-y-1 hover:shadow-[0_10px_36px_rgba(16,185,129,0.10)] hover:border-emerald-400/25"
+                        className={cn(
+                            // BASE (LIGHT): card premium, sólido, bem legível
+                            "rounded-2xl border border-border bg-card p-5 shadow-sm transition-all",
+                            "hover:-translate-y-1 hover:shadow-[0_10px_36px_rgba(16,185,129,0.12)] hover:border-emerald-500/25",
+                            // DARK: mantém a estética original
+                            "dark:border-white/8 dark:bg-white/[0.035] dark:shadow-none dark:hover:border-emerald-400/25"
+                        )}
                     >
                         <div className="flex items-start gap-3">
-                            <div className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/12 ring-1 ring-emerald-400/20">
-                                <p.icon className="h-5 w-5 text-emerald-300" aria-hidden />
+                            <div
+                                className={cn(
+                                    "mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                                    "bg-emerald-500/10 ring-1 ring-emerald-500/20",
+                                    "dark:bg-emerald-500/12 dark:ring-emerald-400/20"
+                                )}
+                            >
+                                <p.icon
+                                    className="h-5 w-5 text-emerald-600 dark:text-emerald-300"
+                                    aria-hidden
+                                />
                             </div>
+
                             <div>
-                                <h3 className="text-base font-semibold text-white">
+                                <h3 className="text-base font-semibold text-foreground dark:text-white">
                                     {p.title}
                                 </h3>
-                                <p className="mt-1 text-sm leading-relaxed text-slate-300">
+                                <p className="mt-1 text-sm leading-relaxed text-muted-foreground dark:text-slate-300">
                                     {p.text}
                                 </p>
                             </div>
@@ -158,28 +199,30 @@ export function WhyAutentika() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, margin: "-60px" }}
-                className="mx-auto mt-12 max-w-4xl list-none space-y-3 text-sm text-slate-200"
+                className="mx-auto mt-12 max-w-4xl list-none space-y-3 text-sm text-foreground/90 dark:text-slate-200"
                 aria-label="Como funciona"
             >
                 <motion.li variants={item} className="flex items-start gap-3">
                     <CheckCircle2
-                        className="mt-0.5 h-5 w-5 text-emerald-400"
+                        className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400"
                         aria-hidden
                     />
                     1) Diagnóstico consultivo: objetivo, prazo, perfil e capacidade de
                     aporte.
                 </motion.li>
+
                 <motion.li variants={item} className="flex items-start gap-3">
                     <CheckCircle2
-                        className="mt-0.5 h-5 w-5 text-emerald-400"
+                        className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400"
                         aria-hidden
                     />
                     2) Definição de estratégia: tipo de lance, janelas de assembleia e
                     simulação de cenários.
                 </motion.li>
+
                 <motion.li variants={item} className="flex items-start gap-3">
                     <CheckCircle2
-                        className="mt-0.5 h-5 w-5 text-emerald-400"
+                        className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400"
                         aria-hidden
                     />
                     3) Acompanhamento até a contemplação: alertas, revisão e orientação no
@@ -193,7 +236,7 @@ export function WhyAutentika() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, margin: "-40px" }}
-                className="mx-auto mt-6 max-w-3xl text-center text-[12px] leading-relaxed text-slate-500"
+                className="mx-auto mt-6 max-w-3xl text-center text-[12px] leading-relaxed text-muted-foreground dark:text-slate-500"
             >
                 Estimativas de contemplação são projeções baseadas em histórico e
                 sazonalidade. Não há garantia de contemplação.

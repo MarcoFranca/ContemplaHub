@@ -176,7 +176,6 @@ export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
 
             {/* Valor da carta (ocupa as 2 colunas do mobile) */}
             <div className="grid gap-2 col-span-2 md:col-span-6 min-w-0">
-                <Label htmlFor="valor_carta_visual">Valor da carta (R$)</Label>
                 <div className="grid gap-2 col-span-2 md:col-span-6 min-w-0">
                     <Label htmlFor="valor_carta_visual">Valor da carta (R$)</Label>
                     <Input

@@ -21,9 +21,15 @@ export default function LoginPage() {
 
 
     return (
-        <main className="flex isolate items-center justify-center relative min-h-[100dvh] overflow-hidden text-slate-50 bg-slate-950">
+        <main
+            className="
+    flex isolate items-center justify-center relative min-h-[100dvh] overflow-hidden
+    bg-background text-foreground
+    dark:bg-slate-950 dark:text-slate-50
+  "
+        >
             {/* ✨ Fundo animado igual ao Hero */}
-            <SectionFX variant="emerald" preset="mesh" beamsTilt={-14} />
+            <SectionFX variant="emerald" preset="mesh" beamsTilt={-14}/>
 
             {/* Container centralizado */}
             <Section className="relative flex min-h-[100svh] flex-col items-center justify-center px-4">
