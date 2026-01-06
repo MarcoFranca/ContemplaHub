@@ -35,7 +35,7 @@ export function Hero() {
 
     return (
         <div className="relative isolate overflow-hidden">
-            {/* BG animado – funciona em light/dark */}
+            {/* BG animado */}
             <motion.div
                 aria-hidden
                 className={cn(
@@ -69,9 +69,19 @@ export function Hero() {
                 )}
             />
 
-            <Section className="relative min-h-[100svh] flex flex-col items-center justify-center pt-24 pb-28">
+            <Section
+                className={cn(
+                    "relative min-h-[100svh] flex flex-col items-center",
+                    // default (telas normais)
+                    "justify-center pt-24",
+                    // RESPIRO GARANTIDO p/ ScrollCue (altura dele + margem)
+                    "pb-[9.5rem]",
+                    // telas baixas (laptop): não centraliza, reduz espaçamentos e fonte
+                    "max-[820px]:justify-start max-[820px]:pt-20 max-[820px]:pb-[8.5rem]"
+                )}
+            >
                 <motion.div
-                    className="mx-auto max-w-3xl text-center"
+                    className="mx-auto w-full max-w-3xl text-center"
                     variants={container}
                     initial="hidden"
                     whileInView="show"
@@ -88,7 +98,7 @@ export function Hero() {
                     >
                         <span className="font-medium">Autentika Corretora</span>
                         <span aria-hidden>•</span>
-                        <span>Planeje hoje, conquiste sempre.</span>
+                        <span>Estratégia real, sem juros.</span>
                     </motion.div>
 
                     {/* Headline */}
@@ -96,10 +106,17 @@ export function Hero() {
                         variants={item}
                         className={cn(
                             "mt-6 text-balance font-bold tracking-tight text-foreground",
-                            "text-4xl md:text-5xl"
+                            "text-4xl md:text-5xl",
+                            // telas baixas: segura um pouco
+                            "max-[820px]:text-[2.25rem] max-[820px]:leading-[1.05]"
                         )}
                     >
-                        Já reparou como a vida anda… Mas a sua conquista sempre fica para depois?
+                        Pare de adiar a sua conquista.
+                        <br />
+                        <span className="text-emerald-500 dark:text-emerald-400">
+              Use consórcio como estratégia,
+            </span>{" "}
+                        não como esperança.
                     </motion.h1>
 
                     {/* Subheadline */}
@@ -107,22 +124,21 @@ export function Hero() {
                         variants={item}
                         className={cn(
                             "mt-4 text-balance text-lg md:text-xl",
-                            "text-muted-foreground dark:text-slate-300"
+                            "text-muted-foreground dark:text-slate-300",
+                            "max-[820px]:text-base"
                         )}
                     >
-                        Não é falta de vontade. É o aluguel subindo, é o banco te prendendo nos juros, é o
-                        “quando der eu resolvo” que te afasta do que é seu.
-                        <br className="hidden sm:block" />
-                        Mas quando você muda a estratégia, sua vida começa a avançar de verdade.
-                        <br />
-                        <br />
-                        Com método, zero juros e um plano claro, o consórcio coloca você de volta no caminho da
-                        casa própria — com segurança e previsibilidade.
+                        Enquanto o banco cobra juros e o aluguel sobe, você precisa de um plano.
+                        Aqui você recebe um <strong>diagnóstico consultivo</strong> para escolher o consórcio certo
+                        (imóvel ou auto) e executar com previsibilidade.
                     </motion.p>
 
                     {/* CTAs */}
-                    <motion.div variants={item} className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                        <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className="inline-flex">
+                    <motion.div
+                        variants={item}
+                        className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row max-[820px]:mt-6"
+                    >
+                        <motion.div whileHover={reduce ? {} : { y: -2 }} whileTap={reduce ? {} : { scale: 0.98 }} className="inline-flex">
                             <Button
                                 size="lg"
                                 onClick={() => router.push("#diagnostico")}
@@ -132,11 +148,11 @@ export function Hero() {
                                     "focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                                 )}
                             >
-                                Quero meu plano sem juros
+                                Quero meu diagnóstico agora
                             </Button>
                         </motion.div>
 
-                        <motion.div whileTap={{ scale: 0.98 }} className="inline-flex">
+                        <motion.div whileTap={reduce ? {} : { scale: 0.98 }} className="inline-flex">
                             <Button
                                 size="lg"
                                 variant="outline"
@@ -148,36 +164,38 @@ export function Hero() {
                                     "focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                                 )}
                             >
-                                Como funciona na prática?
+                                Ver como funciona (2 min)
                             </Button>
                         </motion.div>
                     </motion.div>
 
-                    {/* Prova social */}
-                    <motion.div
+                    {/* Observação curta */}
+                    <motion.p
                         variants={item}
-                        className={cn(
-                            "mt-6 flex flex-wrap items-center justify-center gap-3 text-xs",
-                            "text-muted-foreground dark:text-slate-400"
-                        )}
+                        className="mt-3 text-[12px] text-muted-foreground/80 dark:text-slate-500"
                     >
-                        <span>10 anos de experiência</span>
-                        <span aria-hidden className="hidden sm:inline">•</span>
-                        <span>Reconhecido pela Porto Seguro</span>
-                        <span aria-hidden className="hidden sm:inline">•</span>
-                        <span>Administradoras autorizadas pelo BACEN</span>
-                    </motion.div>
+                        Sem ligação indesejada. Você fala direto com um especialista pelo WhatsApp.
+                    </motion.p>
 
                     {/* Disclaimer */}
                     <motion.p
                         variants={item}
-                        className="mt-3 text-[11px] text-muted-foreground/80 dark:text-slate-500 text-center"
+                        className="mt-6 text-[11px] text-muted-foreground/70 dark:text-slate-500 text-center max-[820px]:mt-4"
                     >
-                        Estimativas de contemplação são projeções, sem garantia de resultados.
+                        Estimativas de contemplação são projeções baseadas em histórico e sazonalidade. Não há garantia de contemplação.
                     </motion.p>
                 </motion.div>
 
-                <ScrollCue targetId="como-funciona" />
+                {/* ScrollCue com margem maior e “blindagem” contra overlap */}
+                <ScrollCue
+                    targetId="como-funciona"
+                    className={cn(
+                        // sobe um pouco em relação ao padrão
+                        "bottom-6",
+                        // em telas baixas, sobe mais ainda
+                        "max-[820px]:bottom-4"
+                    )}
+                />
             </Section>
         </div>
     );
