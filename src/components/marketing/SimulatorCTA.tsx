@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Section } from "./Section";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
@@ -9,6 +10,7 @@ import { SectionFX } from "@/components/marketing/SectionFX";
 import { BokehOrbs } from "@/components/marketing/BokehOrbs";
 import { SweepHighlight } from "@/components/marketing/SweepHighlight";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export function SimulatorCTA() {
     const reduce = useReducedMotion();
@@ -36,11 +38,10 @@ export function SimulatorCTA() {
         },
     };
 
-    // WhatsApp com UTM + mensagem consultiva
-    const waHref = (() => {
-        const wa = new URL(
-            `https://wa.me/${process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999"}`
-        );
+    // WhatsApp com UTM + mensagem consultiva (determinístico)
+    const waHref = useMemo(() => {
+        const phone = process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999";
+        const wa = new URL(`https://wa.me/${phone}`);
         wa.searchParams.set(
             "text",
             "Olá! Quero simular meu consórcio (imobiliário/auto) e entender a melhor estratégia de lance."
@@ -48,15 +49,15 @@ export function SimulatorCTA() {
         wa.searchParams.set("utm_source", "lp_home");
         wa.searchParams.set("utm_medium", "cta_simulador");
         return wa.toString();
-    })();
+    }, []);
 
     return (
         <Section
             id="simular"
             aria-labelledby="simulador-title"
-            className="relative isolate py-28 md:py-32 z-10"
+            className="relative isolate z-10 py-28 md:py-32"
         >
-            {/* Fundo mesh + vinhetas (mantém o dark do jeito que estava; light fica neutro e legível) */}
+            {/* Fundo mesh + vinhetas (dark como estava; light neutro) */}
             <SectionFX
                 preset="mesh"
                 variant="neutral"
@@ -65,10 +66,10 @@ export function SimulatorCTA() {
                 className="dark:[--mesh-a:#0a1822] dark:[--mesh-b:#0d1e2b]"
             />
 
-            {/* Fades/Overlays escuros: SOMENTE no dark (no light isso “suja” o branco) */}
+            {/* overlays escuros só no dark */}
             <div
                 aria-hidden
-                className="absolute -top-16 left-0 right-0 h-16 z-10 pointer-events-none hidden dark:block"
+                className="pointer-events-none absolute -top-16 left-0 right-0 z-10 hidden h-16 dark:block"
                 style={{
                     background:
                         "linear-gradient(to bottom, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(0,0,0,1) 100%)",
@@ -96,13 +97,12 @@ export function SimulatorCTA() {
                 className="relative mx-auto max-w-5xl"
             >
                 <div
-                    className="
-            relative rounded-3xl p-8 md:p-10 backdrop-blur-md
-            border border-border bg-background
-            shadow-lg
-            dark:border-white/10 dark:bg-white/[0.06]
-            dark:shadow-[0_0_60px_rgba(16,185,129,0.06)]
-          "
+                    className={cn(
+                        "relative rounded-3xl p-8 backdrop-blur-md md:p-10",
+                        "border border-border bg-background shadow-lg",
+                        "dark:border-white/10 dark:bg-white/[0.06]",
+                        "dark:shadow-[0_0_60px_rgba(16,185,129,0.06)]"
+                    )}
                 >
                     <motion.div variants={item} className="text-center md:text-left">
                         <h3
@@ -129,12 +129,12 @@ export function SimulatorCTA() {
                             <Button
                                 size="lg"
                                 onClick={() => router.push("#diagnostico")}
-                                className="
-                  bg-emerald-500 text-black hover:bg-emerald-400
-                  focus-visible:ring-2 focus-visible:ring-emerald-400
-                  focus-visible:ring-offset-2 focus-visible:ring-offset-background
-                  dark:focus-visible:ring-offset-slate-900
-                "
+                                className={cn(
+                                    "bg-emerald-500 text-black hover:bg-emerald-400",
+                                    "focus-visible:ring-2 focus-visible:ring-emerald-400",
+                                    "focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                                    "dark:focus-visible:ring-offset-slate-900"
+                                )}
                             >
                                 <Home className="mr-2 h-5 w-5" />
                                 Imobiliário
@@ -149,13 +149,13 @@ export function SimulatorCTA() {
                                 size="lg"
                                 variant="outline"
                                 onClick={() => router.push("#diagnostico")}
-                                className="
-                  border-border text-foreground hover:bg-muted
-                  focus-visible:ring-2 focus-visible:ring-emerald-400
-                  focus-visible:ring-offset-2 focus-visible:ring-offset-background
-                  dark:border-white/25 dark:text-slate-100 dark:hover:bg-white/10
-                  dark:focus-visible:ring-offset-slate-900
-                "
+                                className={cn(
+                                    "border-border text-foreground hover:bg-muted",
+                                    "focus-visible:ring-2 focus-visible:ring-emerald-400",
+                                    "focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                                    "dark:border-white/25 dark:text-slate-100 dark:hover:bg-white/10",
+                                    "dark:focus-visible:ring-offset-slate-900"
+                                )}
                             >
                                 <Car className="mr-2 h-5 w-5" />
                                 Automóvel
@@ -170,12 +170,10 @@ export function SimulatorCTA() {
                                 asChild
                                 size="lg"
                                 variant="secondary"
-                                className="
-                  bg-muted text-foreground border border-border
-                  hover:bg-muted/80
-                  dark:bg-white/10 dark:hover:bg-white/15
-                  dark:text-white dark:border-white/15
-                "
+                                className={cn(
+                                    "border border-border bg-muted text-foreground hover:bg-muted/80",
+                                    "dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+                                )}
                             >
                                 <Link href={waHref} target="_blank" rel="noopener noreferrer">
                                     <MessageCircle className="mr-2 h-5 w-5" />
@@ -185,17 +183,17 @@ export function SimulatorCTA() {
                         </div>
 
                         <p className="mt-4 text-center text-xs text-muted-foreground md:text-left dark:text-slate-500">
-                            Administradoras autorizadas pelo Banco Central. Sem promessas de
-                            contemplação. LGPD e transparência em todas as etapas.
+                            Administradoras autorizadas pelo Banco Central. Sem promessas de contemplação.
+                            LGPD e transparência em todas as etapas.
                         </p>
                     </motion.div>
                 </div>
             </motion.div>
 
-            {/* Fade inferior: SOMENTE no dark */}
+            {/* Fade inferior: só no dark */}
             <div
                 aria-hidden
-                className="absolute -bottom-16 left-0 right-0 h-16 -z-10 pointer-events-none hidden dark:block"
+                className="pointer-events-none absolute -bottom-16 left-0 right-0 -z-10 hidden h-16 dark:block"
                 style={{
                     background:
                         "linear-gradient(to top, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(0,0,0,1) 100%)",

@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Section } from "./Section";
 import { BookOpen, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { SectionFX } from "@/components/marketing/SectionFX";
+import { cn } from "@/lib/utils";
 
 export function GuideCTA() {
     const router = useRouter();
@@ -34,10 +36,9 @@ export function GuideCTA() {
         },
     };
 
-    const waHref = (() => {
-        const wa = new URL(
-            `https://wa.me/${process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999"}`
-        );
+    const waHref = useMemo(() => {
+        const phone = process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999";
+        const wa = new URL(`https://wa.me/${phone}`);
         wa.searchParams.set(
             "text",
             "Olá! Quero receber o Guia Estratégico do Consórcio e tirar dúvidas sobre o meu plano."
@@ -45,18 +46,14 @@ export function GuideCTA() {
         wa.searchParams.set("utm_source", "lp_home");
         wa.searchParams.set("utm_medium", "cta_guide");
         return wa.toString();
-    })();
+    }, []);
 
     return (
-        <Section
-            id="guia"
-            aria-labelledby="guide-title"
-            className="relative isolate py-28 md:py-32"
-        >
+        <Section id="guia" aria-labelledby="guide-title" className="relative isolate py-28 md:py-32">
             {/* Costura superior: LIGHT vs DARK */}
             <div
                 aria-hidden
-                className="absolute -top-16 left-0 right-0 h-16 -z-10 pointer-events-none dark:hidden"
+                className="pointer-events-none absolute -top-16 left-0 right-0 -z-10 h-16 dark:hidden"
                 style={{
                     background:
                         "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(15,23,42,0.06) 45%, rgba(15,23,42,0.10) 100%)",
@@ -64,26 +61,26 @@ export function GuideCTA() {
             />
             <div
                 aria-hidden
-                className="absolute -top-16 left-0 right-0 h-16 -z-10 pointer-events-none hidden dark:block"
+                className="pointer-events-none absolute -top-16 left-0 right-0 -z-10 hidden h-16 dark:block"
                 style={{
                     background:
                         "linear-gradient(to bottom, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(0,0,0,1) 100%)",
                 }}
             />
 
-            {/* FX: no DARK mantém seu palco; no LIGHT usa mesh claro premium */}
+            {/* FX */}
             <SectionFX
                 preset="mesh"
                 variant="neutral"
                 showGrid={false}
                 showLines={false}
-                className="
-          dark:[--mesh-a:#0b1822] dark:[--mesh-b:#101827]
-          [--mesh-a:#f7faf9] [--mesh-b:#eef6f2]
-        "
+                className={cn(
+                    "dark:[--mesh-a:#0b1822] dark:[--mesh-b:#101827]",
+                    "[--mesh-a:#f7faf9] [--mesh-b:#eef6f2]"
+                )}
             />
 
-            {/* Vinheta: LIGHT mais suave, DARK como estava */}
+            {/* Vinheta */}
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0 -z-10 dark:hidden"
@@ -101,7 +98,7 @@ export function GuideCTA() {
                 }}
             />
 
-            {/* JSON-LD do material (CreativeWork) */}
+            {/* JSON-LD */}
             <script
                 type="application/ld+json"
                 suppressHydrationWarning
@@ -129,15 +126,13 @@ export function GuideCTA() {
                 whileInView="show"
                 viewport={{ once: true, margin: "-100px" }}
             >
-                {/* Card: LIGHT tokenizado; DARK preserva o visual original */}
                 <div
-                    className="
-            relative overflow-hidden rounded-3xl p-8 md:p-10
-            flex flex-col items-center justify-center text-center
-            border border-border bg-card shadow-sm
-            dark:border-white/10 dark:bg-white/[0.05] dark:shadow-none
-            backdrop-blur-md
-          "
+                    className={cn(
+                        "relative overflow-hidden rounded-3xl p-8 md:p-10",
+                        "flex flex-col items-center justify-center text-center",
+                        "border border-border bg-card shadow-sm backdrop-blur-md",
+                        "dark:border-white/10 dark:bg-white/[0.05] dark:shadow-none"
+                    )}
                 >
                     {/* band */}
                     <div
@@ -149,17 +144,14 @@ export function GuideCTA() {
                         }}
                     />
 
-                    {/* borda gradiente sutil */}
+                    {/* borda gradiente */}
                     <div
                         aria-hidden
                         className="pointer-events-none absolute inset-0 rounded-3xl"
                         style={{
-                            background:
-                                "linear-gradient(180deg, rgba(56,189,248,0.18), rgba(16,185,129,0.16))",
-                            mask:
-                                "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                            WebkitMask:
-                                "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                            background: "linear-gradient(180deg, rgba(56,189,248,0.18), rgba(16,185,129,0.16))",
+                            mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                            WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
                             WebkitMaskComposite: "xor",
                             maskComposite: "exclude",
                             padding: "1px",
@@ -170,10 +162,10 @@ export function GuideCTA() {
                     {/* ícone */}
                     <motion.div
                         variants={item}
-                        className="
-              mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl
-              bg-emerald-500/10 ring-1 ring-emerald-500/20
-            "
+                        className={cn(
+                            "mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl",
+                            "bg-emerald-500/10 ring-1 ring-emerald-500/20"
+                        )}
                     >
                         <BookOpen className="h-6 w-6 text-emerald-600 dark:text-emerald-300" />
                     </motion.div>
@@ -182,14 +174,12 @@ export function GuideCTA() {
                     <motion.h3
                         id="guide-title"
                         variants={item}
-                        className="mt-3 text-2xl font-semibold md:text-3xl text-foreground dark:text-white"
+                        className="mt-3 text-2xl font-semibold text-foreground md:text-3xl dark:text-white"
                     >
                         Baixe o Guia Estratégico do Consórcio
                     </motion.h3>
-                    <motion.p
-                        variants={item}
-                        className="mt-2 md:text-lg text-muted-foreground dark:text-slate-200/90"
-                    >
+
+                    <motion.p variants={item} className="mt-2 text-muted-foreground md:text-lg dark:text-slate-200/90">
                         Entenda como transformar o consórcio em uma estratégia real de alavancagem patrimonial
                         previsível, segura e sem juros.
                     </motion.p>
@@ -197,11 +187,10 @@ export function GuideCTA() {
                     {/* bullets */}
                     <motion.ul
                         variants={item}
-                        className="
-              mx-auto mt-5 grid max-w-2xl grid-cols-1 gap-4 text-left text-sm
-              text-muted-foreground dark:text-slate-300
-              sm:grid-cols-2
-            "
+                        className={cn(
+                            "mx-auto mt-5 grid max-w-2xl grid-cols-1 gap-4 text-left text-sm sm:grid-cols-2",
+                            "text-muted-foreground dark:text-slate-300"
+                        )}
                     >
                         <li className="inline-flex items-start gap-3">
                             <CheckCircle2 className="mt-[2px] h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -222,19 +211,16 @@ export function GuideCTA() {
                     </motion.ul>
 
                     {/* CTAs */}
-                    <motion.div
-                        variants={item}
-                        className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row"
-                    >
+                    <motion.div variants={item} className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
                         <Button
                             size="lg"
                             onClick={() => router.push("/guia-consorcio")}
-                            className="
-                bg-emerald-500 text-black hover:bg-emerald-400
-                focus-visible:ring-2 focus-visible:ring-emerald-400
-                focus-visible:ring-offset-2 focus-visible:ring-offset-background
-                dark:focus-visible:ring-offset-slate-900
-              "
+                            className={cn(
+                                "bg-emerald-500 text-black hover:bg-emerald-400",
+                                "focus-visible:ring-2 focus-visible:ring-emerald-400",
+                                "focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                                "dark:focus-visible:ring-offset-slate-900"
+                            )}
                         >
                             <BookOpen className="mr-2 h-5 w-5" />
                             Baixar meu guia gratuito
@@ -244,10 +230,10 @@ export function GuideCTA() {
                             asChild
                             size="lg"
                             variant="outline"
-                            className="
-                border-border text-foreground hover:bg-muted
-                dark:border-white/20 dark:text-slate-100 dark:hover:bg-white/10
-              "
+                            className={cn(
+                                "border-border text-foreground hover:bg-muted",
+                                "dark:border-white/20 dark:text-slate-100 dark:hover:bg-white/10"
+                            )}
                         >
                             <Link href={waHref} target="_blank" rel="noopener noreferrer">
                                 <ShieldCheck className="mr-2 h-5 w-5 text-emerald-600 dark:text-current" />
@@ -267,10 +253,10 @@ export function GuideCTA() {
                 </div>
             </motion.div>
 
-            {/* Costura inferior: LIGHT vs DARK */}
+            {/* Costura inferior */}
             <div
                 aria-hidden
-                className="absolute -bottom-16 left-0 right-0 h-16 -z-10 pointer-events-none dark:hidden"
+                className="pointer-events-none absolute -bottom-16 left-0 right-0 -z-10 h-16 dark:hidden"
                 style={{
                     background:
                         "linear-gradient(to top, rgba(255,255,255,0) 0%, rgba(15,23,42,0.06) 45%, rgba(15,23,42,0.10) 100%)",
@@ -278,7 +264,7 @@ export function GuideCTA() {
             />
             <div
                 aria-hidden
-                className="absolute -bottom-16 left-0 right-0 h-16 -z-10 pointer-events-none hidden dark:block"
+                className="pointer-events-none absolute -bottom-16 left-0 right-0 -z-10 hidden h-16 dark:block"
                 style={{
                     background:
                         "linear-gradient(to top, rgba(2,6,23,0) 0%, rgba(2,6,23,0.35) 40%, rgba(0,0,0,1) 100%)",
