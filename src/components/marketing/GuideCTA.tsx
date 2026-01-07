@@ -214,7 +214,7 @@ export function GuideCTA() {
                     <motion.div variants={item} className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
                         <Button
                             size="lg"
-                            onClick={() => router.push("/guia-consorcio")}
+                            onClick={() => router.push("/guia-consorcio?lp=autentika")}
                             className={cn(
                                 "bg-emerald-500 text-black hover:bg-emerald-400",
                                 "focus-visible:ring-2 focus-visible:ring-emerald-400",
