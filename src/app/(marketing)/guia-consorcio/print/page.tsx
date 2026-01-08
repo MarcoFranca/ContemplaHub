@@ -27,84 +27,32 @@ export default function GuiaPrintPage({ searchParams }: { searchParams: SP }) {
             <title>Guia Estratégico do Consórcio Imobiliário</title>
 
             <style>{`
-          /* Página */
           @page { size: A4; margin: 14mm 14mm 22mm 14mm; }
           html, body { background:#fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           * { box-sizing: border-box; }
 
-          /* Tipografia e ritmo */
-          :root{
-            --h1: 34px;
-            --h2: 22px;
-            --p: 13.5px;
-            --lh: 1.6;
-          }
-          body{ color:#0f172a; }
-          h1{ font-size: var(--h1); line-height: 1.12; margin:0; letter-spacing:-0.02em; }
-          h2{ font-size: var(--h2); line-height: 1.2; margin:0; letter-spacing:-0.01em; }
-          p{ font-size: var(--p); line-height: var(--lh); margin:0; }
-          .small{ font-size: 12px; line-height: 1.5; }
-          .muted{ color:#475569; }
-           /* Limita largura do conteúdo para não ficar chapado */
-           .container {
-            max-width: 170mm; /* A4 útil ~182mm (com margens). 170mm dá respiro lateral. */
-            margin: 0 auto;
-           }
+          .content { padding-bottom: 18mm; }
 
-           /* Ajuste opcional para títulos não grudarem no topo */
-           .section-top {
-            margin-top: 6mm;
-           }
+          /* ✅ margem visual interna (resolve “colado na folha”) */
+          .page { padding: 10mm 8mm 0 8mm; }
+          .container { max-width: 170mm; margin: 0 auto; }
+          .section-top { margin-top: 6mm; }
           .stack-12 > * + *{ margin-top: 12px; }
           .stack-16 > * + *{ margin-top: 16px; }
-          .section{ margin-top: 16px; }
-
-          /* Layout / impressão */
-          .content { padding-bottom: 18mm; }
-          .page {
-            /* “margem visual” interna: dá respiro sem mudar a margem física do PDF */
-             padding: 10mm 8mm 0 8mm;
-            }
           .page-break { break-before: page; page-break-before: always; }
           .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+          .muted { color: #475569; }
+          .small { font-size: 12px; line-height: 1.45; }
 
-          /* Componentes */
-          .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; font-size:12px; }
+          .foot { position: fixed; bottom: 8mm; left: 14mm; right: 14mm; font-size: 10px; color: #64748b; }
+
+          .toc li { display: flex; gap: 10px; align-items: baseline; }
           .dots { flex: 1; border-bottom: 1px dotted #cbd5e1; transform: translateY(-2px); }
-          .toc li { display:flex; gap:10px; align-items:baseline; }
-
-          /* Tabela */
-          .tbl { width:100%; border-collapse:collapse; font-size: 12.5px; }
+          .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; font-size:12px; }
+          .tbl { width:100%; border-collapse:collapse; }
           .tbl th, .tbl td { border:1px solid #e2e8f0; padding:10px; vertical-align:top; }
-          .tbl th { background:#f1f5f9; text-align:left; font-weight:600; color:#0f172a; }
+          .tbl th { background:#f1f5f9; text-align:left; font-weight:600; }
 
-          /* Rodapé */
-          .foot {
-            position: fixed;
-            bottom: 8mm;
-            left: 14mm;
-            right: 14mm;
-            font-size: 10px;
-            color: #64748b;
-          }
-
-          /* Watermark (fixo) */
-          .wm {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            opacity: 0.06;
-            display: grid;
-            place-items: center;
-            transform: rotate(-24deg);
-            font-size: 34px;
-            color: #0f172a;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            white-space: pre-wrap;
-          }
-
-          /* Barra de marca */
           .brandbar{
             height: 6px;
             border-radius: 999px;
@@ -114,22 +62,19 @@ export default function GuiaPrintPage({ searchParams }: { searchParams: SP }) {
         </head>
 
         <body className={cn("text-slate-900")}>
-
-
-        {/* Rodapé fixo */}
+        {/* Footer fixo */}
         <div className="foot">
             <div className="flex w-full items-center justify-between">
             <span>
-              {org} • Guia Estratégico do Consórcio Imobiliário • Gerado em {data}
+              {org} • Guia Estratégico do Consórcio Imobiliário • Uso exclusivo de {nome} • Gerado em {data}
             </span>
                 <span className="font-mono">{doc ? `DOC ${doc}` : ""}</span>
             </div>
         </div>
 
-        {/* Conteúdo com padding para não encostar no rodapé */}
+        {/* ✅ Conteúdo com “margem visual” e container */}
         <div className="content page">
             <div className="container">
-
                 {/* CAPA */}
                 <section className="avoid-break">
                     <div
@@ -139,78 +84,68 @@ export default function GuiaPrintPage({ searchParams }: { searchParams: SP }) {
                                 "linear-gradient(135deg, rgba(16,185,129,0.10) 0%, rgba(14,165,233,0.10) 55%, rgba(16,185,129,0.07) 100%)",
                         }}
                     >
-                        <div className="brandbar"/>
-
+                        <div className="brandbar" />
                         <div className="mt-5 pill border border-emerald-200 bg-emerald-50 text-emerald-900">
-                <span
-                    style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 999,
-                        background: "#10b981",
-                        display: "inline-block",
-                    }}
-                />
+                            <span style={{ width: 8, height: 8, borderRadius: 999, background: "#10b981", display: "inline-block" }} />
                             Guia gratuito • Imóveis • Sem juros
                         </div>
 
-                        <div className="mt-6 stack-12">
-                            <h1>Guia Estratégico do Consórcio Imobiliário</h1>
-                            <p className="text-slate-700">
-                                Como usar consórcio como estratégia de aquisição e alavancagem patrimonial com
-                                previsibilidade,
-                                disciplina financeira e compliance.
+                        <h1 className="mt-6 text-4xl font-semibold tracking-tight">
+                            Guia Estratégico do Consórcio Imobiliário
+                        </h1>
+
+                        <p className="mt-3 text-lg text-slate-700">
+                            Como usar consórcio como estratégia de aquisição e alavancagem patrimonial com previsibilidade,
+                            disciplina financeira e compliance.
+                        </p>
+
+                        <div className="mt-7 rounded-2xl border border-slate-200 bg-white p-5">
+                            <div className="text-sm font-semibold text-slate-900">Personalizado para</div>
+                            <div className="mt-1 text-2xl font-semibold">{nome}</div>
+                            <p className="mt-2 small muted">
+                                Material educativo. Não há promessa de contemplação. Contemplação depende de sorteio, lances,
+                                regras da administradora e dinâmica do grupo.
                             </p>
+                        </div>
 
-                            <div className="rounded-2xl border border-slate-200 bg-white p-5 avoid-break">
-                                <div className="text-sm font-semibold text-slate-900">Personalizado para</div>
-                                <div className="mt-1 text-2xl font-semibold">{nome}</div>
-                                <p className="mt-2 small muted">
-                                    Material educativo. Não há promessa de contemplação. Contemplação depende de
-                                    sorteio, lances,
-                                    regras da administradora e dinâmica do grupo.
-                                </p>
+                        <div className="mt-7 grid grid-cols-3 gap-3">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 avoid-break">
+                                <div className="text-sm font-semibold">1) Entender</div>
+                                <p className="mt-1 small muted">Consórcio x financiamento, custos e quando faz sentido.</p>
                             </div>
-
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="rounded-2xl border border-slate-200 bg-white p-4 avoid-break">
-                                    <div className="text-sm font-semibold">1) Entender</div>
-                                    <p className="mt-1 small muted">Consórcio x financiamento, custos e quando faz
-                                        sentido.</p>
-                                </div>
-                                <div className="rounded-2xl border border-slate-200 bg-white p-4 avoid-break">
-                                    <div className="text-sm font-semibold">2) Estruturar</div>
-                                    <p className="mt-1 small muted">Estratégia por perfil e janela de assembleia.</p>
-                                </div>
-                                <div className="rounded-2xl border border-slate-200 bg-white p-4 avoid-break">
-                                    <div className="text-sm font-semibold">3) Executar</div>
-                                    <p className="mt-1 small muted">Próximos passos e checklist de
-                                        documentação/compliance.</p>
-                                </div>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 avoid-break">
+                                <div className="text-sm font-semibold">2) Estruturar</div>
+                                <p className="mt-1 small muted">Estratégia por perfil e janela de assembleia.</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 avoid-break">
+                                <div className="text-sm font-semibold">3) Executar</div>
+                                <p className="mt-1 small muted">Próximos passos e checklist de documentação/compliance.</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* SUMÁRIO + RESUMO (2 colunas para ocupar melhor o espaço) */}
-                <section className="page-break">
-                    <div className="brandbar"/>
+                {/* (o restante do seu conteúdo permanece igual) */}
+                {/* SUMÁRIO */}
+                <section className="page-break section-top">
+                    <div className="brandbar" />
+                    <h2 className="mt-5 text-2xl font-semibold">Sumário</h2>
+
                     <div className="mt-5 grid grid-cols-[1.25fr_0.95fr] gap-6">
-                        <div className="avoid-break">
-                            <h2>Sumário</h2>
-                            <ol className="mt-4 space-y-2 toc">
+                        <div>
+                            <ol className="space-y-2 toc">
                                 {[
                                     ["Consórcio x Financiamento (decisão correta)", "2"],
                                     ["Como funciona a contemplação (sorteio e lance)", "3"],
                                     ["Estratégias de lance por perfil (sem promessa)", "5"],
                                     ["Cenários práticos (simples e realistas)", "7"],
                                     ["Regras e restrições de crédito (imóveis)", "9"],
-                                    ["Checklist de LGPD e compliance comercial", "10"],
+                                    ["Checklist LGPD e compliance comercial", "10"],
                                     ["Próximos passos para o seu caso", "11"],
                                 ].map(([t, p]) => (
                                     <li key={t}>
                                         <span className="text-slate-800">{t}</span>
-                                        <span className="dots"/>
+                                        <span className="dots" />
                                         <span className="text-slate-600">{p}</span>
                                     </li>
                                 ))}
@@ -221,8 +156,7 @@ export default function GuiaPrintPage({ searchParams }: { searchParams: SP }) {
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 avoid-break">
                                 <div className="text-sm font-semibold">Nota importante</div>
                                 <p className="mt-2 small muted">
-                                    Este report é personalizado com as informações básicas do cadastro inicial. No
-                                    diagnóstico, refinamos
+                                    Este report é personalizado com as informações básicas do cadastro inicial. No diagnóstico, refinamos
                                     carta, prazo e estratégia com previsões responsáveis (sem promessas).
                                 </p>
                             </div>
@@ -239,8 +173,7 @@ export default function GuiaPrintPage({ searchParams }: { searchParams: SP }) {
                             <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5 avoid-break">
                                 <div className="text-sm font-semibold text-sky-950">Resumo executivo</div>
                                 <p className="mt-2 small text-sky-950">
-                                    Consórcio é planejamento com menor custo total (sem juros), porém depende de
-                                    contemplação.
+                                    Consórcio é planejamento com menor custo total (sem juros), porém depende de contemplação.
                                     A estratégia vencedora é disciplina + reserva + decisões responsáveis.
                                 </p>
                             </div>
