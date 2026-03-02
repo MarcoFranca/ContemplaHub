@@ -96,223 +96,225 @@ export default async function LandingPagesPage() {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
     return (
-        <main className="p-6 space-y-6">
-            {/* dispara toasts com base no query param ?toast=... */}
-            <ToastAnnouncer />
+        <div className="h-full overflow-y-auto">
+            <main className="p-6 space-y-6">
+                {/* dispara toasts com base no query param ?toast=... */}
+                <ToastAnnouncer />
 
-            <div className="flex items-center gap-2">
-                <Globe2 className="h-5 w-5 text-emerald-400" />
-                <h1 className="text-2xl font-semibold">Landing Pages</h1>
-            </div>
+                <div className="flex items-center gap-2">
+                    <Globe2 className="h-5 w-5 text-emerald-400" />
+                    <h1 className="text-2xl font-semibold">Landing Pages</h1>
+                </div>
 
-            {/* Criar nova LP */}
-            {me.isManager && (
-                <Card className="bg-white/5 border-white/10">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Criar nova Landing Page</CardTitle>
-                        <Plus className="h-4 w-4 text-emerald-400" />
-                    </CardHeader>
-                    <CardContent>
-                        <form
-                            action={actionCreate}
-                            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                        >
-                            <div className="space-y-2">
-                                <Label>Slug (opcional, SEO)</Label>
-                                <Input name="slug" placeholder="ex.: consorcio-imobiliario-sp" />
-                                <p className="text-xs text-muted-foreground">
-                                    Se deixar vazio, use apenas o link com <code>?h=HASH</code>.
-                                </p>
-                            </div>
+                {/* Criar nova LP */}
+                {me.isManager && (
+                    <Card className="bg-white/5 border-white/10">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>Criar nova Landing Page</CardTitle>
+                            <Plus className="h-4 w-4 text-emerald-400" />
+                        </CardHeader>
+                        <CardContent>
+                            <form
+                                action={actionCreate}
+                                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                            >
+                                <div className="space-y-2">
+                                    <Label>Slug (opcional, SEO)</Label>
+                                    <Input name="slug" placeholder="ex.: consorcio-imobiliario-sp" />
+                                    <p className="text-xs text-muted-foreground">
+                                        Se deixar vazio, use apenas o link com <code>?h=HASH</code>.
+                                    </p>
+                                </div>
 
-                            <div className="space-y-2">
-                                <Label>Ativa</Label>
-                                <div className="flex items-center gap-2">
-                                    <Switch name="active" defaultChecked />
-                                    <span className="text-sm text-muted-foreground">
+                                <div className="space-y-2">
+                                    <Label>Ativa</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Switch name="active" defaultChecked />
+                                        <span className="text-sm text-muted-foreground">
                     Receber leads desta LP
                   </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="space-y-2 md:col-span-1">
-                                <Label>Allowed Domains</Label>
-                                <Textarea
-                                    name="allowed_domains"
-                                    placeholder={`ex.:
+                                <div className="space-y-2 md:col-span-1">
+                                    <Label>Allowed Domains</Label>
+                                    <Textarea
+                                        name="allowed_domains"
+                                        placeholder={`ex.:
 autentika.com.br
 meu-wordpress.com
 minha-lp.vercel.app`}
-                                    className="h-28"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Um por linha (ou separado por vírgula). Verificado em{" "}
-                                    <code>Origin/Referer</code>.
-                                </p>
-                            </div>
+                                        className="h-28"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Um por linha (ou separado por vírgula). Verificado em{" "}
+                                        <code>Origin/Referer</code>.
+                                    </p>
+                                </div>
 
-                            <div className="space-y-2 md:col-span-1">
-                                <Label>UTM Defaults (JSON opcional)</Label>
-                                <Textarea
-                                    name="utm_defaults"
-                                    placeholder='ex.: {"utm_source":"google","utm_medium":"cpc"}'
-                                    className="h-28 font-mono text-xs"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Preenchidos quando a LP externa não enviar UTMs.
-                                </p>
-                            </div>
+                                <div className="space-y-2 md:col-span-1">
+                                    <Label>UTM Defaults (JSON opcional)</Label>
+                                    <Textarea
+                                        name="utm_defaults"
+                                        placeholder='ex.: {"utm_source":"google","utm_medium":"cpc"}'
+                                        className="h-28 font-mono text-xs"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Preenchidos quando a LP externa não enviar UTMs.
+                                    </p>
+                                </div>
 
-                            <div className="md:col-span-2">
-                                <Button type="submit">Criar</Button>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
-            )}
+                                <div className="md:col-span-2">
+                                    <Button type="submit">Criar</Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                )}
 
-            {/* Lista */}
-            <Card className="bg-white/5 border-white/10">
-                <CardHeader>
-                    <CardTitle>Minhas páginas</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    {rows.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">Nenhuma LP criada.</p>
-                    ) : (
-                        <ul className="space-y-2">
-                            {rows.map((lp: LandingItem) => {
-                                const publicUrl = lp.slug
-                                    ? `${siteUrl}/lp/${lp.slug}`
-                                    : `${siteUrl}/lp?h=${lp.public_hash}`;
-                                return (
-                                    <li
-                                        key={lp.id}
-                                        className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 p-3"
-                                    >
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <Button
-                                                    asChild
-                                                    variant="outline"
-                                                    size="sm"
-                                                    title="Configurar"
-                                                >
-                                                    <Link
-                                                        href={`/app/landing-pages/${lp.id}`}
-                                                        prefetch={false}
+                {/* Lista */}
+                <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                        <CardTitle>Minhas páginas</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {rows.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Nenhuma LP criada.</p>
+                        ) : (
+                            <ul className="space-y-2">
+                                {rows.map((lp: LandingItem) => {
+                                    const publicUrl = lp.slug
+                                        ? `${siteUrl}/lp/${lp.slug}`
+                                        : `${siteUrl}/lp?h=${lp.public_hash}`;
+                                    return (
+                                        <li
+                                            key={lp.id}
+                                            className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 p-3"
+                                        >
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <Button
+                                                        asChild
+                                                        variant="outline"
+                                                        size="sm"
+                                                        title="Configurar"
                                                     >
-                                                        Configurar
-                                                    </Link>
-                                                </Button>
-                                                <LinkIcon className="h-4 w-4 text-emerald-400" />
-                                                <span className="font-medium">
+                                                        <Link
+                                                            href={`/app/landing-pages/${lp.id}`}
+                                                            prefetch={false}
+                                                        >
+                                                            Configurar
+                                                        </Link>
+                                                    </Button>
+                                                    <LinkIcon className="h-4 w-4 text-emerald-400" />
+                                                    <span className="font-medium">
                           {lp.slug ?? `hash: ${lp.public_hash}`}
                         </span>
-                                                <span className="text-xs text-muted-foreground">
+                                                    <span className="text-xs text-muted-foreground">
                           • {lp.active ? "Ativa" : "Inativa"}
                         </span>
-                                            </div>
-                                            <div className="text-xs text-muted-foreground break-all flex items-center gap-2">
-                                                <span>{publicUrl}</span>
-                                                <CopyButton value={publicUrl} />
-                                            </div>
-                                            {lp.allowed_domains?.length ? (
-                                                <div className="text-[11px] text-muted-foreground">
-                                                    Domínios: {lp.allowed_domains.join(", ")}
                                                 </div>
-                                            ) : (
-                                                <div className="text-[11px] text-muted-foreground">
-                                                    Domínios: (qualquer)
+                                                <div className="text-xs text-muted-foreground break-all flex items-center gap-2">
+                                                    <span>{publicUrl}</span>
+                                                    <CopyButton value={publicUrl} />
                                                 </div>
-                                            )}
-                                        </div>
+                                                {lp.allowed_domains?.length ? (
+                                                    <div className="text-[11px] text-muted-foreground">
+                                                        Domínios: {lp.allowed_domains.join(", ")}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-[11px] text-muted-foreground">
+                                                        Domínios: (qualquer)
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                        <div className="flex items-center gap-1">
-                                            {/* Regenerar hash → toast=hash (com confirm) */}
-                                            <form
-                                                action={async () => {
-                                                    "use server";
-                                                    await regenHash(lp.id);
-                                                    redirect("/app/landing-pages?toast=hash");
-                                                }}
-                                            >
-                                                <ConfirmSubmitButton
-                                                    title="Gerar novo hash?"
-                                                    description="Isso invalida imediatamente o link público atual (?h=HASH). Confirma a rotação do hash desta LP?"
-                                                    confirmLabel="Gerar novo hash"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    pendingLabel="Gerando novo hash…"
-                                                    pendingKind="saving"
-                                                    iconLeft={<RefreshCw className="h-4 w-4" />}
-                                                />
-                                            </form>
-
-                                            {/* Toggle → volta com toast conforme estado (sem confirm) */}
-                                            <form
-                                                action={async () => {
-                                                    "use server";
-                                                    const next = !lp.active;
-                                                    await toggleLandingActive(lp.id, next);
-                                                    redirect(
-                                                        `/app/landing-pages?toast=${
-                                                            next ? "toggled_on" : "toggled_off"
-                                                        }`,
-                                                    );
-                                                }}
-                                            >
-                                                <Button
-                                                    type="submit"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    title={lp.active ? "Desativar" : "Ativar"}
-                                                    aria-label={lp.active ? "Desativar" : "Ativar"}
+                                            <div className="flex items-center gap-1">
+                                                {/* Regenerar hash → toast=hash (com confirm) */}
+                                                <form
+                                                    action={async () => {
+                                                        "use server";
+                                                        await regenHash(lp.id);
+                                                        redirect("/app/landing-pages?toast=hash");
+                                                    }}
                                                 >
-                                                    {lp.active ? (
-                                                        <ToggleRight className="h-4 w-4" />
-                                                    ) : (
-                                                        <ToggleLeft className="h-4 w-4" />
-                                                    )}
-                                                </Button>
-                                            </form>
+                                                    <ConfirmSubmitButton
+                                                        title="Gerar novo hash?"
+                                                        description="Isso invalida imediatamente o link público atual (?h=HASH). Confirma a rotação do hash desta LP?"
+                                                        confirmLabel="Gerar novo hash"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        pendingLabel="Gerando novo hash…"
+                                                        pendingKind="saving"
+                                                        iconLeft={<RefreshCw className="h-4 w-4" />}
+                                                    />
+                                                </form>
 
-                                            {/* Delete → toast=deleted (com confirm) */}
-                                            <form
-                                                action={async () => {
-                                                    "use server";
-                                                    await deleteLandingPage(lp.id);
-                                                    redirect("/app/landing-pages?toast=deleted");
-                                                }}
-                                            >
-                                                <ConfirmInputSubmitButton
-                                                    title="Excluir definitivamente?"
-                                                    description="Esta ação é irreversível. Digite o slug (ou 'DELETAR') para confirmar."
-                                                    confirmLabel="Excluir"
-                                                    cancelLabel="Cancelar"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-red-400"
-                                                    iconLeft={<Trash2 className="h-4 w-4" />}
-                                                    // Confirma digitando exatamente o slug (ou troque para equals-insensitive)
-                                                    expected={lp.slug ?? "DELETAR"}
-                                                    mode={lp.slug ? "equals" : "equals-insensitive"}
-                                                    placeholder={lp.slug ? lp.slug : "DELETAR"}
-                                                    helperText={lp.slug ? "Digite o slug exatamente como acima." : "Digite DELETAR para confirmar."}
-                                                    mismatchMessage="Valor incorreto."
-                                                    // HUD GlobalPending:
-                                                    pendingKind="saving"
-                                                    pendingLabel="Deletando…"
-                                                />
-                                            </form>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    )}
-                </CardContent>
-            </Card>
-        </main>
+                                                {/* Toggle → volta com toast conforme estado (sem confirm) */}
+                                                <form
+                                                    action={async () => {
+                                                        "use server";
+                                                        const next = !lp.active;
+                                                        await toggleLandingActive(lp.id, next);
+                                                        redirect(
+                                                            `/app/landing-pages?toast=${
+                                                                next ? "toggled_on" : "toggled_off"
+                                                            }`,
+                                                        );
+                                                    }}
+                                                >
+                                                    <Button
+                                                        type="submit"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        title={lp.active ? "Desativar" : "Ativar"}
+                                                        aria-label={lp.active ? "Desativar" : "Ativar"}
+                                                    >
+                                                        {lp.active ? (
+                                                            <ToggleRight className="h-4 w-4" />
+                                                        ) : (
+                                                            <ToggleLeft className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
+                                                </form>
+
+                                                {/* Delete → toast=deleted (com confirm) */}
+                                                <form
+                                                    action={async () => {
+                                                        "use server";
+                                                        await deleteLandingPage(lp.id);
+                                                        redirect("/app/landing-pages?toast=deleted");
+                                                    }}
+                                                >
+                                                    <ConfirmInputSubmitButton
+                                                        title="Excluir definitivamente?"
+                                                        description="Esta ação é irreversível. Digite o slug (ou 'DELETAR') para confirmar."
+                                                        confirmLabel="Excluir"
+                                                        cancelLabel="Cancelar"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-red-400"
+                                                        iconLeft={<Trash2 className="h-4 w-4" />}
+                                                        // Confirma digitando exatamente o slug (ou troque para equals-insensitive)
+                                                        expected={lp.slug ?? "DELETAR"}
+                                                        mode={lp.slug ? "equals" : "equals-insensitive"}
+                                                        placeholder={lp.slug ? lp.slug : "DELETAR"}
+                                                        helperText={lp.slug ? "Digite o slug exatamente como acima." : "Digite DELETAR para confirmar."}
+                                                        mismatchMessage="Valor incorreto."
+                                                        // HUD GlobalPending:
+                                                        pendingKind="saving"
+                                                        pendingLabel="Deletando…"
+                                                    />
+                                                </form>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </CardContent>
+                </Card>
+            </main>
+        </div>
     );
 }

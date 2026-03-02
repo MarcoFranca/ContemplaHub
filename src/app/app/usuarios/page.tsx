@@ -53,6 +53,7 @@ export default async function UsersPage({
     };
 
     return (
+        <div className="h-full overflow-y-auto">
         <main className="p-6 space-y-6">
             {/* Toaster que lê ?ok / ?err */}
             <PageToasts ok={searchParams?.ok} err={searchParams?.err} />
@@ -226,6 +227,7 @@ export default async function UsersPage({
                 </CardContent>
             </Card>
         </main>
+        </div>
     );
 }
 
