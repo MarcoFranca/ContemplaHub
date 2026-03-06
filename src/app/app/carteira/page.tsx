@@ -1,21 +1,27 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+import { cookies } from "next/headers";
+
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { getCurrentProfile } from "@/lib/auth/server";
-import { listCarteiraClientes, listCarteiraCartas } from "./actions";
+import { listCarteiraClientes, listCarteiraCartas } from "./actions/index";
 import type {
+    ClienteSort,
     CarteiraClienteItem,
     CarteiraClientesResponse,
     CarteiraCartaItem,
     CarteiraCartasResponse,
 } from "./lib/types";
+
+import { ClientesViewModeToggle } from "./components/clientes-view-mode-toggle";
 import { CarteiraFilters } from "./components/carteira-filters";
 import { ClientesCards } from "./components/clientes-cards";
+import { ClientesTable } from "./components/clientes-table";
 import { CartasList } from "./components/cartas-list";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -29,6 +35,47 @@ function first(sp: SearchParams, k: string): string | undefined {
     return Array.isArray(v) ? v[0] : v;
 }
 
+function buildHref(params: {
+    view: "clientes" | "cartas";
+    mode?: "cards" | "lista";
+    includeAll: boolean;
+    produto: string;
+    statusCarteira: string;
+    q: string;
+    sort?: string;
+}) {
+    const qp = new URLSearchParams({
+        view: params.view,
+        all: params.includeAll ? "1" : "0",
+        produto: params.produto,
+        status_carteira: params.statusCarteira,
+        q: params.q,
+    });
+
+    if (params.mode && params.view === "clientes") {
+        qp.set("mode", params.mode);
+    }
+
+    if (params.sort && params.view === "clientes") {
+        qp.set("sort", params.sort);
+    }
+
+    return `/app/carteira?${qp.toString()}`;
+}
+
+function parseSort(value?: string): ClienteSort {
+    switch (value) {
+        case "nome_asc":
+        case "total_desc":
+        case "qtd_cartas_desc":
+        case "maior_carta_desc":
+        case "entrada_desc":
+            return value;
+        default:
+            return "entrada_desc";
+    }
+}
+
 export default async function CarteiraPage({ searchParams }: PageProps) {
     const me = await getCurrentProfile();
     if (!me?.orgId) return <main className="p-6">Vincule-se a uma organização.</main>;
@@ -36,10 +83,21 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
     const sp: SearchParams = (await searchParams) ?? {};
 
     const view = first(sp, "view") === "cartas" ? "cartas" : "clientes";
-    const includeAll = first(sp, "all") === "1";
+    const cookieStore = await cookies();
+    const savedMode = cookieStore.get("carteira_clientes_mode")?.value;
+
+    const mode =
+        first(sp, "mode") === "lista"
+            ? "lista"
+            : first(sp, "mode") === "cards"
+                ? "cards"
+                : savedMode === "lista"
+                    ? "lista"
+                    : "cards";    const includeAll = first(sp, "all") === "1";
     const q = first(sp, "q") ?? "";
     const produto = first(sp, "produto") ?? "";
     const statusCarteira = first(sp, "status_carteira") ?? "";
+    const sort = parseSort(first(sp, "sort"));
 
     let err: string | null = null;
 
@@ -53,6 +111,7 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                 produto: produto || null,
                 q: q || null,
                 status_carteira: statusCarteira || null,
+                sort: sort || "entrada_desc",
             });
         } else {
             cartasData = await listCarteiraCartas({
@@ -91,6 +150,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                         produto={produto}
                         statusCarteira={statusCarteira}
                         includeAll={includeAll}
+                        sort={sort}
+                        mode={mode}
                     />
 
                     {err && (
@@ -104,34 +165,48 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
 
                     {!err && (
                         <Tabs defaultValue={view} className="space-y-3">
-                            <TabsList>
-                                <TabsTrigger value="clientes" asChild>
-                                    <Link
-                                        href={`/app/carteira?view=clientes&all=${includeAll ? 1 : 0}&produto=${encodeURIComponent(
-                                            produto
-                                        )}&status_carteira=${encodeURIComponent(
-                                            statusCarteira
-                                        )}&q=${encodeURIComponent(q)}`}
-                                    >
-                                        Clientes
-                                    </Link>
-                                </TabsTrigger>
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                                <TabsList>
+                                    <TabsTrigger value="clientes" asChild>
+                                        <Link
+                                            href={buildHref({
+                                                view: "clientes",
+                                                mode,
+                                                includeAll,
+                                                produto,
+                                                statusCarteira,
+                                                q,
+                                                sort,
+                                            })}
+                                        >
+                                            Clientes
+                                        </Link>
+                                    </TabsTrigger>
 
-                                <TabsTrigger value="cartas" asChild>
-                                    <Link
-                                        href={`/app/carteira?view=cartas&all=${includeAll ? 1 : 0}&produto=${encodeURIComponent(
-                                            produto
-                                        )}&status_carteira=${encodeURIComponent(
-                                            statusCarteira
-                                        )}&q=${encodeURIComponent(q)}`}
-                                    >
-                                        Cartas
-                                    </Link>
-                                </TabsTrigger>
-                            </TabsList>
+                                    <TabsTrigger value="cartas" asChild>
+                                        <Link
+                                            href={buildHref({
+                                                view: "cartas",
+                                                includeAll,
+                                                produto,
+                                                statusCarteira,
+                                                q,
+                                            })}
+                                        >
+                                            Cartas
+                                        </Link>
+                                    </TabsTrigger>
+                                </TabsList>
+
+                                {view === "clientes" && <ClientesViewModeToggle currentMode={mode} />}
+                            </div>
 
                             <TabsContent value="clientes">
-                                <ClientesCards items={(clientesData?.items ?? []) as CarteiraClienteItem[]} />
+                                {mode === "cards" ? (
+                                    <ClientesCards items={(clientesData?.items ?? []) as CarteiraClienteItem[]} />
+                                ) : (
+                                    <ClientesTable items={(clientesData?.items ?? []) as CarteiraClienteItem[]} />
+                                )}
                             </TabsContent>
 
                             <TabsContent value="cartas">
