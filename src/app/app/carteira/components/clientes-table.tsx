@@ -5,6 +5,7 @@ import { contratoBadgeVariant } from "../lib/badges";
 import { fmtCurrency, fmtDate } from "../lib/format";
 import type { CarteiraClienteItem } from "../lib/types";
 import { EmptyState } from "./empty-state";
+import { CartasSummaryPopover } from "./cartas-summary-popover";
 
 type ClientesTableProps = {
     items: CarteiraClienteItem[];
@@ -17,16 +18,15 @@ export function ClientesTable({ items }: ClientesTableProps) {
 
     return (
         <div className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="w-full min-w-[1350px] text-sm">
-                    <thead className="bg-white/5 text-muted-foreground">
+            <div className="max-h-[65vh] overflow-auto">
+                <table className="w-full min-w-[1300px] text-sm">
+                    <thead className="sticky top-0 z-10 bg-zinc-950 text-muted-foreground">
                     <tr className="border-b border-white/10">
                         <th className="text-left px-4 py-3 font-medium">Cliente</th>
                         <th className="text-left px-4 py-3 font-medium">Contato</th>
                         <th className="text-left px-4 py-3 font-medium">Etapa</th>
                         <th className="text-left px-4 py-3 font-medium">Carteira</th>
                         <th className="text-left px-4 py-3 font-medium">Origem</th>
-                        <th className="text-left px-4 py-3 font-medium">Administradora</th>
                         <th className="text-left px-4 py-3 font-medium">Cartas</th>
                         <th className="text-left px-4 py-3 font-medium">Total</th>
                         <th className="text-left px-4 py-3 font-medium">Maior carta</th>
@@ -75,28 +75,17 @@ export function ClientesTable({ items }: ClientesTableProps) {
                             </td>
 
                             <td className="px-4 py-3 text-muted-foreground">
-                                {it.resumo.administradora_principal ?? "—"}
-                            </td>
-
-                            <td className="px-4 py-3 text-muted-foreground">
-                                <div>{it.resumo.qtd_cartas}</div>
-                                {it.cartas.length > 0 && (
-                                    <div className="text-xs mt-1 space-y-1">
-                                        {it.cartas.slice(0, 2).map((c) => (
-                                            <div key={c.cota_id}>
-                                                {c.numero_cota ?? "—"}{" "}
-                                                <span className="text-muted-foreground/70">
-                            ({c.grupo_codigo ?? "—"})
-                          </span>
-                                            </div>
-                                        ))}
-                                        {it.cartas.length > 2 && (
-                                            <div className="text-muted-foreground/70">
-                                                +{it.cartas.length - 2} carta(s)
-                                            </div>
-                                        )}
+                                <div className="flex flex-col gap-2">
+                                    <div className="text-sm font-medium text-foreground">
+                                        {it.resumo.qtd_cartas} carta(s)
                                     </div>
-                                )}
+                                    <div className="text-xs">
+                                        Maior: {fmtCurrency(it.resumo.maior_carta_valor)}
+                                    </div>
+                                    <div>
+                                        <CartasSummaryPopover cartas={it.cartas} />
+                                    </div>
+                                </div>
                             </td>
 
                             <td className="px-4 py-3 text-muted-foreground">

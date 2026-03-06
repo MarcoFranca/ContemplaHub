@@ -92,9 +92,6 @@ export async function listCarteiraClientes(
                 .map((cota) => latestContratoByCota.get(cota.id) ?? null)
                 .filter(Boolean)[0] ?? null;
 
-        const administradoraPrincipal =
-            cartas.find((c) => !!c.administradora)?.administradora ?? null;
-
         return {
             cliente: {
                 carteira_id: row.id,
@@ -114,7 +111,6 @@ export async function listCarteiraClientes(
                 status_contrato_mais_recente: contratoMaisRecente?.status ?? null,
                 valor_total_cartas: cartas.length ? valorTotalCartas : null,
                 maior_carta_valor: maiorCartaValor,
-                administradora_principal: administradoraPrincipal,
             },
             cartas,
         };

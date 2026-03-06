@@ -93,7 +93,6 @@ export type CarteiraClienteItem = {
         status_contrato_mais_recente: string | null;
         valor_total_cartas: number | null;
         maior_carta_valor: number | null;
-        administradora_principal: string | null;
     };
     cartas: CarteiraClienteCartaResumo[];
 };
