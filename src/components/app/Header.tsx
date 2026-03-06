@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { MobileNav } from "@/components/app/MobileNav";
 import {LeadsToolbar} from "@/app/app/leads/ui/LeadsToolbar";
 import {CreateLeadSheet} from "@/app/app/leads/ui/CreateLeadSheet";
+import { CreateCarteiraClienteSheet } from "@/app/app/carteira/ui/CreateCarteiraClienteSheet";
 
 export function Header({
                            collapsed,
@@ -16,6 +17,7 @@ export function Header({
     const path = usePathname();
     const title = (() => {
         if (path.startsWith("/app/leads")) return "Leads";
+        if (path.startsWith("/app/carteira")) return "Carteira";
         if (path.startsWith("/app/usuarios")) return "Usuários";
         if (path.startsWith("/app/organizacao")) return "Organização";
         if (path.startsWith("/app/landing-pages")) return "Landing Pages";
@@ -40,6 +42,11 @@ export function Header({
                 <div className={"flex h-auto mr-8 items-center justify-center gap-8"}>
                     <LeadsToolbar />
                     <CreateLeadSheet variant="fab" />
+                </div>
+            )}
+            {path.startsWith("/app/carteira") && (
+                <div className={"flex h-auto mr-8 items-center justify-center gap-8"}>
+                    <CreateCarteiraClienteSheet variant="fab" />
                 </div>
             )}
         </motion.header>
