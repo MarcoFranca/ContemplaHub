@@ -1,107 +1,146 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import { listCarteira, type CarteiraItem } from "./actions";
-import { getCurrentProfile } from "@/lib/auth/server";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function fmtCurrency(v: number | null) {
-    if (v == null) return "—";
-    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+import { getCurrentProfile } from "@/lib/auth/server";
+import { listCarteiraClientes, listCarteiraCartas } from "./actions";
+import type {
+    CarteiraClienteItem,
+    CarteiraClientesResponse,
+    CarteiraCartaItem,
+    CarteiraCartasResponse,
+} from "./lib/types";
+import { CarteiraFilters } from "./components/carteira-filters";
+import { ClientesCards } from "./components/clientes-cards";
+import { CartasList } from "./components/cartas-list";
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+type PageProps = {
+    searchParams?: Promise<SearchParams>;
+};
+
+function first(sp: SearchParams, k: string): string | undefined {
+    const v = sp[k];
+    return Array.isArray(v) ? v[0] : v;
 }
 
-export default async function CarteiraPage() {
+export default async function CarteiraPage({ searchParams }: PageProps) {
     const me = await getCurrentProfile();
-    if (!me?.orgId) {
-        return <main className="p-6">Vincule-se a uma organização.</main>;
-    }
+    if (!me?.orgId) return <main className="p-6">Vincule-se a uma organização.</main>;
 
-    let rows: CarteiraItem[] = [];
-    let loadErr: string | null = null;
+    const sp: SearchParams = (await searchParams) ?? {};
+
+    const view = first(sp, "view") === "cartas" ? "cartas" : "clientes";
+    const includeAll = first(sp, "all") === "1";
+    const q = first(sp, "q") ?? "";
+    const produto = first(sp, "produto") ?? "";
+    const statusCarteira = first(sp, "status_carteira") ?? "";
+
+    let err: string | null = null;
+
+    let clientesData: CarteiraClientesResponse | null = null;
+    let cartasData: CarteiraCartasResponse | null = null;
 
     try {
-        rows = await listCarteira();
-    } catch (err: unknown) {
-        loadErr = err instanceof Error ? err.message : "Erro ao carregar carteira.";
+        if (view === "clientes") {
+            clientesData = await listCarteiraClientes({
+                include_all: includeAll,
+                produto: produto || null,
+                q: q || null,
+                status_carteira: statusCarteira || null,
+            });
+        } else {
+            cartasData = await listCarteiraCartas({
+                include_all: includeAll,
+                produto: produto || null,
+                q: q || null,
+                status_carteira: statusCarteira || null,
+            });
+        }
+    } catch (e: unknown) {
+        err = e instanceof Error ? e.message : "Erro ao carregar carteira.";
     }
 
     return (
-        <div className="h-full overflow-y-auto">
-            <main className="p-6 space-y-6">
-
-                {/* HEADER */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Carteira de Clientes</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Acompanhe clientes ativos, pendências e contratos em andamento.
-                        </p>
-                    </div>
-
-                    <Link href="/app/leads">
-                        <Button variant="outline">Ver Leads</Button>
-                    </Link>
-                </div>
-
-                {/* ERRO */}
-                {loadErr && (
-                    <Card className="bg-red-500/10 border-red-500/30">
-                        <CardHeader>
-                            <CardTitle className="text-red-300">Erro</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-red-200">
-                            {loadErr}
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* GRID DA CARTEIRA */}
-                {!loadErr && (
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {rows.map((c) => (
-                            <Card key={c.contratoId} className="bg-white/5 border-white/10">
-                                <CardHeader>
-                                    <CardTitle className="flex justify-between items-center">
-                                        <span>{c.nome}</span>
-                                        <Badge className="capitalize">{c.status}</Badge>
-                                    </CardTitle>
-                                </CardHeader>
-
-                                <CardContent className="text-sm space-y-1 text-muted-foreground">
-                                    <p>🏢 {c.administradora ?? "—"}</p>
-                                    <p>💰 Carta: {fmtCurrency(c.valorCarta)}</p>
-                                    <p>📝 Assinatura: {c.dataAssinatura ?? "—"}</p>
-
-                                    <div className="pt-3 flex justify-between">
-                                        <Link href={`/app/clientes/${c.leadId}`}>
-                                            <Button size="sm" variant="outline">
-                                                Ver cliente
-                                            </Button>
-                                        </Link>
-
-                                        <form action="/app/leads" method="GET">
-                                            <input type="hidden" name="fromClient" value={c.leadId} />
-                                            <Button size="sm">
-                                                Nova negociação
-                                            </Button>
-                                        </form>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-
-                        {rows.length === 0 && (
-                            <p className="text-center text-muted-foreground col-span-full">
-                                Nenhum cliente na carteira ainda.
+        <div className="h-full w-full overflow-hidden px-4 md:px-6 py-4">
+            <div className="h-full overflow-auto">
+                <main className="space-y-4">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                            <h1 className="text-2xl font-semibold">Carteira</h1>
+                            <p className="text-sm text-muted-foreground">
+                                Clientes da carteira com ou sem contrato, com visão por cliente e por carta.
                             </p>
-                        )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Link href="/app/leads">
+                                <Button variant="outline">Ver Leads</Button>
+                            </Link>
+                        </div>
                     </div>
-                )}
-            </main>
+
+                    <CarteiraFilters
+                        view={view}
+                        q={q}
+                        produto={produto}
+                        statusCarteira={statusCarteira}
+                        includeAll={includeAll}
+                    />
+
+                    {err && (
+                        <Card className="bg-red-500/10 border-red-500/30">
+                            <CardHeader>
+                                <CardTitle className="text-red-300">Erro</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-sm text-red-200">{err}</CardContent>
+                        </Card>
+                    )}
+
+                    {!err && (
+                        <Tabs defaultValue={view} className="space-y-3">
+                            <TabsList>
+                                <TabsTrigger value="clientes" asChild>
+                                    <Link
+                                        href={`/app/carteira?view=clientes&all=${includeAll ? 1 : 0}&produto=${encodeURIComponent(
+                                            produto
+                                        )}&status_carteira=${encodeURIComponent(
+                                            statusCarteira
+                                        )}&q=${encodeURIComponent(q)}`}
+                                    >
+                                        Clientes
+                                    </Link>
+                                </TabsTrigger>
+
+                                <TabsTrigger value="cartas" asChild>
+                                    <Link
+                                        href={`/app/carteira?view=cartas&all=${includeAll ? 1 : 0}&produto=${encodeURIComponent(
+                                            produto
+                                        )}&status_carteira=${encodeURIComponent(
+                                            statusCarteira
+                                        )}&q=${encodeURIComponent(q)}`}
+                                    >
+                                        Cartas
+                                    </Link>
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="clientes">
+                                <ClientesCards items={(clientesData?.items ?? []) as CarteiraClienteItem[]} />
+                            </TabsContent>
+
+                            <TabsContent value="cartas">
+                                <CartasList items={(cartasData?.items ?? []) as CarteiraCartaItem[]} />
+                            </TabsContent>
+                        </Tabs>
+                    )}
+                </main>
+            </div>
         </div>
     );
 }
