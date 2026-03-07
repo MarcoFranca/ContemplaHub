@@ -1,4 +1,3 @@
-// src/app/app/leads/[leadId]/page.tsx
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -9,7 +8,8 @@ import { LeadDiagnosticCard } from "./LeadDiagnosticCard";
 import { LeadPropostasCard } from "./LeadPropostasCard";
 import { LeadInfoCard } from "./LeadInfoCard";
 import { LeadStrategiesCard } from "./LeadStrategiesCard";
-import {LeadCotasCard} from "@/app/app/leads/[leadId]/LeadCotasCard"; // 👈 ADICIONA ISSO
+import { LeadCotasCard } from "@/app/app/leads/[leadId]/LeadCotasCard";
+import { listContractOptions } from "@/app/app/leads/actions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ async function loadDiagnostic(leadId: string, orgId: string) {
         .maybeSingle();
 
     if (error) throw error;
-    return data; // pode ser null
+    return data;
 }
 
 async function loadCotas(leadId: string, orgId: string) {
@@ -49,26 +49,26 @@ async function loadCotas(leadId: string, orgId: string) {
     const { data, error } = await supabase
         .from("cotas")
         .select(`
-            id,
-            org_id,
-            lead_id,
-            administradora_id,
-            valor_carta,
-            produto,
-            data_adesao,
-            numero_cota,
-            grupo_codigo,
-            valor_parcela,
-            prazo,
-            forma_pagamento,
-            indice_correcao,
-            parcela_reduzida,
-            percentual_reducao,
-            valor_parcela_sem_redutor,
-            embutido_permitido,
-            embutido_max_percent,
-            fgts_permitido
-        `)
+      id,
+      org_id,
+      lead_id,
+      administradora_id,
+      valor_carta,
+      produto,
+      data_adesao,
+      numero_cota,
+      grupo_codigo,
+      valor_parcela,
+      prazo,
+      forma_pagamento,
+      indice_correcao,
+      parcela_reduzida,
+      percentual_reducao,
+      valor_parcela_sem_redutor,
+      embutido_permitido,
+      embutido_max_percent,
+      fgts_permitido
+    `)
         .eq("org_id", orgId)
         .eq("lead_id", leadId);
 
@@ -77,6 +77,8 @@ async function loadCotas(leadId: string, orgId: string) {
 }
 
 async function loadContratos(orgId: string, cotasIds: string[]) {
+    if (cotasIds.length === 0) return [];
+
     const supabase = await supabaseServer();
 
     const { data, error } = await supabase
@@ -101,16 +103,15 @@ export default async function LeadDetailsPage({
         throw new Error("Org inválida");
     }
 
-    const [lead, diagnostico, cotas] = await Promise.all([
+    const [lead, diagnostico, cotas, contractOptions] = await Promise.all([
         loadLead(leadId, profile.orgId),
         loadDiagnostic(leadId, profile.orgId),
         loadCotas(leadId, profile.orgId),
+        listContractOptions(),
     ]);
 
-    const contratos = await loadContratos(
-        profile.orgId,
-        cotas.map((c: any) => c.id),
-    );
+    const cotasIds = cotas.map((c: { id: string }) => c.id);
+    const contratos = await loadContratos(profile.orgId, cotasIds);
 
     if (!lead) notFound();
 
@@ -120,9 +121,7 @@ export default async function LeadDetailsPage({
                 <LeadHeader lead={lead} />
                 <Separator />
 
-                {/* 2 colunas no desktop, empilhado no mobile */}
                 <main className="grid gap-6 lg:grid-cols-[1.3fr_1.2fr]">
-                    {/* COLUNA ESQUERDA */}
                     <div className="space-y-4">
                         <LeadDiagnosticCard
                             leadId={leadId}
@@ -132,11 +131,15 @@ export default async function LeadDetailsPage({
 
                         <LeadPropostasCard leadId={leadId} />
 
-                        {/* Cotas entra aqui, embaixo das propostas */}
-                        <LeadCotasCard cotas={cotas} contratos={contratos} />
+                        <LeadCotasCard
+                            leadId={leadId}
+                            leadName={lead.nome}
+                            cotas={cotas}
+                            contratos={contratos}
+                            administradoras={contractOptions.administradoras}
+                        />
                     </div>
 
-                    {/* COLUNA DIREITA */}
                     <div className="space-y-4">
                         <LeadInfoCard lead={lead} />
                         <LeadStrategiesCard lead={lead} />
@@ -146,4 +149,3 @@ export default async function LeadDetailsPage({
         </div>
     );
 }
-

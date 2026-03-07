@@ -1,16 +1,22 @@
-// src/app/app/leads/ui/CreateContractDialog.tsx
 "use client";
+
+import * as React from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
-    Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import * as React from "react";
+
 import type { AdminOption, GrupoOption } from "../actions";
 import { createContractFromLead } from "@/app/app/leads/actions";
-import { toast } from "sonner";
 
 export function CreateContractDialog({
                                          leadId,
@@ -27,30 +33,45 @@ export function CreateContractDialog({
 }) {
     const [open, setOpen] = React.useState(false);
     const [admId, setAdmId] = React.useState<string>("");
+    const [grupoId, setGrupoId] = React.useState<string>("");
 
     const gruposFiltrados = React.useMemo(
         () => grupos.filter((g) => g.administradoraId === admId),
         [grupos, admId]
     );
 
+    const grupoSelecionado = React.useMemo(
+        () => gruposFiltrados.find((g) => g.id === grupoId) ?? null,
+        [gruposFiltrados, grupoId]
+    );
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm">Gerar contrato</Button>
+                <Button size="sm">Nova carta</Button>
             </DialogTrigger>
+
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Novo contrato — {leadName}</DialogTitle>
+                    <DialogTitle>Nova carta / contrato — {leadName}</DialogTitle>
                 </DialogHeader>
 
                 <form
                     action={createContractFromLead}
                     onSubmit={(e) => {
                         const fd = new FormData(e.currentTarget);
-                        if (!fd.get("administradoraId") || !fd.get("grupoId") || !fd.get("valorCarta")) {
+
+                        if (
+                            !fd.get("administradoraId") ||
+                            !fd.get("grupoCodigo") ||
+                            !fd.get("numeroCota") ||
+                            !fd.get("valorCarta")
+                        ) {
                             e.preventDefault();
+                            toast.error("Preencha os campos obrigatórios.");
                             return;
                         }
+
                         setOpen(false);
                         toast.loading("Criando contrato…");
                         onSuccess?.();
@@ -58,38 +79,62 @@ export function CreateContractDialog({
                     className="space-y-3"
                 >
                     <input type="hidden" name="leadId" value={leadId} />
+                    <input type="hidden" name="grupoCodigo" value={grupoSelecionado?.codigo ?? ""} />
 
                     <div className="grid gap-2">
                         <Label>Administradora</Label>
                         <select
                             name="administradoraId"
                             value={admId}
-                            onChange={(e) => setAdmId(e.target.value)}
+                            onChange={(e) => {
+                                setAdmId(e.target.value);
+                                setGrupoId("");
+                            }}
                             className="h-9 rounded-md bg-background border px-2 text-sm"
                             required
                         >
                             <option value="">Selecione…</option>
                             {administradoras.map((a) => (
-                                <option key={a.id} value={a.id}>{a.nome}</option>
+                                <option key={a.id} value={a.id}>
+                                    {a.nome}
+                                </option>
                             ))}
                         </select>
                     </div>
 
                     <div className="grid gap-2">
                         <Label>Grupo</Label>
-                        <select name="grupoId" className="h-9 rounded-md bg-background border px-2 text-sm" required>
+                        <select
+                            name="grupoId"
+                            value={grupoId}
+                            onChange={(e) => setGrupoId(e.target.value)}
+                            className="h-9 rounded-md bg-background border px-2 text-sm"
+                            required
+                        >
                             <option value="">Selecione…</option>
                             {gruposFiltrados.map((g) => (
-                                <option key={g.id} value={g.id}>{g.codigo ?? g.id}</option>
+                                <option key={g.id} value={g.id}>
+                                    {g.codigo ?? g.id}
+                                </option>
                             ))}
                         </select>
                     </div>
 
                     <div className="grid gap-2">
+                        <Label>Número da cota</Label>
+                        <Input name="numeroCota" placeholder="Ex.: 12345" required />
+                    </div>
+
+                    <div className="grid gap-2">
                         <Label>Produto</Label>
-                        <select name="produto" defaultValue="imobiliario" className="h-9 rounded-md bg-background border px-2 text-sm">
+                        <select
+                            name="produto"
+                            defaultValue="imobiliario"
+                            className="h-9 rounded-md bg-background border px-2 text-sm"
+                        >
                             <option value="imobiliario">Imobiliário</option>
                             <option value="auto">Auto</option>
+                            <option value="pesados">Pesados</option>
                         </select>
                     </div>
 
@@ -100,9 +145,27 @@ export function CreateContractDialog({
 
                     <div className="grid grid-cols-2 gap-3">
                         <div className="grid gap-2">
+                            <Label>Prazo (opcional)</Label>
+                            <Input type="number" name="prazo" placeholder="Ex.: 180" />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label>Forma de pagamento (opcional)</Label>
+                            <Input name="formaPagamento" placeholder="Ex.: boleto" />
+                        </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label>Índice de correção (opcional)</Label>
+                        <Input name="indiceCorrecao" placeholder="Ex.: INCC / IPCA" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-2">
                             <Label>Data de adesão (opcional)</Label>
                             <Input type="date" name="dataAdesao" />
                         </div>
+
                         <div className="grid gap-2">
                             <Label>Data de assinatura (opcional)</Label>
                             <Input type="date" name="dataAssinatura" />
@@ -112,6 +175,28 @@ export function CreateContractDialog({
                     <div className="grid gap-2">
                         <Label>Nº do contrato (opcional)</Label>
                         <Input name="numero" placeholder="Ex.: 2025-000123" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="parcelaReduzida" />
+                            Parcela reduzida
+                        </label>
+
+                        <label className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="fgtsPermitido" />
+                            FGTS permitido
+                        </label>
+
+                        <label className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="embutidoPermitido" />
+                            Embutido permitido
+                        </label>
+
+                        <label className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="autorizacaoGestao" />
+                            Autorização de gestão
+                        </label>
                     </div>
 
                     <DialogFooter>
