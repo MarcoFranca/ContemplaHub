@@ -13,11 +13,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FilePlus2, Sparkles } from "lucide-react";
+import { FilePlus2, Sparkles, Plus, Trash2 } from "lucide-react";
 
 import { createContractFromLead } from "@/app/app/leads/actions";
 
 type AdminOption = { id: string; nome: string };
+
+type LanceFixoOpcaoForm = {
+    id: string;
+    percentual: string;
+    ordem: number;
+    ativo: boolean;
+    observacoes: string;
+};
+
+function makeOpcao(ordem = 1): LanceFixoOpcaoForm {
+    return {
+        id: crypto.randomUUID(),
+        percentual: "",
+        ordem,
+        ativo: true,
+        observacoes: "",
+    };
+}
 
 export function ContractSheet({
                                   open,
@@ -41,6 +59,9 @@ export function ContractSheet({
     const [fgts, setFgts] = React.useState(false);
     const [embutido, setEmbutido] = React.useState(false);
 
+    const [usaLanceFixo, setUsaLanceFixo] = React.useState(false);
+    const [opcoesLanceFixo, setOpcoesLanceFixo] = React.useState<LanceFixoOpcaoForm[]>([]);
+
     React.useEffect(() => {
         if (!open) {
             setAdmId("");
@@ -49,8 +70,92 @@ export function ContractSheet({
             setAutGestao(false);
             setFgts(false);
             setEmbutido(false);
+            setUsaLanceFixo(false);
+            setOpcoesLanceFixo([]);
         }
     }, [open]);
+
+    const opcoesLanceFixoJson = React.useMemo(() => {
+        if (!usaLanceFixo) return "[]";
+
+        const normalizadas = opcoesLanceFixo
+            .map((op) => ({
+                percentual: op.percentual === "" ? null : Number(String(op.percentual).replace(",", ".")),
+                ordem: Number(op.ordem),
+                ativo: Boolean(op.ativo),
+                observacoes: op.observacoes?.trim() || null,
+            }))
+            .filter((op) => op.percentual !== null);
+
+        return JSON.stringify(normalizadas);
+    }, [usaLanceFixo, opcoesLanceFixo]);
+
+    function addOpcaoLanceFixo() {
+        setOpcoesLanceFixo((prev) => [...prev, makeOpcao(prev.length + 1)]);
+    }
+
+    function removeOpcaoLanceFixo(id: string) {
+        setOpcoesLanceFixo((prev) => {
+            const next = prev.filter((op) => op.id !== id);
+            return next.map((op, idx) => ({
+                ...op,
+                ordem: idx + 1,
+            }));
+        });
+    }
+
+    function updateOpcaoLanceFixo(
+        id: string,
+        patch: Partial<LanceFixoOpcaoForm>
+    ) {
+        setOpcoesLanceFixo((prev) =>
+            prev.map((op) => (op.id === id ? { ...op, ...patch } : op))
+        );
+    }
+
+    function validateLanceFixo() {
+        if (!usaLanceFixo) return true;
+
+        if (!opcoesLanceFixo.length) {
+            toast.error("Adicione ao menos uma opção de lance fixo.");
+            return false;
+        }
+
+        const percentuais = new Set<string>();
+        const ordens = new Set<number>();
+
+        for (const op of opcoesLanceFixo) {
+            const percentual = Number(String(op.percentual).replace(",", "."));
+            const ordem = Number(op.ordem);
+
+            if (!op.percentual || Number.isNaN(percentual) || percentual <= 0 || percentual > 100) {
+                toast.error("Revise os percentuais do lance fixo. Use valores entre 0 e 100.");
+                return false;
+            }
+
+            if (Number.isNaN(ordem) || ordem < 1) {
+                toast.error("Revise a ordem das opções de lance fixo.");
+                return false;
+            }
+
+            const percentualKey = percentual.toFixed(4);
+
+            if (percentuais.has(percentualKey)) {
+                toast.error("Não repita percentual nas opções de lance fixo.");
+                return false;
+            }
+
+            if (ordens.has(ordem)) {
+                toast.error("Não repita a ordem das opções de lance fixo.");
+                return false;
+            }
+
+            percentuais.add(percentualKey);
+            ordens.add(ordem);
+        }
+
+        return true;
+    }
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -98,6 +203,10 @@ export function ContractSheet({
                             return;
                         }
 
+                        if (!validateLanceFixo()) {
+                            return;
+                        }
+
                         try {
                             toast.dismiss();
                             toast.loading("Criando contrato...");
@@ -117,6 +226,7 @@ export function ContractSheet({
                     className="flex-1 flex flex-col min-h-0"
                 >
                     <input type="hidden" name="leadId" value={leadId} />
+                    <input type="hidden" name="opcoesLanceFixoJson" value={opcoesLanceFixoJson} />
 
                     <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
                         <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3">
@@ -181,7 +291,6 @@ export function ContractSheet({
                                 >
                                     <option value="imobiliario">Imóvel</option>
                                     <option value="auto">Auto</option>
-                                    <option value="pesados">Pesados</option>
                                 </select>
                             </div>
 
@@ -285,6 +394,128 @@ export function ContractSheet({
                                     Cliente autorizou gestão da carta
                                 </label>
                             </div>
+                        </section>
+
+                        <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                            <div className="flex items-center justify-between gap-2">
+                                <div>
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                        Modalidades de lance fixo
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 mt-1">
+                                        Configure uma ou mais opções por carta, respeitando a ordem operacional.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <label className="flex items-center gap-2 text-xs">
+                                <input
+                                    type="checkbox"
+                                    checked={usaLanceFixo}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setUsaLanceFixo(checked);
+                                        if (checked && opcoesLanceFixo.length === 0) {
+                                            setOpcoesLanceFixo([makeOpcao(1)]);
+                                        }
+                                        if (!checked) {
+                                            setOpcoesLanceFixo([]);
+                                        }
+                                    }}
+                                    className="h-3 w-3"
+                                />
+                                Esta carta possui opções de lance fixo
+                            </label>
+
+                            {usaLanceFixo && (
+                                <div className="space-y-3">
+                                    {opcoesLanceFixo.map((op, idx) => (
+                                        <div
+                                            key={op.id}
+                                            className="rounded-lg border border-slate-800 bg-slate-950/50 p-3 space-y-3"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-xs font-medium text-slate-200">
+                                                    Opção {idx + 1}
+                                                </p>
+
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-7 px-2 text-red-300 hover:text-red-200"
+                                                    onClick={() => removeOpcaoLanceFixo(op.id)}
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs">Percentual (%)</Label>
+                                                    <Input
+                                                        value={op.percentual}
+                                                        onChange={(e) =>
+                                                            updateOpcaoLanceFixo(op.id, { percentual: e.target.value })
+                                                        }
+                                                        placeholder="Ex: 40"
+                                                        className="h-8 text-xs"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs">Ordem</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={op.ordem}
+                                                        onChange={(e) =>
+                                                            updateOpcaoLanceFixo(op.id, {
+                                                                ordem: Number(e.target.value || 1),
+                                                            })
+                                                        }
+                                                        className="h-8 text-xs"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs">Observações</Label>
+                                                <Input
+                                                    value={op.observacoes}
+                                                    onChange={(e) =>
+                                                        updateOpcaoLanceFixo(op.id, { observacoes: e.target.value })
+                                                    }
+                                                    placeholder="Opcional"
+                                                    className="h-8 text-xs"
+                                                />
+                                            </div>
+
+                                            <label className="flex items-center gap-2 text-xs">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={op.ativo}
+                                                    onChange={(e) =>
+                                                        updateOpcaoLanceFixo(op.id, { ativo: e.target.checked })
+                                                    }
+                                                    className="h-3 w-3"
+                                                />
+                                                Opção ativa
+                                            </label>
+                                        </div>
+                                    ))}
+
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-xs"
+                                        onClick={addOpcaoLanceFixo}
+                                    >
+                                        <Plus className="mr-1.5 h-3.5 w-3.5" />
+                                        Adicionar opção de fixo
+                                    </Button>
+                                </div>
+                            )}
                         </section>
 
                         <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3">

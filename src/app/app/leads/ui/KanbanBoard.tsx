@@ -5,7 +5,6 @@ import { useOptimistic, useTransition } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { LeadCardItem } from "./LeadCardItem";
 import { toast } from "sonner";
-import { ContractSheet } from "@/components/app/ContractSheet";
 import { fireConfetti } from "@/lib/ui/confetti";
 import { ColumnHeaderStats } from "@/app/app/leads/ui/ColumnHeaderStats";
 
@@ -15,6 +14,7 @@ import type {
     LeadCard,
     KanbanMetrics,
 } from "@/app/app/leads/types";
+import {ContractSheet} from "@/app/app/leads/ui/ContractSheet";
 
 type OptimisticAction = { id: string; from: Stage; to: Stage };
 export type AdminOption = { id: string; nome: string };
@@ -172,8 +172,9 @@ export default function KanbanBoard({
 
         document.addEventListener("dragover", handleDragOver, { passive: false });
         document.addEventListener("dragend", handleDragEnd);
+
         return () => {
-            document.removeEventListener("dragover", handleDragOver as any);
+            document.removeEventListener("dragover", handleDragOver);
             document.removeEventListener("dragend", handleDragEnd);
             stopAutoScroll();
         };

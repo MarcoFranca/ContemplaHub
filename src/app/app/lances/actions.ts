@@ -29,6 +29,65 @@ async function getBackendAuthContext() {
     };
 }
 
+export async function updateCartaAction(formData: FormData): Promise<void> {
+    const cotaId = String(formData.get("cotaId") || "");
+    if (!cotaId) throw new Error("Cota inválida.");
+
+    const toNullableString = (name: string) => {
+        const value = String(formData.get(name) || "").trim();
+        return value ? value : null;
+    };
+
+    const toNullableNumber = (name: string) => {
+        const value = String(formData.get(name) || "").trim();
+        if (!value) return null;
+        const num = Number(value.replace(",", "."));
+        return Number.isFinite(num) ? num : null;
+    };
+
+    const opcoesLanceFixoJson = String(formData.get("opcoesLanceFixoJson") || "[]");
+
+    let opcoes_lance_fixo: Array<{
+        id?: string | null;
+        percentual: number;
+        ordem: number;
+        ativo: boolean;
+        observacoes?: string | null;
+    }> = [];
+
+    try {
+        const parsed = JSON.parse(opcoesLanceFixoJson);
+        if (Array.isArray(parsed)) {
+            opcoes_lance_fixo = parsed;
+        }
+    } catch {
+        throw new Error("Opções de lance fixo inválidas.");
+    }
+
+    await backendAuthed(`/lances/cartas/${cotaId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+            grupo_codigo: toNullableString("grupo_codigo"),
+            numero_cota: toNullableString("numero_cota"),
+            produto: toNullableString("produto"),
+            valor_carta: toNullableNumber("valor_carta"),
+            valor_parcela: toNullableNumber("valor_parcela"),
+            prazo: toNullableNumber("prazo"),
+            assembleia_dia: toNullableNumber("assembleia_dia"),
+            autorizacao_gestao: Boolean(formData.get("autorizacao_gestao")),
+            embutido_permitido: Boolean(formData.get("embutido_permitido")),
+            embutido_max_percent: toNullableNumber("embutido_max_percent"),
+            fgts_permitido: Boolean(formData.get("fgts_permitido")),
+            tipo_lance_preferencial: toNullableString("tipo_lance_preferencial"),
+            estrategia: toNullableString("estrategia"),
+            objetivo: toNullableString("objetivo"),
+            opcoes_lance_fixo,
+        }),
+    });
+
+    revalidatePath("/app/lances");
+}
+
 async function backendAuthed<T>(path: string, init?: RequestInit): Promise<T> {
     const { orgId, accessToken } = await getBackendAuthContext();
     const baseUrl = getBackendUrl();

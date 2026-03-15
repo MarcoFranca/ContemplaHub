@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -202,6 +202,8 @@ function RegistrarLanceDialog({
     onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
     pending: boolean;
 }) {
+    const [open, setOpen] = useState(false);
+
     const assembleiaDefault = item.assembleia_prevista ?? competencia;
 
     const [tipoLance, setTipoLance] = useState<"livre" | "fixo">("livre");
@@ -220,6 +222,17 @@ function RegistrarLanceDialog({
     const opcoesFixo = item.opcoes_lance_fixo ?? [];
     const opcaoFixoSelecionada =
         opcoesFixo.find((op) => op.id === fixoOpcaoId) ?? null;
+
+    useEffect(() => {
+        if (open) {
+            console.log("RegistrarLanceDialog aberto");
+            console.log("item completo:", item);
+            console.log("item.opcoes_lance_fixo:", item.opcoes_lance_fixo);
+            console.log("opcoesFixo:", opcoesFixo);
+        }
+    }, [open, item, opcoesFixo]);
+
+    // resto...
 
     const valorCarta = Number(item.valor_carta ?? 0);
     const percentualFixo = opcaoFixoSelecionada
@@ -249,10 +262,9 @@ function RegistrarLanceDialog({
         !excedeuTotal &&
         !excedeuEmbutido &&
         (tipoLance === "livre" || Boolean(fixoOpcaoId));
-    console.log("opcoesFixo", opcoesFixo);
 
     return (
-        <Sheet>
+        <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
                 <Button size="sm">Registrar lance</Button>
             </SheetTrigger>

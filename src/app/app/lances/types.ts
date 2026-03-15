@@ -113,6 +113,7 @@ export type LancesCartaDetalhe = {
         readiness_score?: number | null;
     } | null;
     opcoes_lance_fixo?: CotaLanceFixoOpcao[];
+    tem_pendencia_configuracao?: boolean;
 };
 
 export type CotaLanceFixoOpcao = {

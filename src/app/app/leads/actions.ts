@@ -270,7 +270,9 @@ export async function createContractFromLead(formData: FormData): Promise<void> 
         const v = formData.get(name);
         return v ? String(v).trim() : null;
     };
+
     const getBool = (name: string) => !!formData.get(name);
+
     const getInt = (name: string) => {
         const v = getStr(name);
         if (!v) return null;
@@ -278,18 +280,46 @@ export async function createContractFromLead(formData: FormData): Promise<void> 
         return Number.isFinite(n) ? Math.trunc(n) : null;
     };
 
+    const rawOpcoesLanceFixoJson = getStr("opcoesLanceFixoJson") ?? "[]";
+
+    let opcoesLanceFixo: Array<{
+        percentual: number;
+        ordem: number;
+        ativo: boolean;
+        observacoes: string | null;
+    }> = [];
+
+    try {
+        const parsed = JSON.parse(rawOpcoesLanceFixoJson);
+
+        if (!Array.isArray(parsed)) {
+            throw new Error("Formato inválido");
+        }
+
+        opcoesLanceFixo = parsed.map((item) => ({
+            percentual: Number(item.percentual),
+            ordem: Number(item.ordem),
+            ativo: Boolean(item.ativo),
+            observacoes:
+                item.observacoes === undefined || item.observacoes === null || item.observacoes === ""
+                    ? null
+                    : String(item.observacoes),
+        }));
+    } catch (error) {
+        console.error("Erro ao ler opcoesLanceFixoJson:", error);
+        throw new Error("Opções de lance fixo inválidas.");
+    }
+
     const payload = {
         lead_id: getStr("leadId"),
         administradora_id: getStr("administradoraId"),
 
         numero_cota: getStr("numeroCota"),
         grupo_codigo: getStr("grupoCodigo"),
-        produto: (getStr("produto") ?? "imobiliario") as
-            | "imobiliario"
-            | "auto"
-            | "pesados",
+        produto: (getStr("produto") ?? "imobiliario") as "imobiliario" | "auto",
 
         valor_carta: getStr("valorCarta") ?? "",
+        valor_parcela: getStr("valorParcela"),
         prazo: getInt("prazo"),
         forma_pagamento: getStr("formaPagamento"),
         indice_correcao: getStr("indiceCorrecao"),
@@ -302,6 +332,8 @@ export async function createContractFromLead(formData: FormData): Promise<void> 
         data_adesao: getStr("dataAdesao"),
         data_assinatura: getStr("dataAssinatura"),
         numero_contrato: getStr("numero"),
+
+        opcoes_lance_fixo: opcoesLanceFixo,
     };
 
     if (
