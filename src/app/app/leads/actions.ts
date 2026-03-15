@@ -10,6 +10,7 @@ import type {
     LeadCard,
     CanalOrigem,
     KanbanColumns,
+    ContractStatus,
 } from "./types";
 
 // ====== Supabase SR client ======
@@ -20,7 +21,6 @@ function srv() {
         { auth: { persistSession: false } }
     );
 }
-
 
 function normalizeOrigem(input?: string | null): CanalOrigem {
     const allowed: CanalOrigem[] = ["lp", "whatsapp", "indicacao", "orgânico", "pago", "outro"];
@@ -42,18 +42,12 @@ function normalizeOrigem(input?: string | null): CanalOrigem {
     return allowed.includes(hit as CanalOrigem) ? hit : "whatsapp";
 }
 
-// ====== Listagem Kanban ======
-type ListArgs = {
-    showLost?: boolean;   // mostrar "perdido"
-    showActive?: boolean; // mostrar "ativo"
-    scope?: "me" | "team"; // "me": só meus leads | "team": todos (se gestor/admin)
-};
 export type { Stage, LeadCard };
 
 export async function listLeadsForKanban(options?: {
     showActive?: boolean;
     showLost?: boolean;
-    scope?: "me" | "team"; // mantém compatível com a chamada do page.tsx
+    scope?: "me" | "team";
 }): Promise<LeadCard[]> {
     const profile = await getCurrentProfile();
     if (!profile?.orgId) throw new Error("Org inválida");
@@ -61,8 +55,6 @@ export async function listLeadsForKanban(options?: {
     const params = new URLSearchParams();
     if (options?.showActive) params.set("show_active", "true");
     if (options?.showLost) params.set("show_lost", "true");
-    // scope ("me" | "team") por enquanto é ignorado pelo backend,
-    // mas deixamos no tipo para não quebrar o page.tsx.
 
     const query = params.toString();
     const path = query ? `/kanban?${query}` : `/kanban`;
@@ -72,13 +64,107 @@ export async function listLeadsForKanban(options?: {
         orgId: profile.orgId,
     });
 
-    // Backend devolve: { columns: { [stage]: LeadCard[] } }
     const columns = data.columns as KanbanColumns;
-
-    // Achata tudo em um array de linhas (como o page.tsx espera)
     const rows: LeadCard[] = Object.values(columns).flat();
 
-    return rows;
+    // enriquecimento da coluna contrato com status operacional real
+    const contractLeadIds = rows
+        .filter((row) => row.etapa === "contrato")
+        .map((row) => row.id);
+
+    if (contractLeadIds.length === 0) {
+        return rows;
+    }
+
+    const s = srv();
+
+    const { data: cotasData, error: cotasError } = await s
+        .from("cotas")
+        .select("id, lead_id, administradora_id, valor_carta, numero_cota, grupo_codigo, created_at")
+        .eq("org_id", profile.orgId)
+        .in("lead_id", contractLeadIds);
+
+    if (cotasError) {
+        console.error("Erro ao enriquecer cotas do kanban:", cotasError);
+        return rows;
+    }
+
+    const cotas = cotasData ?? [];
+    if (cotas.length === 0) {
+        return rows;
+    }
+
+    const cotaIds = cotas.map((c) => c.id);
+
+    const { data: contratosData, error: contratosError } = await s
+        .from("contratos")
+        .select("id, cota_id, numero, status, created_at")
+        .eq("org_id", profile.orgId)
+        .in("cota_id", cotaIds)
+        .order("created_at", { ascending: false });
+
+    if (contratosError) {
+        console.error("Erro ao enriquecer contratos do kanban:", contratosError);
+        return rows;
+    }
+
+    const administradoraIds = [
+        ...new Set(cotas.map((c) => c.administradora_id).filter(Boolean) as string[]),
+    ];
+
+    let admMap = new Map<string, string>();
+    if (administradoraIds.length > 0) {
+        const { data: adminsData, error: adminsError } = await s
+            .from("administradoras")
+            .select("id, nome")
+            .in("id", administradoraIds);
+
+        if (!adminsError) {
+            admMap = new Map((adminsData ?? []).map((a) => [a.id, a.nome]));
+        }
+    }
+
+    const latestContractByCota = new Map<string, any>();
+    for (const contrato of contratosData ?? []) {
+        if (!latestContractByCota.has(contrato.cota_id)) {
+            latestContractByCota.set(contrato.cota_id, contrato);
+        }
+    }
+
+    const latestCotaByLead = new Map<string, any>();
+    for (const cota of cotas) {
+        const current = latestCotaByLead.get(cota.lead_id);
+        const currentTs = current?.created_at ? new Date(current.created_at).getTime() : 0;
+        const nextTs = cota?.created_at ? new Date(cota.created_at).getTime() : 0;
+
+        if (!current || nextTs >= currentTs) {
+            latestCotaByLead.set(cota.lead_id, cota);
+        }
+    }
+
+    return rows.map((row) => {
+        if (row.etapa !== "contrato") return row;
+
+        const cota = latestCotaByLead.get(row.id);
+        if (!cota) return row;
+
+        const contrato = latestContractByCota.get(cota.id);
+
+        return {
+            ...row,
+            cota_id: cota.id ?? null,
+            cota_numero: cota.numero_cota ?? null,
+            grupo_codigo: cota.grupo_codigo ?? null,
+            valor_carta: cota.valor_carta ? String(cota.valor_carta) : null,
+            administradora_id: cota.administradora_id ?? null,
+            administradora_nome: cota.administradora_id
+                ? admMap.get(cota.administradora_id) ?? null
+                : null,
+            contract_id: contrato?.id ?? null,
+            contract_status: (contrato?.status as ContractStatus | null) ?? "pendente_assinatura",
+            contract_number: contrato?.numero ?? null,
+        };
+    });
 }
 
 // ====== Movimentação de estágio com histórico ======
@@ -101,15 +187,11 @@ export async function moveLeadStage(args: {
         body: JSON.stringify({ stage: newStage, reason }),
     });
 
-    // 🔄 força o Next a buscar o Kanban de novo do backend
     revalidatePath("/app/leads");
-    // se seu dashboard principal depende das etapas, vale revalidar /app também:
-    // revalidatePath("/app");
-
-    return data; // { ok, lead, ... }
+    return data;
 }
 
-// ====== Cadastro manual de lead (recebe FormData) ======
+// ====== Cadastro manual de lead ======
 export async function createLeadManual(formData: FormData): Promise<{ ok: boolean; error?: string }> {
     const me = await getCurrentProfile();
     if (!me?.orgId) return { ok: false, error: "Organização inválida." };
@@ -117,19 +199,13 @@ export async function createLeadManual(formData: FormData): Promise<{ ok: boolea
     const s = srv();
 
     try {
-        // ----------------------------
-        // LEAD
-        // ----------------------------
         const nome = String(formData.get("nome") ?? "").trim();
         const emailRaw = String(formData.get("email") ?? "").trim();
         const telefoneRaw = String(formData.get("telefone") ?? "").trim();
         const origemRaw = String(formData.get("origem") ?? "orgânico").trim();
 
-        if (!nome)
-            return { ok: false, error: "Informe o nome do lead." };
-
-        if (!telefoneRaw && !emailRaw)
-            return { ok: false, error: "Informe telefone ou e-mail." };
+        if (!nome) return { ok: false, error: "Informe o nome do lead." };
+        if (!telefoneRaw && !emailRaw) return { ok: false, error: "Informe telefone ou e-mail." };
 
         const telefone = telefoneRaw ? telefoneRaw.replace(/\D+/g, "") : null;
         const email = emailRaw || null;
@@ -156,7 +232,6 @@ export async function createLeadManual(formData: FormData): Promise<{ ok: boolea
         if (leadErr) {
             console.error("Erro ao criar lead:", leadErr);
 
-            // ERRO DE DUPLICIDADE (unique)
             if (leadErr.code === "23505") {
                 return { ok: false, error: "Já existe um lead com esse telefone/e-mail." };
             }
@@ -164,16 +239,13 @@ export async function createLeadManual(formData: FormData): Promise<{ ok: boolea
             return { ok: false, error: "Erro ao criar o lead. Tente novamente." };
         }
 
-        // ---- Campos do INTERESSE (opcionais) ----
-        const rawProduto = String(formData.get("produto") ?? "").trim();           // 'imobiliario' | 'auto' | '__produto' | 'none'
+        const rawProduto = String(formData.get("produto") ?? "").trim();
         const rawValorTotal = String(formData.get("valorTotal") ?? "").trim();
         const rawPrazoMeses = String(formData.get("prazoMeses") ?? "").trim();
         const objetivo = String(formData.get("objetivo") ?? "").trim();
-
-        const rawPerfil = String(formData.get("perfilDesejado") ?? "").trim();    // 'disciplinado_acumulador' | '__perfil' | 'none'
+        const rawPerfil = String(formData.get("perfilDesejado") ?? "").trim();
         const observacao = String(formData.get("observacao") ?? "").trim();
 
-// normaliza produto/ perfil para null quando for "vazio"
         const produto =
             !rawProduto || rawProduto === "__produto" || rawProduto === "none"
                 ? null
@@ -183,7 +255,6 @@ export async function createLeadManual(formData: FormData): Promise<{ ok: boolea
             !rawPerfil || rawPerfil === "__perfil" || rawPerfil === "none"
                 ? null
                 : rawPerfil;
-
 
         const hasInterest =
             produto || rawValorTotal || rawPrazoMeses || objetivo || rawPerfil || observacao;
@@ -197,7 +268,7 @@ export async function createLeadManual(formData: FormData): Promise<{ ok: boolea
             const { error: intErr } = await s.from("lead_interesses").insert({
                 org_id: me.orgId,
                 lead_id: leadRow!.id,
-                produto,                          // já vem normalizado (string | null)
+                produto,
                 valor_total: valorTotal,
                 prazo_meses: prazoMeses,
                 objetivo: objetivo || null,
@@ -213,9 +284,7 @@ export async function createLeadManual(formData: FormData): Promise<{ ok: boolea
             }
         }
 
-        // revalidate
         revalidatePath("/app/leads");
-
         return { ok: true };
     } catch (err) {
         console.error("Erro inesperado em createLeadManual:", err);
@@ -223,8 +292,7 @@ export async function createLeadManual(formData: FormData): Promise<{ ok: boolea
     }
 }
 
-
-// ====== Opções para o modal (administradoras + grupos) ======
+// ====== Opções para o contrato ======
 export type AdminOption = { id: string; nome: string };
 export type GrupoOption = { id: string; administradoraId: string; codigo: string | null };
 
@@ -240,8 +308,8 @@ export async function listContractOptions(): Promise<{
     const [admRes, grpRes] = await Promise.all([
         s.from("administradoras")
             .select("id, nome")
-            // .eq("org_id", me.orgId)  ❌ remova essa linha
             .order("nome", { ascending: true }),
+
         s.from("grupos")
             .select("id, administradora_id, codigo")
             .eq("org_id", me.orgId)
@@ -261,7 +329,7 @@ export async function listContractOptions(): Promise<{
     };
 }
 
-// ====== Criar contrato a partir do lead (chama backend) ======
+// ====== Criar contrato a partir do lead ======
 export async function createContractFromLead(formData: FormData): Promise<void> {
     const me = await getCurrentProfile();
     if (!me?.orgId) throw new Error("Sem organização.");
@@ -352,17 +420,20 @@ export async function createContractFromLead(formData: FormData): Promise<void> 
         body: JSON.stringify(payload),
     });
 
+    // move o lead para contrato após criação bem-sucedida
+    await backendFetch(`/leads/${payload.lead_id}/stage`, {
+        method: "PATCH",
+        orgId: me.orgId,
+        body: JSON.stringify({
+            stage: "contrato",
+            reason: "Contrato iniciado a partir do cadastro da carta.",
+        }),
+    });
+
     revalidatePath("/app/leads");
+    revalidatePath(`/app/leads/${payload.lead_id}`);
+    revalidatePath("/app/carteira");
 }
-
-// ====== Atualizar status do contrato ======
-export type ContractStatus =
-    | "pendente_assinatura"
-    | "pendente_pagamento"
-    | "alocado"
-    | "contemplado"
-    | "cancelado";
-
 
 export async function updateContractStatus(
     contractId: string,
@@ -381,7 +452,6 @@ export async function updateContractStatus(
     revalidatePath("/app/carteira");
 }
 
-// ====== EXCLUIR LEAD (com cascata no backend) ======
 export async function deleteLead(leadId: string) {
     const profile = await getCurrentProfile();
     if (!profile?.orgId) {
@@ -393,6 +463,5 @@ export async function deleteLead(leadId: string) {
         orgId: profile.orgId,
     });
 
-    // se não lançou erro, está tudo certo
     return { ok: true };
 }

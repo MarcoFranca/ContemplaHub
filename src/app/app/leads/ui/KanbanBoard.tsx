@@ -8,18 +8,16 @@ import { toast } from "sonner";
 import { fireConfetti } from "@/lib/ui/confetti";
 import { ColumnHeaderStats } from "@/app/app/leads/ui/ColumnHeaderStats";
 
-// 👇 tipos centralizados
 import type {
     Stage,
     LeadCard,
     KanbanMetrics,
 } from "@/app/app/leads/types";
-import {ContractSheet} from "@/app/app/leads/ui/ContractSheet";
+import { ContractSheet } from "@/app/app/leads/ui/ContractSheet";
 
 type OptimisticAction = { id: string; from: Stage; to: Stage };
 export type AdminOption = { id: string; nome: string };
 
-// zona próxima da borda que ativa o scroll e velocidade máx
 const EDGE_PX = 96;
 const MAX_SPEED = 28;
 
@@ -57,15 +55,23 @@ export default function KanbanBoard({
         initialColumns,
         (state, action) => {
             if (action.from === action.to) return state;
+
             const fromList = [...state[action.from]];
             const toList = [...state[action.to]];
             const idx = fromList.findIndex((l) => l.id === action.id);
+
             if (idx >= 0) {
                 const [lead] = fromList.splice(idx, 1);
                 const moved: LeadCard = { ...lead, etapa: action.to };
                 toList.unshift(moved);
-                return { ...state, [action.from]: fromList, [action.to]: toList };
+
+                return {
+                    ...state,
+                    [action.from]: fromList,
+                    [action.to]: toList,
+                };
             }
+
             return state;
         }
     );
@@ -73,10 +79,12 @@ export default function KanbanBoard({
     const containerRef = React.useRef<HTMLDivElement | null>(null);
     const draggingRef = React.useRef(false);
     const rafRef = React.useRef<number | null>(null);
-    const speedRef = React.useRef(0); // velocidade dinâmica (px/frame)
+    const speedRef = React.useRef(0);
 
-    // === Drawer de contrato controlado ===
-    const [contractLead, setContractLead] = React.useState<{ id: string; nome: string } | null>(null);
+    const [contractLead, setContractLead] = React.useState<{
+        id: string;
+        nome: string;
+    } | null>(null);
 
     function openContractDrawerFor(id: string, nome: string) {
         setContractLead({ id, nome });
@@ -95,8 +103,10 @@ export default function KanbanBoard({
         ev.preventDefault();
         draggingRef.current = false;
         stopAutoScroll();
+
         const raw = ev.dataTransfer.getData("text/plain");
         if (!raw) return;
+
         try {
             const lead = JSON.parse(raw) as LeadCard;
             const from = lead.etapa;
@@ -112,11 +122,10 @@ export default function KanbanBoard({
                 toast.info(`Lead movido para: ${stageLabels[to].label}`);
             });
         } catch {
-            // ignore JSON parse error
+            // ignore
         }
     }
 
-    // ---- Auto-scroll baseado em dragover global ----
     function stopAutoScroll() {
         if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
@@ -129,18 +138,21 @@ export default function KanbanBoard({
             rafRef.current = null;
             return;
         }
+
         const speed = speedRef.current;
         if (speed !== 0) {
             const max = el.scrollWidth - el.clientWidth;
             const next = Math.min(max, Math.max(0, el.scrollLeft + speed));
             el.scrollLeft = next;
         }
+
         rafRef.current = requestAnimationFrame(loop);
     }
 
     React.useEffect(() => {
         function handleDragOver(e: DragEvent) {
             if (!draggingRef.current) return;
+
             const el = containerRef.current;
             if (!el) return;
 
@@ -151,6 +163,7 @@ export default function KanbanBoard({
             const distRight = Math.max(0, rect.right - x);
 
             let speed = 0;
+
             if (distLeft <= EDGE_PX) {
                 const pct = 1 - distLeft / EDGE_PX;
                 if (el.scrollLeft > 0) speed = -Math.ceil(pct * MAX_SPEED);
@@ -161,7 +174,11 @@ export default function KanbanBoard({
             }
 
             speedRef.current = speed;
-            if (!rafRef.current) rafRef.current = requestAnimationFrame(loop);
+
+            if (!rafRef.current) {
+                rafRef.current = requestAnimationFrame(loop);
+            }
+
             e.preventDefault();
         }
 
@@ -205,7 +222,7 @@ export default function KanbanBoard({
                             className={`text-sm p-4 text-center font-semibold tracking-wide capitalize ${stageLabels[s].color}`}
                         >
                             <CardTitle className="text-sm font-semibold tracking-wide capitalize">
-                                {s}
+                                {stageLabels[s].label}
                             </CardTitle>
                         </CardHeader>
 
@@ -221,6 +238,7 @@ export default function KanbanBoard({
                                     onDragStart={onDragStart}
                                 />
                             ))}
+
                             {columns[s].length === 0 && (
                                 <p className="text-xs text-muted-foreground">
                                     Arraste cards para cá.
@@ -231,25 +249,21 @@ export default function KanbanBoard({
                 ))}
             </div>
 
-            {/* Drawer de contrato quando soltar em “contrato” */}
             {contractLead && (
                 <ContractSheet
                     open={!!contractLead}
-                    onOpenChange={(v) => !v && closeContractDrawer()}
+                    onOpenChange={(v) => {
+                        if (!v) closeContractDrawer();
+                    }}
                     leadId={contractLead.id}
                     leadName={contractLead.nome}
                     administradoras={contractOptions.administradoras}
                     onSuccess={async () => {
                         toast.success(
                             <span>
-                Contrato criado e cliente movido para a Carteira.{" "}
-                                <a
-                                    href="/app/carteira"
-                                    className="underline text-emerald-300 hover:text-emerald-200 ml-1"
-                                >
-                  Ver Carteira →
-                </a>
-              </span>
+                                Contrato criado e lead movido para a coluna{" "}
+                                <strong>Contrato</strong>.
+                            </span>
                         );
                         await fireConfetti();
                     }}

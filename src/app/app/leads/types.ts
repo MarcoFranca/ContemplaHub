@@ -9,6 +9,13 @@ export type Stage =
 
 export type CanalOrigem = "lp" | "whatsapp" | "indicacao" | "orgânico" | "pago" | "outro";
 
+export type ContractStatus =
+    | "pendente_assinatura"
+    | "pendente_pagamento"
+    | "alocado"
+    | "contemplado"
+    | "cancelado";
+
 export type Interest = {
     produto?: string | null;
     valorTotal?: string | null;
@@ -46,11 +53,9 @@ export interface LeadCard {
 
     utm_source?: string | null;
 
-    // legado
     valor_interesse?: string | null;
     prazo_meses?: number | null;
 
-    // interesse atual
     interest?: LeadCardInterest | null;
     interest_insight?: InterestInsight | null;
 
@@ -59,16 +64,21 @@ export interface LeadCard {
     prob_conversao?: number | null;
 
     interest_summary?: string | null;
+
+    // enriquecimento para coluna contrato
+    contract_id?: string | null;
+    contract_status?: ContractStatus | null;
+    contract_number?: string | null;
+
+    cota_id?: string | null;
+    cota_numero?: string | null;
+    grupo_codigo?: string | null;
+
+    valor_carta?: string | null;
+    administradora_id?: string | null;
+    administradora_nome?: string | null;
 }
 
-/**
- * Agora o backend já traz os números por etapa:
- * {
- *   avgDays: { novo: 11.09, diagnostico: 11.13, ...},
- *   conversion: { ... },
- *   ...
- * }
- */
 export type MetricsByStage = Partial<Record<Stage, number>>;
 
 export interface KanbanMetrics {
