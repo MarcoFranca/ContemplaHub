@@ -124,18 +124,36 @@ export async function listLeadsForKanban(options?: {
         }
     }
 
-    const latestContractByCota = new Map<string, any>();
-    for (const contrato of contratosData ?? []) {
+    type CotaRow = {
+        id: string;
+        lead_id: string;
+        administradora_id: string | null;
+        valor_carta: string | number | null;
+        numero_cota: string | null;
+        grupo_codigo: string | null;
+        created_at: string | null;
+    };
+
+    type ContratoRow = {
+        id: string;
+        cota_id: string;
+        numero: string | null;
+        status: string | null;
+        created_at: string | null;
+    };
+
+    const latestContractByCota = new Map<string, ContratoRow>();
+    for (const contrato of (contratosData ?? []) as ContratoRow[]) {
         if (!latestContractByCota.has(contrato.cota_id)) {
             latestContractByCota.set(contrato.cota_id, contrato);
         }
     }
 
-    const latestCotaByLead = new Map<string, any>();
-    for (const cota of cotas) {
+    const latestCotaByLead = new Map<string, CotaRow>();
+    for (const cota of cotas as CotaRow[]) {
         const current = latestCotaByLead.get(cota.lead_id);
         const currentTs = current?.created_at ? new Date(current.created_at).getTime() : 0;
-        const nextTs = cota?.created_at ? new Date(cota.created_at).getTime() : 0;
+        const nextTs = cota.created_at ? new Date(cota.created_at).getTime() : 0;
 
         if (!current || nextTs >= currentTs) {
             latestCotaByLead.set(cota.lead_id, cota);

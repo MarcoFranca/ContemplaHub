@@ -11,7 +11,6 @@ import { InterestDetailsDialog } from "./InterestDetailsDialog";
 import { DiagnosticSheet } from "@/app/app/leads/ui/DiagnosticSheet";
 import { DeleteLeadButton } from "@/app/app/leads/ui/DeleteLeadButton";
 import { updateContractStatus } from "@/app/app/leads/actions";
-
 import type { LeadCard, ContractStatus } from "@/app/app/leads/types";
 
 function contractStatusLabel(status?: ContractStatus | null) {
