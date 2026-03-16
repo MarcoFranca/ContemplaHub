@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus, Sparkles } from "lucide-react";
 
-import { updateContractStatus, type ContractStatus } from "@/app/app/leads/actions";
+import { updateContractStatus } from "@/app/app/leads/actions";
+import type { ContractStatus } from "@/app/app/leads/types";
 import { ContractSheet } from "@/app/app/leads/ui/ContractSheet";
 
 type AdminOption = {
