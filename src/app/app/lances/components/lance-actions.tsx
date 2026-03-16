@@ -206,8 +206,27 @@ function RegistrarLanceDialog({
 
     const assembleiaDefault = item.assembleia_prevista ?? competencia;
 
-    const [tipoLance, setTipoLance] = useState<"livre" | "fixo">("livre");
-    const [fixoOpcaoId, setFixoOpcaoId] = useState("");
+    const opcoesFixo = [...(item.opcoes_lance_fixo ?? [])]
+        .filter((op) => op.ativo)
+        .sort((a, b) => a.ordem - b.ordem);
+
+    const suggestTipoLance = (): "livre" | "fixo" => {
+        const preferencial = (item.tipo_lance_preferencial ?? "").trim().toLowerCase();
+
+        if (preferencial === "fixo" && opcoesFixo.length > 0) {
+            return "fixo";
+        }
+
+        return "livre";
+    };
+
+    const suggestFixoOpcaoId = (): string => {
+        const firstActive = opcoesFixo[0];
+        return firstActive?.id ?? "";
+    };
+
+    const [tipoLance, setTipoLance] = useState<"livre" | "fixo">(suggestTipoLance);
+    const [fixoOpcaoId, setFixoOpcaoId] = useState<string>(suggestFixoOpcaoId);
 
     const [valor, setValor] = useState("R$ 0,00");
     const [embutido, setEmbutido] = useState("R$ 0,00");
@@ -219,20 +238,8 @@ function RegistrarLanceDialog({
     const fgtsNumber = item.fgts_permitido ? parseBrlCurrency(fgts) : 0;
     const outroNumber = parseBrlCurrency(outro);
 
-    const opcoesFixo = item.opcoes_lance_fixo ?? [];
     const opcaoFixoSelecionada =
         opcoesFixo.find((op) => op.id === fixoOpcaoId) ?? null;
-
-    useEffect(() => {
-        if (open) {
-            console.log("RegistrarLanceDialog aberto");
-            console.log("item completo:", item);
-            console.log("item.opcoes_lance_fixo:", item.opcoes_lance_fixo);
-            console.log("opcoesFixo:", opcoesFixo);
-        }
-    }, [open, item, opcoesFixo]);
-
-    // resto...
 
     const valorCarta = Number(item.valor_carta ?? 0);
     const percentualFixo = opcaoFixoSelecionada
@@ -241,7 +248,6 @@ function RegistrarLanceDialog({
 
     const baseInformada = embutidoNumber + fgtsNumber + outroNumber;
     const proprioNumber = Math.max(valorNumber - baseInformada, 0);
-
 
     const embutidoMaxPercent = Number(item.embutido_max_percent ?? 0);
     const limiteEmbutido =
@@ -263,8 +269,24 @@ function RegistrarLanceDialog({
         !excedeuEmbutido &&
         (tipoLance === "livre" || Boolean(fixoOpcaoId));
 
+    function resetSuggestedState(nextOpen: boolean) {
+        setOpen(nextOpen);
+
+        if (!nextOpen) return;
+
+        const nextTipo = suggestTipoLance();
+        const nextFixoId = suggestFixoOpcaoId();
+
+        setTipoLance(nextTipo);
+        setFixoOpcaoId(nextTipo === "fixo" ? nextFixoId : "");
+        setValor("R$ 0,00");
+        setEmbutido("R$ 0,00");
+        setFgts("R$ 0,00");
+        setOutro("R$ 0,00");
+    }
+
     return (
-        <Sheet open={open} onOpenChange={setOpen}>
+        <Sheet open={open} onOpenChange={resetSuggestedState}>
             <SheetTrigger asChild>
                 <Button size="sm">Registrar lance</Button>
             </SheetTrigger>
@@ -273,6 +295,38 @@ function RegistrarLanceDialog({
                 <SheetHeader>
                     <SheetTitle>Registrar lance</SheetTitle>
                 </SheetHeader>
+
+                <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                    <p className="text-sm font-medium text-emerald-300">
+                        Sugestão operacional
+                    </p>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        <Badge variant="secondary">
+                            Preferencial: {(item.tipo_lance_preferencial ?? "livre").toString()}
+                        </Badge>
+
+                        {tipoLance === "fixo" && opcaoFixoSelecionada && (
+                            <Badge variant="outline">
+                                Fixo sugerido: {Number(opcaoFixoSelecionada.percentual).toLocaleString("pt-BR")}%
+                            </Badge>
+                        )}
+
+                        {item.embutido_permitido && (
+                            <Badge variant="outline">Permite embutido</Badge>
+                        )}
+
+                        {item.fgts_permitido && (
+                            <Badge variant="outline">Permite FGTS</Badge>
+                        )}
+                    </div>
+
+                    {item.estrategia?.trim() && (
+                        <p className="mt-3 text-sm text-muted-foreground whitespace-pre-line">
+                            {item.estrategia}
+                        </p>
+                    )}
+                </div>
 
                 <form
                     action={(formData) => {
@@ -302,13 +356,13 @@ function RegistrarLanceDialog({
                     }}
                     className="mt-6 space-y-6"
                 >
-                    <input type="hidden" name="cota_id" value={item.cota_id}/>
-                    <input type="hidden" name="competencia" value={competencia}/>
-                    <input type="hidden" name="valor" value={valorNumber ? valorNumber.toFixed(2) : ""}/>
-                    <input type="hidden" name="pagamento_embutido" value={embutidoNumber.toFixed(2)}/>
-                    <input type="hidden" name="pagamento_fgts" value={fgtsNumber.toFixed(2)}/>
-                    <input type="hidden" name="pagamento_outro" value={outroNumber.toFixed(2)}/>
-                    <input type="hidden" name="pagamento_proprio" value={proprioNumber.toFixed(2)}/>
+                    <input type="hidden" name="cota_id" value={item.cota_id} />
+                    <input type="hidden" name="competencia" value={competencia} />
+                    <input type="hidden" name="valor" value={valorNumber ? valorNumber.toFixed(2) : ""} />
+                    <input type="hidden" name="pagamento_embutido" value={embutidoNumber.toFixed(2)} />
+                    <input type="hidden" name="pagamento_fgts" value={fgtsNumber.toFixed(2)} />
+                    <input type="hidden" name="pagamento_outro" value={outroNumber.toFixed(2)} />
+                    <input type="hidden" name="pagamento_proprio" value={proprioNumber.toFixed(2)} />
                     <input
                         type="hidden"
                         name="cota_lance_fixo_opcao_id"
@@ -346,6 +400,9 @@ function RegistrarLanceDialog({
                                                 const next = e.target.value as "livre" | "fixo";
                                                 setTipoLance(next);
                                                 if (next !== "fixo") setFixoOpcaoId("");
+                                                if (next === "fixo" && !fixoOpcaoId) {
+                                                    setFixoOpcaoId(suggestFixoOpcaoId());
+                                                }
                                             }}
                                         >
                                             <option value="livre">Livre</option>
@@ -382,7 +439,6 @@ function RegistrarLanceDialog({
                                         ) : (
                                             <>
                                                 <select
-                                                    name="cota_lance_fixo_opcao_id"
                                                     className="h-10 rounded-md border bg-background px-3 text-sm"
                                                     value={fixoOpcaoId}
                                                     onChange={(e) => setFixoOpcaoId(e.target.value)}
@@ -396,14 +452,17 @@ function RegistrarLanceDialog({
                                                 </select>
 
                                                 <Input
-                                                    value={opcaoFixoSelecionada ? `${Number(opcaoFixoSelecionada.percentual).toLocaleString("pt-BR")}%` : ""}
+                                                    value={
+                                                        opcaoFixoSelecionada
+                                                            ? `${Number(opcaoFixoSelecionada.percentual).toLocaleString("pt-BR")}%`
+                                                            : ""
+                                                    }
                                                     readOnly
                                                     disabled
                                                 />
 
                                                 <p className="text-xs text-muted-foreground">
-                                                    O percentual do lance fixo é definido pela opção selecionada da
-                                                    carta.
+                                                    O percentual do lance fixo é definido pela opção selecionada da carta.
                                                 </p>
                                             </>
                                         )}
@@ -427,8 +486,7 @@ function RegistrarLanceDialog({
                                 <div>
                                     <h3 className="font-medium">Composição do pagamento</h3>
                                     <p className="text-xs text-muted-foreground">
-                                        Informe embutido, FGTS e outros recursos. O recurso próprio é calculado
-                                        automaticamente.
+                                        Informe embutido, FGTS e outros recursos. O recurso próprio é calculado automaticamente.
                                     </p>
                                 </div>
 
@@ -544,7 +602,7 @@ function RegistrarLanceDialog({
                                     <strong>{formatBrl(creditoLiquido)}</strong>
                                 </div>
 
-                                <div className="border-t pt-3"/>
+                                <div className="border-t pt-3" />
 
                                 <div className="flex items-center justify-between text-sm">
                                     <span>FGTS</span>
@@ -556,7 +614,7 @@ function RegistrarLanceDialog({
                                     <strong>{formatBrl(proprioNumber)}</strong>
                                 </div>
 
-                                <div className="border-t pt-3"/>
+                                <div className="border-t pt-3" />
 
                                 <div className="flex items-center justify-between text-sm">
                                     <span>Valor líquido no bolso</span>
