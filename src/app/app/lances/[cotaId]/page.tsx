@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getLanceCartaDetalhe } from "../actions";
+import { getLanceCartaDetalhe } from "../actions/carta-actions";
 import { DetalheHeaderActions } from "@/app/app/lances/components/detalhe-header-actions";
 
 type SearchParams = Record<string, string | string[] | undefined>;
