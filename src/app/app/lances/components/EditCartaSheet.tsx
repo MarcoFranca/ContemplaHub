@@ -29,15 +29,19 @@ import {
     Trash2,
     WalletCards,
 } from "lucide-react";
+import { updateCartaAction, getContratoByCotaAction } from "../actions/carta-actions";
 import {
+    cancelarComissaoCotaAction,
+    deleteComissaoCotaAction,
     getComissaoCotaAction,
+    getDeleteComissaoCheckAction,
     listParceirosForSelectAction,
     saveComissaoCotaAction,
-    updateCartaAction,
-    getContratoByCotaAction,
-} from "../actions";
+} from "@/app/app/lances/actions/comissao-actions";
+import { deleteCartaAction } from "../actions/carta-actions";
 import type { CotaComissaoPayload, ParceiroSelectOption } from "../types";
 import { ComissaoConfigSection } from "./comissao/ComissaoConfigSection";
+import { SensitiveActionsSection } from "./comissao/SensitiveActionsSection";
 import { gerarLancamentosContratoAction } from "@/app/app/comissoes/actions";
 
 type LanceFixoOpcaoForm = {
@@ -55,40 +59,6 @@ type DiagnosticoSuggestion = {
     lance_max_pct?: number | null;
     readiness_score?: number | null;
 };
-
-
-function getDefaultComissaoPayload(): CotaComissaoPayload {
-    return {
-        percentual_total: 0,
-        base_calculo: "valor_carta",
-        modo: "avista",
-        imposto_padrao_pct: 10,
-        primeira_competencia_regra: "mes_adesao",
-        furo_meses_override: null,
-        ativo: true,
-        observacoes: "",
-        regras: [
-            {
-                ordem: 1,
-                tipo_evento: "adesao",
-                offset_meses: 0,
-                percentual_comissao: 0,
-                descricao: "",
-            },
-        ],
-        parceiros: [],
-    };
-}
-
-function normalizeComissaoPayload(payload?: Partial<CotaComissaoPayload> | null): CotaComissaoPayload {
-    const base = getDefaultComissaoPayload();
-    return {
-        ...base,
-        ...payload,
-        regras: payload?.regras?.length ? payload.regras : base.regras,
-        parceiros: payload?.parceiros ?? [],
-    };
-}
 
 type Props = {
     open: boolean;
@@ -125,6 +95,39 @@ type Props = {
     onSuccess?: () => void;
 };
 
+function getDefaultComissaoPayload(): CotaComissaoPayload {
+    return {
+        percentual_total: 0,
+        base_calculo: "valor_carta",
+        modo: "avista",
+        imposto_padrao_pct: 10,
+        primeira_competencia_regra: "mes_adesao",
+        furo_meses_override: null,
+        ativo: true,
+        observacoes: "",
+        regras: [
+            {
+                ordem: 1,
+                tipo_evento: "adesao",
+                offset_meses: 0,
+                percentual_comissao: 0,
+                descricao: "",
+            },
+        ],
+        parceiros: [],
+    };
+}
+
+function normalizeComissaoPayload(payload?: Partial<CotaComissaoPayload> | null): CotaComissaoPayload {
+    const base = getDefaultComissaoPayload();
+    return {
+        ...base,
+        ...payload,
+        regras: payload?.regras?.length ? payload.regras : base.regras,
+        parceiros: payload?.parceiros ?? [],
+    };
+}
+
 function toInputNumber(value?: number | string | null) {
     if (value === null || value === undefined) return "";
     return String(value);
@@ -149,12 +152,10 @@ function getCompetenciaDefault() {
 
 function normalizePreferencial(value?: string | null): string {
     const v = (value ?? "").trim().toLowerCase();
-
     if (v === "fixo") return "fixo";
     if (v === "livre") return "livre";
     if (v === "embutido") return "embutido";
     if (v === "sorteio") return "sorteio";
-
     return "";
 }
 
@@ -169,10 +170,12 @@ function preferencialLabel(value?: string | null) {
 
 function formatPercent(value?: number | null) {
     if (value == null || Number.isNaN(value)) return "—";
-    return new Intl.NumberFormat("pt-BR", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(value) + "%";
+    return (
+        new Intl.NumberFormat("pt-BR", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        }).format(value) + "%"
+    );
 }
 
 function buildSuggestedObjetivo(
@@ -217,7 +220,9 @@ function buildSuggestedStrategyText(args: {
     } else if (tipo === "embutido") {
         lines.push("Avaliar composição com lance embutido como parte da estratégia.");
     } else if (tipo === "sorteio") {
-        lines.push("Sem preferência de lance definida no momento. Acompanhar chance de contemplação por sorteio e revisar estratégia mensalmente.");
+        lines.push(
+            "Sem preferência de lance definida no momento. Acompanhar chance de contemplação por sorteio e revisar estratégia mensalmente."
+        );
     } else if (hasFixoAtivo) {
         lines.push("A carta possui opção de lance fixo ativa e deve ser considerada na operação.");
     } else {
@@ -276,9 +281,7 @@ function SectionTitle({
                 {icon}
                 {title}
             </h3>
-            {subtitle ? (
-                <p className="text-xs text-muted-foreground">{subtitle}</p>
-            ) : null}
+            {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
         </div>
     );
 }
@@ -296,6 +299,29 @@ function SideInfoRow({
             <strong className="text-right">{value}</strong>
         </div>
     );
+}
+
+async function submitCartaComissao(params: {
+    formData: FormData;
+    cotaId: string;
+    dataAdesao: string;
+    comissaoPayload: CotaComissaoPayload;
+}) {
+    const { formData, cotaId, dataAdesao, comissaoPayload } = params;
+
+    formData.set("data_adesao", dataAdesao || "");
+
+    await updateCartaAction(formData);
+    await saveComissaoCotaAction(cotaId, comissaoPayload);
+
+    const { contrato_id } = await getContratoByCotaAction(cotaId);
+
+    if (contrato_id) {
+        await gerarLancamentosContratoAction(contrato_id);
+        return { gerouLancamentos: true };
+    }
+
+    return { gerouLancamentos: false };
 }
 
 export function EditCartaSheet({
@@ -319,20 +345,11 @@ export function EditCartaSheet({
     const [tipoLancePreferencial, setTipoLancePreferencial] = React.useState(
         initialData.tipo_lance_preferencial ?? ""
     );
-
     const [dataAdesao, setDataAdesao] = React.useState(initialData.data_adesao ?? "");
-
-    const [autorizacaoGestao, setAutorizacaoGestao] = React.useState(
-        Boolean(initialData.autorizacao_gestao)
-    );
-    const [embutidoPermitido, setEmbutidoPermitido] = React.useState(
-        Boolean(initialData.embutido_permitido)
-    );
-    const [embutidoMaxPercent, setEmbutidoMaxPercent] = React.useState(
-        toInputNumber(initialData.embutido_max_percent)
-    );
+    const [autorizacaoGestao, setAutorizacaoGestao] = React.useState(Boolean(initialData.autorizacao_gestao));
+    const [embutidoPermitido, setEmbutidoPermitido] = React.useState(Boolean(initialData.embutido_permitido));
+    const [embutidoMaxPercent, setEmbutidoMaxPercent] = React.useState(toInputNumber(initialData.embutido_max_percent));
     const [fgtsPermitido, setFgtsPermitido] = React.useState(Boolean(initialData.fgts_permitido));
-
     const [usaLanceFixo, setUsaLanceFixo] = React.useState(opcoesLanceFixo.length > 0);
     const [fixos, setFixos] = React.useState<LanceFixoOpcaoForm[]>(
         opcoesLanceFixo.map((op) => ({
@@ -352,8 +369,13 @@ export function EditCartaSheet({
     const [parceirosDisponiveis, setParceirosDisponiveis] = React.useState<ParceiroSelectOption[]>([]);
     const [comissaoPayload, setComissaoPayload] = React.useState<CotaComissaoPayload>(getDefaultComissaoPayload());
 
+    const [deletingComissao, setDeletingComissao] = React.useState(false);
+    const [cancelingComissao, setCancelingComissao] = React.useState(false);
+    const [deletingCarta, setDeletingCarta] = React.useState(false);
+
     React.useEffect(() => {
         if (!open) return;
+
         setDataAdesao(initialData.data_adesao ?? "");
         setGrupoCodigo(initialData.grupo_codigo ?? "");
         setNumeroCota(initialData.numero_cota ?? "");
@@ -430,7 +452,6 @@ export function EditCartaSheet({
         };
     }, [open, cotaId, competencia]);
 
-
     React.useEffect(() => {
         if (!open) return;
 
@@ -478,9 +499,7 @@ export function EditCartaSheet({
 
     function removeFixo(localId: string) {
         setFixos((prev) =>
-            prev
-                .filter((item) => item.localId !== localId)
-                .map((item, idx) => ({ ...item, ordem: idx + 1 }))
+            prev.filter((item) => item.localId !== localId).map((item, idx) => ({ ...item, ordem: idx + 1 }))
         );
     }
 
@@ -551,17 +570,14 @@ export function EditCartaSheet({
 
     const canApplySuggestion =
         !!diagnostico &&
-        (
-            !!normalizePreferencial(diagnostico.estrategia_lance) ||
+        (!!normalizePreferencial(diagnostico.estrategia_lance) ||
             diagnostico.lance_base_pct != null ||
             diagnostico.lance_max_pct != null ||
-            hasActiveFixo
-        );
+            hasActiveFixo);
 
     function applyDiagnosticoSuggestion() {
         const suggestedTipo =
-            normalizePreferencial(diagnostico?.estrategia_lance) ||
-            (hasActiveFixo ? "fixo" : "sorteio");
+            normalizePreferencial(diagnostico?.estrategia_lance) || (hasActiveFixo ? "fixo" : "sorteio");
 
         const suggestedObjetivo = buildSuggestedObjetivo(diagnostico, hasActiveFixo);
         const suggestedText = buildSuggestedStrategyText({
@@ -582,6 +598,115 @@ export function EditCartaSheet({
         setSuggestionApplied(true);
 
         toast.success("Sugestão do diagnóstico aplicada na carta.");
+    }
+
+    async function handleDeleteComissao() {
+        try {
+            setDeletingComissao(true);
+            toast.dismiss();
+            toast.loading("Validando exclusão da comissão...");
+
+            const check = await getDeleteComissaoCheckAction(cotaId);
+
+            toast.dismiss();
+
+            if (!check.config_exists) {
+                toast.info("Esta carta não possui comissão configurada.");
+                return;
+            }
+
+            if (!check.pode_excluir) {
+                toast.error(
+                    check.motivo_bloqueio ||
+                    "Não é possível excluir a comissão porque há lançamentos pagos ou repasses pagos."
+                );
+                return;
+            }
+
+            const confirmado = window.confirm(
+                "Tem certeza que deseja excluir a comissão desta carta? Isso removerá configuração, parceiros e lançamentos de comissão ainda não protegidos por pagamento."
+            );
+
+            if (!confirmado) return;
+
+            toast.loading("Excluindo comissão...");
+            await deleteComissaoCotaAction(cotaId);
+
+            setComissaoPayload(getDefaultComissaoPayload());
+
+            toast.dismiss();
+            toast.success("Comissão excluída com sucesso.");
+            onSuccess?.();
+        } catch (error) {
+            console.error(error);
+            toast.dismiss();
+            toast.error("Erro ao excluir comissão.");
+        } finally {
+            setDeletingComissao(false);
+        }
+    }
+
+    async function handleCancelComissao() {
+        try {
+            const confirmado = window.confirm(
+                "Deseja cancelar a comissão desta carta? Os lançamentos não pagos serão marcados como cancelados."
+            );
+
+            if (!confirmado) return;
+
+            setCancelingComissao(true);
+            toast.dismiss();
+            toast.loading("Cancelando comissão...");
+
+            await cancelarComissaoCotaAction(cotaId);
+
+            toast.dismiss();
+            toast.success("Comissão cancelada com sucesso.");
+            onSuccess?.();
+        } catch (error) {
+            console.error(error);
+            toast.dismiss();
+            toast.error("Erro ao cancelar comissão.");
+        } finally {
+            setCancelingComissao(false);
+        }
+    }
+
+    async function handleDeleteCarta() {
+        try {
+            const confirmado = window.confirm(
+                "Tem certeza que deseja excluir esta carta? Se houver comissão lançada, a exclusão será bloqueada até a comissão ser removida ou cancelada."
+            );
+
+            if (!confirmado) return;
+
+            setDeletingCarta(true);
+            toast.dismiss();
+            toast.loading("Excluindo carta...");
+
+            await deleteCartaAction(cotaId);
+
+            toast.dismiss();
+            toast.success("Carta excluída com sucesso.");
+            onOpenChange(false);
+            onSuccess?.();
+        } catch (error) {
+            console.error(error);
+            toast.dismiss();
+
+            const message = error instanceof Error ? error.message : "Erro ao excluir carta.";
+
+            if (message.includes("comissões lançadas")) {
+                toast.error(
+                    "Esta carta possui comissão lançada. Exclua ou cancele a comissão antes de excluir a carta."
+                );
+                return;
+            }
+
+            toast.error("Erro ao excluir carta.");
+        } finally {
+            setDeletingCarta(false);
+        }
     }
 
     return (
@@ -607,20 +732,21 @@ export function EditCartaSheet({
                             toast.dismiss();
                             toast.loading("Salvando carta...");
 
-                            formData.set("data_adesao", dataAdesao || "");
+                            const result = await submitCartaComissao({
+                                formData,
+                                cotaId,
+                                dataAdesao,
+                                comissaoPayload,
+                            });
 
-                            await updateCartaAction(formData);
-                            await saveComissaoCotaAction(cotaId, comissaoPayload);
+                            toast.dismiss();
 
-                            const { contrato_id } = await getContratoByCotaAction(cotaId);
-
-                            if (contrato_id) {
-                                await gerarLancamentosContratoAction(contrato_id);
-                                toast.dismiss();
+                            if (result.gerouLancamentos) {
                                 toast.success("Carta, comissionamento e lançamentos atualizados com sucesso.");
                             } else {
-                                toast.dismiss();
-                                toast.success("Carta e comissionamento atualizados com sucesso. Ainda não existe contrato para gerar lançamentos.");
+                                toast.success(
+                                    "Carta e comissionamento atualizados com sucesso. Ainda não existe contrato para gerar lançamentos."
+                                );
                             }
 
                             onOpenChange(false);
@@ -648,16 +774,14 @@ export function EditCartaSheet({
                                 <div className="flex items-start justify-between gap-3 flex-wrap">
                                     <div>
                                         <SectionTitle
-                                            icon={<Sparkles className="h-4 w-4 text-emerald-400"/>}
+                                            icon={<Sparkles className="h-4 w-4 text-emerald-400" />}
                                             title="Sugestão do diagnóstico"
                                             subtitle="Use o diagnóstico como base e ajuste a estratégia operacional da carta."
                                         />
                                     </div>
 
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        {suggestionApplied && (
-                                            <Badge variant="secondary">Aplicada do diagnóstico</Badge>
-                                        )}
+                                        {suggestionApplied && <Badge variant="secondary">Aplicada do diagnóstico</Badge>}
 
                                         <Button
                                             type="button"
@@ -926,9 +1050,11 @@ export function EditCartaSheet({
                                         onChange={(e) => {
                                             const checked = e.target.checked;
                                             setUsaLanceFixo(checked);
+
                                             if (checked && fixos.length === 0) {
                                                 setFixos([makeOpcao(1)]);
                                             }
+
                                             if (!checked) {
                                                 setFixos([]);
                                             }
@@ -978,7 +1104,9 @@ export function EditCartaSheet({
                                                         <Label>Observações</Label>
                                                         <Input
                                                             value={item.observacoes}
-                                                            onChange={(e) => updateFixo(item.localId, { observacoes: e.target.value })}
+                                                            onChange={(e) =>
+                                                                updateFixo(item.localId, { observacoes: e.target.value })
+                                                            }
                                                         />
                                                     </div>
                                                 </div>
@@ -1002,7 +1130,6 @@ export function EditCartaSheet({
                                 )}
                             </div>
 
-
                             <ComissaoConfigSection
                                 value={comissaoPayload}
                                 onChange={setComissaoPayload}
@@ -1010,8 +1137,19 @@ export function EditCartaSheet({
                             />
 
                             {loadingComissao ? (
-                                <p className="text-sm text-muted-foreground">Carregando configuração de comissão...</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Carregando configuração de comissão...
+                                </p>
                             ) : null}
+
+                            <SensitiveActionsSection
+                                onCancelComissao={handleCancelComissao}
+                                onDeleteComissao={handleDeleteComissao}
+                                onDeleteCarta={handleDeleteCarta}
+                                cancelingComissao={cancelingComissao}
+                                deletingComissao={deletingComissao}
+                                deletingCarta={deletingCarta}
+                            />
                         </div>
 
                         <div className="space-y-6">
@@ -1053,13 +1191,9 @@ export function EditCartaSheet({
                                             </Badge>
                                         )}
 
-                                        {fgtsPermitido && (
-                                            <Badge variant="outline">FGTS</Badge>
-                                        )}
+                                        {fgtsPermitido && <Badge variant="outline">FGTS</Badge>}
 
-                                        {hasActiveFixo && (
-                                            <Badge variant="outline">Fixo ativo</Badge>
-                                        )}
+                                        {hasActiveFixo && <Badge variant="outline">Fixo ativo</Badge>}
                                     </div>
                                 </div>
 

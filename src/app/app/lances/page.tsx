@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { listLancesCartas, listRegrasOperadora } from "./actions";
+import { listLancesCartas, listRegrasOperadora } from "./actions/carta-actions";
 import { LancesFilters } from "./components/lances-filters";
 import { LancesTable } from "./components/lances-table";
 import type { LanceCartaListResponse, RegraOperadora } from "./types";

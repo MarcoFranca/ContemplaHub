@@ -21,12 +21,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-    cancelarCotaAction,
-    contemplarCotaAction,
-    reativarCotaAction,
-    registrarLanceAction,
     salvarControleMensalAction,
-} from "../actions";
+    registrarLanceAction,
+    contemplarCotaAction,
+    cancelarCotaAction,
+    reativarCotaAction,
+} from "../actions/carta-actions";
 import type { LanceCartaListItem } from "../types";
 
 type Props = {
