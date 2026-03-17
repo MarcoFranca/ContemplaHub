@@ -4,14 +4,23 @@ import { revalidatePath } from "next/cache";
 import { getBackendUrl } from "@/lib/backend";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import type { Parceiro, ParceiroExtratoResponse } from "./types";
+import type {
+  Parceiro,
+  ParceiroExtratoItem,
+  ParceiroExtratoResponse,
+} from "./types";
 
-type BackendEnvelope<T> = {
+type BackendListEnvelope<T> = {
   ok?: boolean;
   item?: T;
   items?: T[];
-  parceiro?: T;
-  resumo?: unknown;
+};
+
+type BackendParceiroExtratoEnvelope = {
+  ok?: boolean;
+  parceiro?: Parceiro;
+  items?: ParceiroExtratoItem[];
+  resumo?: ParceiroExtratoResponse["resumo"];
 };
 
 async function getBackendAuthContext() {
@@ -55,9 +64,13 @@ async function backendAuthed<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function listParceirosAction(ativos?: boolean): Promise<Parceiro[]> {
   const query = typeof ativos === "boolean" ? `?ativos=${ativos}` : "";
-  const data = await backendAuthed<BackendEnvelope<Parceiro>>(`/comissoes/parceiros${query}`, {
-    method: "GET",
-  });
+  const data = await backendAuthed<BackendListEnvelope<Parceiro>>(
+      `/comissoes/parceiros${query}`,
+      {
+        method: "GET",
+      }
+  );
+
   return data.items ?? [];
 }
 
@@ -75,13 +88,17 @@ export async function createParceiroAction(formData: FormData): Promise<Parceiro
 
   if (!body.nome) throw new Error("Informe o nome do parceiro.");
 
-  const data = await backendAuthed<BackendEnvelope<Parceiro>>(`/comissoes/parceiros`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  const data = await backendAuthed<BackendListEnvelope<Parceiro>>(
+      `/comissoes/parceiros`,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      }
+  );
 
   revalidatePath("/app/parceiros");
-  return data.item as Parceiro;
+  if (!data.item) throw new Error("Parceiro não retornado pelo backend.");
+  return data.item;
 }
 
 export async function updateParceiroAction(formData: FormData): Promise<Parceiro | null> {
@@ -99,24 +116,36 @@ export async function updateParceiroAction(formData: FormData): Promise<Parceiro
     observacoes: nullableString(formData, "observacoes"),
   };
 
-  const data = await backendAuthed<BackendEnvelope<Parceiro>>(`/comissoes/parceiros/${parceiroId}`, {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
+  const data = await backendAuthed<BackendListEnvelope<Parceiro>>(
+      `/comissoes/parceiros/${parceiroId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }
+  );
 
   revalidatePath("/app/parceiros");
   return data.item ?? null;
 }
 
-export async function getParceiroExtratoAction(parceiroId: string): Promise<ParceiroExtratoResponse> {
-  const data = await backendAuthed<BackendEnvelope<Parceiro>>(`/comissoes/parceiros/${parceiroId}/extrato`, {
-    method: "GET",
-  });
+export async function getParceiroExtratoAction(
+    parceiroId: string
+): Promise<ParceiroExtratoResponse> {
+  const data = await backendAuthed<BackendParceiroExtratoEnvelope>(
+      `/comissoes/parceiros/${parceiroId}/extrato`,
+      {
+        method: "GET",
+      }
+  );
+
+  if (!data.parceiro) {
+    throw new Error("Parceiro não retornado pelo backend.");
+  }
 
   return {
-    parceiro: data.parceiro as Parceiro,
-    items: (data.items as ParceiroExtratoResponse["items"]) ?? [],
-    resumo: (data.resumo as ParceiroExtratoResponse["resumo"]) ?? null,
+    parceiro: data.parceiro,
+    items: data.items ?? [],
+    resumo: data.resumo ?? null,
   };
 }
 
