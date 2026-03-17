@@ -6,6 +6,7 @@ import { fmtCurrency, fmtDate } from "../lib/format";
 import type { CarteiraClienteItem } from "../lib/types";
 import { EmptyState } from "./empty-state";
 import { CartasSummaryPopover } from "./cartas-summary-popover";
+import { DeleteLeadButton } from "@/app/app/leads/ui/DeleteLeadButton";
 
 type ClientesTableProps = {
     items: CarteiraClienteItem[];
@@ -17,8 +18,8 @@ export function ClientesTable({ items }: ClientesTableProps) {
     }
 
     return (
-        <div className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
-            <div className="max-h-[65vh] overflow-auto">
+        <div className="flex h-full min-h-0 flex-col rounded-lg border border-white/10 bg-white/5 overflow-hidden">
+            <div className="min-h-0 flex-1 overflow-auto pb-6">
                 <table className="w-full min-w-[1300px] text-sm">
                     <thead className="sticky top-0 z-10 bg-zinc-950 text-muted-foreground">
                     <tr className="border-b border-white/10">
@@ -114,7 +115,7 @@ export function ClientesTable({ items }: ClientesTableProps) {
                             </td>
 
                             <td className="px-4 py-3">
-                                <div className="flex items-center justify-end gap-2">
+                                <div className="flex items-center justify-end gap-2 flex-wrap">
                                     <Link href={`/app/leads/${it.cliente.lead_id}`}>
                                         <Button size="sm" variant="outline">
                                             Ver
@@ -125,6 +126,11 @@ export function ClientesTable({ items }: ClientesTableProps) {
                                         <input type="hidden" name="fromClient" value={it.cliente.lead_id} />
                                         <Button size="sm">Negociação</Button>
                                     </form>
+
+                                    <DeleteLeadButton
+                                        leadId={it.cliente.lead_id}
+                                        leadName={it.cliente.nome}
+                                    />
                                 </div>
                             </td>
                         </tr>

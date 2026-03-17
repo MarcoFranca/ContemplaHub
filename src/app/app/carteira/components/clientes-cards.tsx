@@ -6,6 +6,7 @@ import { contratoBadgeVariant } from "../lib/badges";
 import { fmtCurrency, fmtDate } from "../lib/format";
 import type { CarteiraClienteItem } from "../lib/types";
 import { EmptyState } from "./empty-state";
+import { DeleteLeadButton } from "@/app/app/leads/ui/DeleteLeadButton";
 
 type ClientesCardsProps = {
     items: CarteiraClienteItem[];
@@ -112,6 +113,11 @@ export function ClientesCards({ items }: ClientesCardsProps) {
                                 <input type="hidden" name="fromClient" value={it.cliente.lead_id} />
                                 <Button size="sm">Nova negociação</Button>
                             </form>
+
+                            <DeleteLeadButton
+                                leadId={it.cliente.lead_id}
+                                leadName={it.cliente.nome}
+                            />
                         </div>
                     </CardContent>
                 </Card>
