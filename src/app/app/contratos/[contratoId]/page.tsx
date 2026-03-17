@@ -6,6 +6,8 @@ import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { getLancamentosContratoAction } from "@/app/app/comissoes/actions";
+import { ComissoesContratoCard } from "./components/ComissoesContratoCard";
 
 // ------------------------------------------
 // LOAD DO CONTRATO
@@ -39,6 +41,7 @@ export default async function ContratoDetailsPage({
     if (!contrato) notFound();
 
     const cota = contrato.cotas;
+    const comissoes = await getLancamentosContratoAction(contratoId).catch(() => ({ items: [], resumo: null }));
 
     return (
         <div className="h-full overflow-auto px-4 py-6 max-w-4xl mx-auto space-y-6">
@@ -109,7 +112,7 @@ export default async function ContratoDetailsPage({
                             <strong>Prazo:</strong> {cota.prazo} meses
                         </p>
                         <p>
-                            <strong>Situação:</strong> {cota.situacao}
+                            <strong>Situação:</strong> {cota.status ?? "—"}
                         </p>
                         <p>
                             <strong>Grupo:</strong> {cota.grupo_codigo}
@@ -134,6 +137,8 @@ export default async function ContratoDetailsPage({
                     </p>
                 </CardContent>
             </Card>
+
+            <ComissoesContratoCard contratoId={contratoId} resumo={comissoes.resumo} items={comissoes.items} />
         </div>
     );
 }

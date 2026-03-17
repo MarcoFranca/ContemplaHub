@@ -35,6 +35,7 @@ export type LanceCartaListItem = {
     competencia: string;
     status_mes: StatusMes;
     tem_pendencia_configuracao: boolean;
+    data_adesao?: string | null; // <- adicionar
 };
 
 export type LanceCartaListResponse = {
@@ -54,6 +55,7 @@ export type LancesCartaDetalhe = {
         valor_carta?: number | null;
         valor_parcela?: number | null;
         prazo?: number | null;
+        data_adesao?: string | null;
         objetivo?: string | null;
         estrategia?: string | null;
         tipo_lance_preferencial?: string | null;
@@ -148,4 +150,60 @@ export type RegraOperadora = {
     tipo_ajuste: string;
     observacoes?: string | null;
     created_at?: string | null;
+};
+export type ComissaoModo = "avista" | "parcelado";
+export type PrimeiraCompetenciaRegra = "mes_adesao" | "primeira_cobranca_valida" | "manual";
+export type ComissaoEvento = "adesao" | "primeira_cobranca_valida" | "proxima_cobranca" | "contemplacao" | "manual";
+
+export type ParceiroSelectOption = {
+    id: string;
+    nome: string;
+    ativo: boolean;
+};
+
+export type ComissaoRegra = {
+    id?: string;
+    ordem: number;
+    tipo_evento: ComissaoEvento;
+    offset_meses: number;
+    percentual_comissao: number;
+    descricao?: string | null;
+};
+
+export type CotaComissaoParceiro = {
+    id?: string;
+    parceiro_id: string;
+    percentual_parceiro: number;
+    imposto_retido_pct: number;
+    ativo: boolean;
+    observacoes?: string | null;
+    parceiro?: {
+        id: string;
+        nome?: string | null;
+        ativo?: boolean;
+    } | null;
+};
+
+export type CotaComissaoConfig = {
+    id?: string;
+    cota_id?: string;
+    percentual_total: number;
+    base_calculo: string;
+    modo: ComissaoModo;
+    imposto_padrao_pct: number;
+    primeira_competencia_regra: PrimeiraCompetenciaRegra;
+    furo_meses_override?: number | null;
+    ativo: boolean;
+    observacoes?: string | null;
+};
+
+export type CotaComissaoPayload = CotaComissaoConfig & {
+    regras: ComissaoRegra[];
+    parceiros: CotaComissaoParceiro[];
+};
+
+export type CotaComissaoResponse = {
+    config: CotaComissaoConfig | null;
+    regras: ComissaoRegra[];
+    parceiros: CotaComissaoParceiro[];
 };

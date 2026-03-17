@@ -9,6 +9,12 @@ import type {
     LancesCartaDetalhe,
     LancesFiltersInput,
     RegraOperadora,
+    CotaComissaoConfig,
+    CotaComissaoParceiro,
+    CotaComissaoPayload,
+    CotaComissaoResponse,
+    ComissaoRegra,
+    ParceiroSelectOption,
 } from "./types";
 
 async function getBackendAuthContext() {
@@ -26,6 +32,28 @@ async function getBackendAuthContext() {
     return {
         orgId: profile.orgId,
         accessToken,
+    };
+}
+
+export async function getContratoByCotaAction(cotaId: string): Promise<{ contrato_id: string | null }> {
+    const { orgId, accessToken } = await getBackendAuthContext();
+    const supabase = await supabaseServer();
+
+    const { data, error } = await supabase
+        .from("contratos")
+        .select("id")
+        .eq("org_id", orgId)
+        .eq("cota_id", cotaId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    return {
+        contrato_id: data?.id ?? null,
     };
 }
 
@@ -74,6 +102,7 @@ export async function updateCartaAction(formData: FormData): Promise<void> {
             valor_parcela: toNullableNumber("valor_parcela"),
             prazo: toNullableNumber("prazo"),
             assembleia_dia: toNullableNumber("assembleia_dia"),
+            data_adesao: toNullableString("data_adesao"), // <- adicionar
             autorizacao_gestao: Boolean(formData.get("autorizacao_gestao")),
             embutido_permitido: Boolean(formData.get("embutido_permitido")),
             embutido_max_percent: toNullableNumber("embutido_max_percent"),
@@ -292,4 +321,48 @@ export async function reativarCotaAction(formData: FormData) {
 
     revalidatePath("/app/lances");
     revalidatePath(`/app/lances/${cotaId}`);
+}
+export async function getComissaoCotaAction(cotaId: string): Promise<CotaComissaoResponse> {
+    const data = await backendAuthed<{ ok?: boolean; config: CotaComissaoConfig | null; regras: ComissaoRegra[]; parceiros: CotaComissaoParceiro[] }>(
+        `/comissoes/cotas/${cotaId}`,
+        { method: "GET" }
+    );
+
+    return {
+        config: data.config ?? null,
+        regras: data.regras ?? [],
+        parceiros: data.parceiros ?? [],
+    };
+}
+
+export async function listParceirosForSelectAction(): Promise<ParceiroSelectOption[]> {
+    const data = await backendAuthed<{ ok?: boolean; items: Array<{ id: string; nome: string; ativo: boolean }> }>(
+        `/comissoes/parceiros?ativos=true`,
+        { method: "GET" }
+    );
+
+    return (data.items ?? []).map((item) => ({
+        id: item.id,
+        nome: item.nome,
+        ativo: Boolean(item.ativo),
+    }));
+}
+
+export async function saveComissaoCotaAction(cotaId: string, payload: CotaComissaoPayload): Promise<CotaComissaoResponse> {
+    const data = await backendAuthed<{ ok?: boolean; config: CotaComissaoConfig | null; regras: ComissaoRegra[]; parceiros: CotaComissaoParceiro[] }>(
+        `/comissoes/cotas/${cotaId}`,
+        {
+            method: "PUT",
+            body: JSON.stringify(payload),
+        }
+    );
+
+    revalidatePath("/app/lances");
+    revalidatePath(`/app/lances/${cotaId}`);
+
+    return {
+        config: data.config ?? null,
+        regras: data.regras ?? [],
+        parceiros: data.parceiros ?? [],
+    };
 }

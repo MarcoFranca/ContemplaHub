@@ -29,7 +29,16 @@ import {
     Trash2,
     WalletCards,
 } from "lucide-react";
-import { updateCartaAction } from "../actions";
+import {
+    getComissaoCotaAction,
+    listParceirosForSelectAction,
+    saveComissaoCotaAction,
+    updateCartaAction,
+    getContratoByCotaAction,
+} from "../actions";
+import type { CotaComissaoPayload, ParceiroSelectOption } from "../types";
+import { ComissaoConfigSection } from "./comissao/ComissaoConfigSection";
+import { gerarLancamentosContratoAction } from "@/app/app/comissoes/actions";
 
 type LanceFixoOpcaoForm = {
     id?: string;
@@ -46,6 +55,40 @@ type DiagnosticoSuggestion = {
     lance_max_pct?: number | null;
     readiness_score?: number | null;
 };
+
+
+function getDefaultComissaoPayload(): CotaComissaoPayload {
+    return {
+        percentual_total: 0,
+        base_calculo: "valor_carta",
+        modo: "avista",
+        imposto_padrao_pct: 10,
+        primeira_competencia_regra: "mes_adesao",
+        furo_meses_override: null,
+        ativo: true,
+        observacoes: "",
+        regras: [
+            {
+                ordem: 1,
+                tipo_evento: "adesao",
+                offset_meses: 0,
+                percentual_comissao: 0,
+                descricao: "",
+            },
+        ],
+        parceiros: [],
+    };
+}
+
+function normalizeComissaoPayload(payload?: Partial<CotaComissaoPayload> | null): CotaComissaoPayload {
+    const base = getDefaultComissaoPayload();
+    return {
+        ...base,
+        ...payload,
+        regras: payload?.regras?.length ? payload.regras : base.regras,
+        parceiros: payload?.parceiros ?? [],
+    };
+}
 
 type Props = {
     open: boolean;
@@ -68,6 +111,7 @@ type Props = {
         estrategia?: string | null;
         objetivo?: string | null;
         assembleia_dia?: number | null;
+        data_adesao?: string | null;
     };
     opcoesLanceFixo?: Array<{
         id: string;
@@ -276,6 +320,8 @@ export function EditCartaSheet({
         initialData.tipo_lance_preferencial ?? ""
     );
 
+    const [dataAdesao, setDataAdesao] = React.useState(initialData.data_adesao ?? "");
+
     const [autorizacaoGestao, setAutorizacaoGestao] = React.useState(
         Boolean(initialData.autorizacao_gestao)
     );
@@ -302,10 +348,13 @@ export function EditCartaSheet({
     const [loadingDiagnostico, setLoadingDiagnostico] = React.useState(false);
     const [diagnostico, setDiagnostico] = React.useState<DiagnosticoSuggestion | null>(null);
     const [suggestionApplied, setSuggestionApplied] = React.useState(false);
+    const [loadingComissao, setLoadingComissao] = React.useState(false);
+    const [parceirosDisponiveis, setParceirosDisponiveis] = React.useState<ParceiroSelectOption[]>([]);
+    const [comissaoPayload, setComissaoPayload] = React.useState<CotaComissaoPayload>(getDefaultComissaoPayload());
 
     React.useEffect(() => {
         if (!open) return;
-
+        setDataAdesao(initialData.data_adesao ?? "");
         setGrupoCodigo(initialData.grupo_codigo ?? "");
         setNumeroCota(initialData.numero_cota ?? "");
         setProduto(initialData.produto ?? "imobiliario");
@@ -332,6 +381,7 @@ export function EditCartaSheet({
             }))
         );
         setSuggestionApplied(false);
+        setComissaoPayload(getDefaultComissaoPayload());
     }, [open, initialData, opcoesLanceFixo]);
 
     React.useEffect(() => {
@@ -379,6 +429,48 @@ export function EditCartaSheet({
             cancelled = true;
         };
     }, [open, cotaId, competencia]);
+
+
+    React.useEffect(() => {
+        if (!open) return;
+
+        let cancelled = false;
+
+        async function loadComissao() {
+            try {
+                setLoadingComissao(true);
+                const [configResponse, parceiros] = await Promise.all([
+                    getComissaoCotaAction(cotaId),
+                    listParceirosForSelectAction(),
+                ]);
+
+                if (cancelled) return;
+
+                setParceirosDisponiveis(parceiros);
+                setComissaoPayload(
+                    normalizeComissaoPayload({
+                        ...configResponse.config,
+                        regras: configResponse.regras,
+                        parceiros: configResponse.parceiros,
+                    })
+                );
+            } catch (error) {
+                console.error(error);
+                if (!cancelled) {
+                    setParceirosDisponiveis([]);
+                    setComissaoPayload(getDefaultComissaoPayload());
+                }
+            } finally {
+                if (!cancelled) setLoadingComissao(false);
+            }
+        }
+
+        void loadComissao();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [open, cotaId]);
 
     function addFixo() {
         setFixos((prev) => [...prev, makeOpcao(prev.length + 1)]);
@@ -515,10 +607,22 @@ export function EditCartaSheet({
                             toast.dismiss();
                             toast.loading("Salvando carta...");
 
-                            await updateCartaAction(formData);
+                            formData.set("data_adesao", dataAdesao || "");
 
-                            toast.dismiss();
-                            toast.success("Carta atualizada com sucesso.");
+                            await updateCartaAction(formData);
+                            await saveComissaoCotaAction(cotaId, comissaoPayload);
+
+                            const { contrato_id } = await getContratoByCotaAction(cotaId);
+
+                            if (contrato_id) {
+                                await gerarLancamentosContratoAction(contrato_id);
+                                toast.dismiss();
+                                toast.success("Carta, comissionamento e lançamentos atualizados com sucesso.");
+                            } else {
+                                toast.dismiss();
+                                toast.success("Carta e comissionamento atualizados com sucesso. Ainda não existe contrato para gerar lançamentos.");
+                            }
+
                             onOpenChange(false);
                             onSuccess?.();
                         } catch (error) {
@@ -544,7 +648,7 @@ export function EditCartaSheet({
                                 <div className="flex items-start justify-between gap-3 flex-wrap">
                                     <div>
                                         <SectionTitle
-                                            icon={<Sparkles className="h-4 w-4 text-emerald-400" />}
+                                            icon={<Sparkles className="h-4 w-4 text-emerald-400"/>}
                                             title="Sugestão do diagnóstico"
                                             subtitle="Use o diagnóstico como base e ajuste a estratégia operacional da carta."
                                         />
@@ -564,6 +668,16 @@ export function EditCartaSheet({
                                             Aplicar sugestão
                                         </Button>
                                     </div>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="data_adesao">Data de adesão</Label>
+                                    <Input
+                                        id="data_adesao"
+                                        type="date"
+                                        value={dataAdesao}
+                                        onChange={(e) => setDataAdesao(e.target.value)}
+                                    />
                                 </div>
 
                                 {loadingDiagnostico ? (
@@ -887,6 +1001,17 @@ export function EditCartaSheet({
                                     </div>
                                 )}
                             </div>
+
+
+                            <ComissaoConfigSection
+                                value={comissaoPayload}
+                                onChange={setComissaoPayload}
+                                parceirosDisponiveis={parceirosDisponiveis}
+                            />
+
+                            {loadingComissao ? (
+                                <p className="text-sm text-muted-foreground">Carregando configuração de comissão...</p>
+                            ) : null}
                         </div>
 
                         <div className="space-y-6">
@@ -903,6 +1028,10 @@ export function EditCartaSheet({
                                     <SideInfoRow
                                         label="Preferência"
                                         value={preferencialLabel(tipoLancePreferencial)}
+                                    />
+                                    <SideInfoRow
+                                        label="Comissão"
+                                        value={`${Number(comissaoPayload.percentual_total || 0).toFixed(2)}%`}
                                     />
                                 </div>
 
