@@ -4,8 +4,18 @@ import * as React from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+    Building2,
+    CalendarDays,
+    CircleDollarSign,
+    FileText,
+    FolderKanban,
+    UserRound,
+} from "lucide-react";
+
 import { LanceActions } from "./lance-actions";
 import { StrategyPanel } from "./strategy-panel";
+import { EditCartaQuickAction } from "./edit-carta-quick-action";
 import type { LanceCartaListItem, StatusMes } from "../types";
 
 type Props = {
@@ -144,6 +154,26 @@ function buildGroups(items: LanceCartaListItem[]): OperadoraGroup[] {
         }));
 }
 
+function InfoRow({
+                     icon,
+                     label,
+                     value,
+                 }: {
+    icon: React.ReactNode;
+    label: string;
+    value: React.ReactNode;
+}) {
+    return (
+        <div className="flex items-center justify-between gap-3 text-sm">
+            <span className="inline-flex items-center gap-2 text-muted-foreground">
+                {icon}
+                {label}
+            </span>
+            <strong className="text-right">{value}</strong>
+        </div>
+    );
+}
+
 function CartaCard({
                        item,
                        competencia,
@@ -154,7 +184,7 @@ function CartaCard({
     return (
         <div className={`rounded-xl border p-4 space-y-4 ${cardClass(item)}`}>
             <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="space-y-1">
+                <div className="space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold">
                             Grupo {item.grupo_codigo} • Cota {item.numero_cota}
@@ -169,7 +199,8 @@ function CartaCard({
                         </Badge>
                     </div>
 
-                    <p className="text-sm text-muted-foreground capitalize">
+                    <p className="text-sm text-muted-foreground capitalize inline-flex items-center gap-2">
+                        <CircleDollarSign className="h-4 w-4" />
                         {item.produto} • {money(item.valor_carta)}
                     </p>
                 </div>
@@ -182,18 +213,19 @@ function CartaCard({
                 </Link>
             </div>
 
-            <div className="grid gap-3 xl:grid-cols-[0.9fr_1.1fr_0.9fr]">
+            <div className="grid gap-3 xl:grid-cols-[0.95fr_1.15fr_0.95fr]">
                 <div className="space-y-3">
                     <div className="rounded-lg border border-white/10 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground inline-flex items-center gap-2">
+                            <CalendarDays className="h-3.5 w-3.5" />
                             Assembleia
                         </p>
 
                         {item.tem_pendencia_configuracao ? (
-                            <p className="mt-1 text-sm text-amber-500">Sem regra configurada</p>
+                            <p className="mt-2 text-sm text-amber-500">Sem regra configurada</p>
                         ) : (
                             <>
-                                <p className="mt-1 font-medium">{fmtDate(item.assembleia_prevista)}</p>
+                                <p className="mt-2 font-medium">{fmtDate(item.assembleia_prevista)}</p>
                                 <p className="text-xs text-muted-foreground">
                                     origem: {item.assembleia_dia_origem || "—"}
                                 </p>
@@ -202,37 +234,44 @@ function CartaCard({
                     </div>
 
                     <div className="rounded-lg border border-white/10 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground inline-flex items-center gap-2">
+                            <FileText className="h-3.5 w-3.5" />
                             Resumo da carta
                         </p>
 
-                        <div className="mt-2 space-y-1 text-sm">
-                            <div className="flex items-center justify-between gap-2">
-                                <span>Cliente</span>
-                                <strong className="text-right">{item.cliente_nome || "—"}</strong>
-                            </div>
+                        <div className="mt-3 space-y-2">
+                            <InfoRow
+                                icon={<UserRound className="h-4 w-4" />}
+                                label="Cliente"
+                                value={item.cliente_nome || "—"}
+                            />
 
-                            <div className="flex items-center justify-between gap-2">
-                                <span>Operadora</span>
-                                <strong className="text-right">{item.administradora_nome || "—"}</strong>
-                            </div>
+                            <InfoRow
+                                icon={<Building2 className="h-4 w-4" />}
+                                label="Operadora"
+                                value={item.administradora_nome || "—"}
+                            />
 
-                            <div className="flex items-center justify-between gap-2">
-                                <span>Valor carta</span>
-                                <strong className="text-right">{money(item.valor_carta)}</strong>
-                            </div>
+                            <InfoRow
+                                icon={<CircleDollarSign className="h-4 w-4" />}
+                                label="Valor carta"
+                                value={money(item.valor_carta)}
+                            />
                         </div>
                     </div>
                 </div>
 
                 <StrategyPanel item={item} />
 
-                <div className="rounded-lg border border-white/10 p-3">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <div className="rounded-lg border border-white/10 p-3 space-y-3">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground inline-flex items-center gap-2">
+                        <FolderKanban className="h-3.5 w-3.5" />
                         Ações
                     </p>
 
-                    <div className="mt-3">
+                    <EditCartaQuickAction item={item} competencia={competencia} />
+
+                    <div className="pt-1">
                         <LanceActions item={item} competencia={competencia} />
                     </div>
                 </div>
@@ -287,7 +326,10 @@ export function LancesTable({ items, competencia }: Props) {
                     <div className="rounded-xl border bg-white/5 p-4">
                         <div className="flex items-center justify-between gap-3 flex-wrap">
                             <div>
-                                <h3 className="text-lg font-semibold">{group.operadora}</h3>
+                                <h3 className="text-lg font-semibold inline-flex items-center gap-2">
+                                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                                    {group.operadora}
+                                </h3>
                                 <p className="text-sm text-muted-foreground">
                                     {group.clientes.reduce((acc, c) => acc + c.items.length, 0)} carta(s) •{" "}
                                     {group.clientes.length} cliente(s)
@@ -304,7 +346,10 @@ export function LancesTable({ items, competencia }: Props) {
                             >
                                 <div className="flex items-center justify-between gap-3 flex-wrap">
                                     <div>
-                                        <h4 className="text-base font-semibold">{clienteGroup.cliente}</h4>
+                                        <h4 className="text-base font-semibold inline-flex items-center gap-2">
+                                            <UserRound className="h-4 w-4 text-muted-foreground" />
+                                            {clienteGroup.cliente}
+                                        </h4>
                                         <p className="text-sm text-muted-foreground">
                                             {clienteGroup.items.length} carta(s) nesta operadora
                                         </p>

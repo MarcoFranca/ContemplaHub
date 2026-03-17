@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import {EditCartaSheet} from "@/app/app/lances/components/EditCartaSheet";
+import { EditCartaSheet } from "@/app/app/lances/components/EditCartaSheet";
 
 type Props = {
     cotaId: string;
+    competencia?: string;
     cota: {
         grupo_codigo: string;
         numero_cota: string;
@@ -34,7 +35,12 @@ type Props = {
     }>;
 };
 
-export function DetalheHeaderActions({ cotaId, cota, opcoesLanceFixo = [] }: Props) {
+export function DetalheHeaderActions({
+                                         cotaId,
+                                         competencia,
+                                         cota,
+                                         opcoesLanceFixo = [],
+                                     }: Props) {
     const [open, setOpen] = React.useState(false);
 
     return (
@@ -45,6 +51,7 @@ export function DetalheHeaderActions({ cotaId, cota, opcoesLanceFixo = [] }: Pro
                 open={open}
                 onOpenChange={setOpen}
                 cotaId={cotaId}
+                competencia={competencia}
                 initialData={cota}
                 opcoesLanceFixo={opcoesLanceFixo}
                 onSuccess={() => window.location.reload()}
