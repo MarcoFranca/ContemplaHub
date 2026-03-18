@@ -1,36 +1,32 @@
 // src/app/app/leads/[leadId]/LeadPropostasCard.tsx
 import Link from "next/link";
-import { FileSignature } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight, FileSignature } from "lucide-react";
 import { LeadPropostasList } from "./LeadPropostasList";
 
 export function LeadPropostasCard({ leadId }: { leadId: string }) {
     return (
-        <Card className="bg-slate-950/70 border-slate-800/80">
-            <CardHeader
-                className="
-          flex flex-col gap-3
-          sm:flex-row sm:items-center sm:justify-between
-        "
-            >
-                <div className="space-y-1">
-                    <CardTitle className="text-base font-semibold">
-                        Propostas consultivas
+        <Card className="border-white/10 bg-white/5">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15">
+              <FileSignature className="h-4 w-4 text-emerald-300" />
+            </span>
+                        Propostas
                     </CardTitle>
-                    <p className="text-[11px] text-slate-400 max-w-md">
-                        Organize seus cenários de consórcio, acompanhe status e acesse
-                        rapidamente o link público de cada proposta.
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Acompanhe propostas, simulações e andamento comercial do lead.
                     </p>
                 </div>
 
-                <Link
-                    href={`/app/leads/${leadId}/propostas/nova`}
-                    className="text-xs inline-flex items-center gap-1 px-3 py-1 rounded
-                     bg-emerald-600 text-white hover:bg-emerald-500
-                     whitespace-nowrap"
-                >
-                    <FileSignature className="h-3.5 w-3.5" />
-                    Nova proposta
+                <Link href={`/app/leads/${leadId}/propostas/nova`}>
+                    <Button size="sm" className="gap-2 bg-emerald-600 text-white hover:bg-emerald-500">
+                        <ArrowUpRight className="h-4 w-4" />
+                        Nova proposta
+                    </Button>
                 </Link>
             </CardHeader>
 

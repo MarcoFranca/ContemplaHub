@@ -103,9 +103,8 @@ export default async function LeadDetailsPage({
         throw new Error("Org inválida");
     }
 
-    const [lead, diagnostico, cotas, contractOptions] = await Promise.all([
+    const [lead, cotas, contractOptions] = await Promise.all([
         loadLead(leadId, profile.orgId),
-        loadDiagnostic(leadId, profile.orgId),
         loadCotas(leadId, profile.orgId),
         listContractOptions(),
     ]);
@@ -126,7 +125,6 @@ export default async function LeadDetailsPage({
                         <LeadDiagnosticCard
                             leadId={leadId}
                             leadName={lead.nome}
-                            diagnostico={diagnostico}
                         />
 
                         <LeadPropostasCard leadId={leadId} />
