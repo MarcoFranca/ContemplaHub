@@ -256,8 +256,8 @@ export function LeadCotasCard({
                                                 label="Administradora"
                                                 value={
                                                     <span className="block truncate" title={administradoraNome}>
-                                                    {administradoraNome}
-                                                    </span>
+      {administradoraNome}
+    </span>
                                                 }
                                             />
 
