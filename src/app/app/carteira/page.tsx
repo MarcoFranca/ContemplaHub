@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -17,12 +16,14 @@ import type {
     CarteiraCartaItem,
     CarteiraCartasResponse,
 } from "./lib/types";
+
 import { CarteiraFilters } from "./components/carteira-filters";
 import { ClientesCards } from "./components/clientes-cards";
 import { ClientesTable } from "./components/clientes-table";
 import { CartasList } from "./components/cartas-list";
 import { ClientesViewModeToggle } from "./components/clientes-view-mode-toggle";
 import { CarteiraViewTabs } from "./components/carteira-view-tabs";
+import { CreateCarteiraClienteSheet } from "./ui/CreateCarteiraClienteSheet";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -48,9 +49,32 @@ function parseSort(value?: string): ClienteSort {
     }
 }
 
+function buildBaseHref(params: {
+    view: "clientes" | "cartas";
+    q: string;
+    produto: string;
+    statusCarteira: string;
+    includeAll: boolean;
+    sort: ClienteSort;
+}) {
+    const qs = new URLSearchParams();
+
+    qs.set("view", params.view);
+
+    if (params.q) qs.set("q", params.q);
+    if (params.produto) qs.set("produto", params.produto);
+    if (params.statusCarteira) qs.set("status_carteira", params.statusCarteira);
+    if (params.includeAll) qs.set("all", "1");
+    if (params.sort) qs.set("sort", params.sort);
+
+    return `/app/carteira?${qs.toString()}`;
+}
+
 export default async function CarteiraPage({ searchParams }: PageProps) {
     const me = await getCurrentProfile();
-    if (!me?.orgId) return <main className="p-6">Vincule-se a uma organização.</main>;
+    if (!me?.orgId) {
+        return <main className="p-6">Vincule-se a uma organização.</main>;
+    }
 
     const cookieStore = await cookies();
     const savedView = cookieStore.get("carteira_view")?.value;
@@ -108,11 +132,32 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
         err = e instanceof Error ? e.message : "Erro ao carregar carteira.";
     }
 
+    const clientesItems = (clientesData?.items ?? []) as CarteiraClienteItem[];
+    const cartasItems = (cartasData?.items ?? []) as CarteiraCartaItem[];
+
+    const clientesHref = buildBaseHref({
+        view: "clientes",
+        q,
+        produto,
+        statusCarteira,
+        includeAll,
+        sort,
+    });
+
+    const cartasHref = buildBaseHref({
+        view: "cartas",
+        q,
+        produto,
+        statusCarteira,
+        includeAll,
+        sort,
+    });
+
     return (
-        <div className="h-full w-full overflow-hidden px-4 md:px-6 py-4">
+        <div className="h-full w-full overflow-hidden px-4 py-4 md:px-6">
             <div className="h-full overflow-hidden">
-                <main className="h-full flex flex-col gap-4">
-                    <div className="flex items-start justify-between gap-3 flex-wrap shrink-0">
+                <main className="flex h-full flex-col gap-4">
+                    <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div>
                             <h1 className="text-2xl font-semibold">Carteira</h1>
                             <p className="text-sm text-muted-foreground">
@@ -120,10 +165,12 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <Link href="/app/leads">
                                 <Button variant="outline">Ver Leads</Button>
                             </Link>
+
+                            <CreateCarteiraClienteSheet />
                         </div>
                     </div>
 
@@ -140,7 +187,7 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                     </div>
 
                     {err && (
-                        <Card className="bg-red-500/10 border-red-500/30 shrink-0">
+                        <Card className="shrink-0 border-red-500/30 bg-red-500/10">
                             <CardHeader>
                                 <CardTitle className="text-red-300">Erro</CardTitle>
                             </CardHeader>
@@ -149,35 +196,40 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                     )}
 
                     {!err && (
-                        <Tabs defaultValue={view} className="flex min-h-0 flex-1 flex-col space-y-3">
-                            <div className="flex items-center justify-between gap-3 flex-wrap shrink-0">
-                                <CarteiraViewTabs currentView={view} />
+                        <>
+                            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <CarteiraViewTabs
+                                    current={view}
+                                    clientesHref={clientesHref}
+                                    cartasHref={cartasHref}
+                                />
 
-                                {view === "clientes" && <ClientesViewModeToggle currentMode={mode} />}
+                                {view === "clientes" && (
+                                    <ClientesViewModeToggle
+                                        current={mode}
+                                        baseHref={clientesHref}
+                                    />
+                                )}
                             </div>
 
                             <div className="min-h-0 flex-1 overflow-hidden">
-                                <TabsContent value="clientes" className="h-full mt-0">
-                                    <div className="h-full overflow-hidden">
-                                        {mode === "cards" ? (
-                                            <div className="h-full overflow-auto pr-1">
-                                                <ClientesCards items={(clientesData?.items ?? []) as CarteiraClienteItem[]} />
-                                            </div>
-                                        ) : (
-                                            <div className="h-full overflow-hidden">
-                                                <ClientesTable items={(clientesData?.items ?? []) as CarteiraClienteItem[]} />
-                                            </div>
-                                        )}
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="cartas" className="h-full mt-0">
+                                {view === "clientes" ? (
+                                    mode === "cards" ? (
+                                        <div className="h-full overflow-auto pr-1">
+                                            <ClientesCards items={clientesItems} />
+                                        </div>
+                                    ) : (
+                                        <div className="h-full overflow-auto pr-1">
+                                            <ClientesTable items={clientesItems} />
+                                        </div>
+                                    )
+                                ) : (
                                     <div className="h-full overflow-auto pr-1">
-                                        <CartasList items={(cartasData?.items ?? []) as CarteiraCartaItem[]} />
+                                        <CartasList items={cartasItems} />
                                     </div>
-                                </TabsContent>
+                                )}
                             </div>
-                        </Tabs>
+                        </>
                     )}
                 </main>
             </div>

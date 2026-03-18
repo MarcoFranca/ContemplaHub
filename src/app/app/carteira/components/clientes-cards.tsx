@@ -2,6 +2,15 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    CalendarDays,
+    FileText,
+    Mail,
+    Phone,
+    UserRound,
+    Wallet,
+    Workflow,
+} from "lucide-react";
 import { contratoBadgeVariant } from "../lib/badges";
 import { fmtCurrency, fmtDate } from "../lib/format";
 import type { CarteiraClienteItem } from "../lib/types";
@@ -20,12 +29,26 @@ export function ClientesCards({ items }: ClientesCardsProps) {
     return (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {items.map((it) => (
-                <Card key={it.cliente.lead_id} className="bg-white/5 border-white/10">
-                    <CardHeader className="space-y-3">
-                        <CardTitle className="flex items-start justify-between gap-2">
-                            <span className="truncate">{it.cliente.nome ?? "—"}</span>
+                <Card
+                    key={it.cliente.lead_id}
+                    className="border-white/10 bg-white/5 backdrop-blur-sm transition hover:border-emerald-400/20 hover:bg-white/7"
+                >
+                    <CardHeader className="space-y-4">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 ring-1 ring-emerald-400/20">
+                    <UserRound className="h-4 w-4 text-emerald-300" />
+                  </span>
+                                    <span className="truncate">{it.cliente.nome ?? "—"}</span>
+                                </CardTitle>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Lead vinculado à carteira
+                                </p>
+                            </div>
+
                             <Badge variant="secondary">{it.resumo.qtd_cartas} carta(s)</Badge>
-                        </CardTitle>
+                        </div>
 
                         <div className="flex flex-wrap gap-2">
                             <Badge variant="outline" className="capitalize">
@@ -49,34 +72,61 @@ export function ClientesCards({ items }: ClientesCardsProps) {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="text-sm space-y-3 text-muted-foreground">
-                        <div className="space-y-1">
-                            <div>📞 {it.cliente.telefone ?? "—"}</div>
-                            <div>✉️ {it.cliente.email ?? "—"}</div>
-                            <div>📍 Etapa: {it.cliente.etapa ?? "—"}</div>
-                            <div>🗂️ Entrada na carteira: {fmtDate(it.cliente.entered_at)}</div>
-                            <div>💰 Total em cartas: {fmtCurrency(it.resumo.valor_total_cartas)}</div>
+                    <CardContent className="space-y-4 text-sm">
+                        <div className="grid gap-2 rounded-xl border border-white/10 bg-black/10 p-3">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Phone className="h-4 w-4" />
+                                <span className="truncate">{it.cliente.telefone ?? "—"}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Mail className="h-4 w-4" />
+                                <span className="truncate">{it.cliente.email ?? "—"}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Workflow className="h-4 w-4" />
+                                <span>Etapa: {it.cliente.etapa ?? "—"}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <CalendarDays className="h-4 w-4" />
+                                <span>Entrada: {fmtDate(it.cliente.entered_at)}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 font-medium text-foreground">
+                                <Wallet className="h-4 w-4 text-emerald-300" />
+                                <span>Total em cartas: {fmtCurrency(it.resumo.valor_total_cartas)}</span>
+                            </div>
                         </div>
 
-                        <div className="pt-2 space-y-2">
-                            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+                                <FileText className="h-3.5 w-3.5" />
                                 Cartas
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 {it.cartas.slice(0, 3).map((c) => (
                                     <div
                                         key={c.cota_id}
-                                        className="flex items-center justify-between rounded-md border border-white/10 bg-white/5 px-2 py-1"
+                                        className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2"
                                     >
-                                        <div className="truncate">
-                                            <span className="font-medium">{c.numero_cota ?? "—"}</span>{" "}
-                                            <span className="text-xs">({c.grupo_codigo ?? "—"})</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-xs">{fmtCurrency(c.valor_carta)}</div>
-                                            <div className="text-[11px] text-muted-foreground">
+                                        <div className="min-w-0">
+                                            <div className="truncate font-medium">
+                                                {c.numero_cota ?? "—"}{" "}
+                                                <span className="text-xs text-muted-foreground">
+                          ({c.grupo_codigo ?? "—"})
+                        </span>
+                                            </div>
+                                            <div className="truncate text-xs text-muted-foreground">
                                                 {c.administradora ?? "—"}
+                                            </div>
+                                        </div>
+
+                                        <div className="text-right text-xs">
+                                            <div className="font-medium text-foreground">
+                                                {fmtCurrency(c.valor_carta)}
                                             </div>
                                         </div>
                                     </div>
@@ -97,12 +147,13 @@ export function ClientesCards({ items }: ClientesCardsProps) {
                         </div>
 
                         {it.cliente.observacoes && (
-                            <div className="text-xs text-muted-foreground">
-                                Obs.: {it.cliente.observacoes}
+                            <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-muted-foreground">
+                                <span className="font-medium text-foreground">Observações:</span>{" "}
+                                {it.cliente.observacoes}
                             </div>
                         )}
 
-                        <div className="pt-3 flex gap-2 flex-wrap">
+                        <div className="flex flex-wrap gap-2 pt-2">
                             <Link href={`/app/leads/${it.cliente.lead_id}`}>
                                 <Button size="sm" variant="outline">
                                     Ver cliente
