@@ -29,6 +29,15 @@ type LeadEditData = {
     prazo_meses: number | null;
 };
 
+const ORIGEM_OPTIONS = [
+    { value: "lp", label: "Landing Page" },
+    { value: "whatsapp", label: "WhatsApp" },
+    { value: "indicacao", label: "Indicação" },
+    { value: "orgânico", label: "Orgânico" },
+    { value: "pago", label: "Pago" },
+    { value: "outro", label: "Outro" },
+];
+
 export function EditLeadSheet({ lead }: { lead: LeadEditData }) {
     const router = useRouter();
     const [open, setOpen] = React.useState(false);
@@ -131,21 +140,28 @@ export function EditLeadSheet({ lead }: { lead: LeadEditData }) {
 
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="origem" className="flex items-center gap-2 text-xs">
-                                            <BadgeInfo className="h-3.5 w-3.5" />
+                                        <Label className="flex items-center gap-2 text-xs">
+                                            <BadgeInfo className="h-3.5 w-3.5"/>
                                             Origem
                                         </Label>
-                                        <Input
-                                            id="origem"
+
+                                        <select
                                             name="origem"
                                             defaultValue={lead.origem ?? ""}
-                                            placeholder="Indicação, tráfego pago, orgânico..."
-                                        />
+                                            className="h-10 w-full rounded-md border border-white/10 bg-background px-3 text-sm"
+                                        >
+                                            <option value="">Não informado</option>
+                                            {ORIGEM_OPTIONS.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
 
                                     <div className="space-y-1.5">
                                         <Label htmlFor="valor_interesse" className="flex items-center gap-2 text-xs">
-                                            <Target className="h-3.5 w-3.5" />
+                                            <Target className="h-3.5 w-3.5"/>
                                             Valor de interesse
                                         </Label>
                                         <Input
@@ -160,7 +176,7 @@ export function EditLeadSheet({ lead }: { lead: LeadEditData }) {
 
                                 <div className="space-y-1.5">
                                     <Label htmlFor="prazo_meses" className="flex items-center gap-2 text-xs">
-                                        <CalendarRange className="h-3.5 w-3.5" />
+                                        <CalendarRange className="h-3.5 w-3.5"/>
                                         Prazo desejado (meses)
                                     </Label>
                                     <Input

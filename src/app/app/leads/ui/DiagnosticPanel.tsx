@@ -17,6 +17,7 @@ import {
     type DiagnosticRecord,
     type DiagnosticInputDTO,
 } from "@/app/app/leads/actions.diagnostic";
+import {DiagnosticCombobox} from "@/app/app/leads/[leadId]/DiagnosticCombobox";
 
 type Props = {
     leadId: string;
@@ -60,9 +61,96 @@ const emptyForm: FormState = {
     perfil_psicologico: "",
 };
 
+const PERFIL_PSICO_OPTIONS = [
+    {
+        value: "disciplinado_acumulador",
+        label: "Disciplinado acumulador",
+        description: "Planeja bem, valoriza constância e construção de patrimônio.",
+    },
+    {
+        value: "sonhador_familiar",
+        label: "Sonhador familiar",
+        description: "Decide muito pelo objetivo de vida e segurança da família.",
+    },
+    {
+        value: "corporativo_racional",
+        label: "Corporativo racional",
+        description: "Analisa números, previsibilidade e lógica financeira.",
+    },
+    {
+        value: "impulsivo_emocional",
+        label: "Impulsivo emocional",
+        description: "Tende a decidir rápido pelo entusiasmo do momento.",
+    },
+    {
+        value: "estrategico_oportunista",
+        label: "Estratégico oportunista",
+        description: "Busca timing, vantagem e melhor janela para agir.",
+    },
+    {
+        value: "conservador",
+        label: "Conservador",
+        description: "Prefere segurança, menor risco e mais cautela.",
+    },
+    {
+        value: "moderado",
+        label: "Moderado",
+        description: "Equilibra prudência e oportunidade.",
+    },
+    {
+        value: "arrojado",
+        label: "Arrojado",
+        description: "Aceita maior risco em troca de velocidade.",
+    },
+    {
+        value: "nao_informado",
+        label: "Não informado",
+        description: "Use quando ainda não houver elementos suficientes.",
+    },
+];
+
+const ESTRATEGIA_LANCE_OPTIONS = [
+    {
+        value: "conservadora",
+        label: "Conservadora",
+        description: "Entrada gradual, menor exposição e foco em previsibilidade.",
+    },
+    {
+        value: "progressiva",
+        label: "Progressiva",
+        description: "Aumenta o lance conforme evolução do plano.",
+    },
+    {
+        value: "agressiva_inicio",
+        label: "Agressiva no início",
+        description: "Busca antecipar contemplação nas primeiras assembleias.",
+    },
+    {
+        value: "oportunista",
+        label: "Oportunista",
+        description: "Age conforme caixa, janela e leitura da assembleia.",
+    },
+    {
+        value: "sem_lance_inicial",
+        label: "Sem lance inicial",
+        description: "Foco inicial em adesão e organização financeira.",
+    },
+];
+
+function getDiagnosticExtras(
+    extras: DiagnosticRecord["extras"]
+): Record<string, unknown> {
+    if (extras && typeof extras === "object" && !Array.isArray(extras)) {
+        return extras as Record<string, unknown>;
+    }
+    return {};
+}
+
 function toFormState(rec: DiagnosticRecord | null): FormState {
     if (!rec) return emptyForm;
-    const extras = (rec.extras || {}) as any;
+
+    const extras = getDiagnosticExtras(rec.extras);
+
     return {
         objetivo: rec.objetivo ?? "",
         prazo_meta_meses: rec.prazo_meta_meses?.toString() ?? "",
@@ -79,8 +167,12 @@ function toFormState(rec: DiagnosticRecord | null): FormState {
         lance_base_pct: rec.lance_base_pct?.toString() ?? "",
         lance_max_pct: rec.lance_max_pct?.toString() ?? "",
         janela_preferida_semanas: rec.janela_preferida_semanas?.toString() ?? "",
-        comentarios: extras.comentarios ?? "",
-        perfil_psicologico: extras.perfil_psicologico ?? "",
+        comentarios:
+            typeof extras.comentarios === "string" ? extras.comentarios : "",
+        perfil_psicologico:
+            typeof extras.perfil_psicologico === "string"
+                ? extras.perfil_psicologico
+                : "",
     };
 }
 
@@ -385,12 +477,12 @@ export function DiagnosticPanel({ leadId }: Props) {
             <div className="grid gap-3 md:grid-cols-3">
                 <div className="grid gap-1">
                     <Label>Estratégia de lance</Label>
-                    <Input
+                    <DiagnosticCombobox
                         value={form.estrategia_lance}
-                        onChange={(e) =>
-                            handleChange("estrategia_lance", e.target.value)
-                        }
-                        placeholder="Ex.: agressivo_inicio"
+                        onChange={(value) => handleChange("estrategia_lance", value)}
+                        placeholder="Selecionar estratégia"
+                        searchPlaceholder="Buscar estratégia..."
+                        options={ESTRATEGIA_LANCE_OPTIONS}
                     />
                 </div>
                 <div className="grid gap-1">
@@ -431,12 +523,12 @@ export function DiagnosticPanel({ leadId }: Props) {
                 </div>
                 <div className="grid gap-1">
                     <Label>Perfil psicológico</Label>
-                    <Input
+                    <DiagnosticCombobox
                         value={form.perfil_psicologico}
-                        onChange={(e) =>
-                            handleChange("perfil_psicologico", e.target.value)
-                        }
-                        placeholder="moderado, conservador, agressivo…"
+                        onChange={(value) => handleChange("perfil_psicologico", value)}
+                        placeholder="Selecionar perfil"
+                        searchPlaceholder="Buscar perfil..."
+                        options={PERFIL_PSICO_OPTIONS}
                     />
                 </div>
             </div>
@@ -610,7 +702,12 @@ export function DiagnosticPanel({ leadId }: Props) {
                             Comentários do consultor
                         </p>
                         <p className="text-sm whitespace-pre-wrap">
-                            {(record?.extras as any)?.comentarios || "Sem comentários ainda."}
+                            {(() => {
+                                const extras = getDiagnosticExtras(record?.extras);
+                                return typeof extras.comentarios === "string" && extras.comentarios.trim()
+                                    ? extras.comentarios
+                                    : "Sem comentários ainda.";
+                            })()}
                         </p>
                     </div>
                 </TabsContent>
