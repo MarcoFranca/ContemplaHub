@@ -119,7 +119,7 @@ export function StrategyPanel({ item }: Props) {
             <div>
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground inline-flex items-center gap-2">
                     <Goal className="h-3.5 w-3.5" />
-                    Estratégia recomendada
+                    Contexto estratégico
                 </p>
 
                 <div className="mt-2 flex flex-wrap gap-2">

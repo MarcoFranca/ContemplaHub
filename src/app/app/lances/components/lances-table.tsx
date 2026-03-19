@@ -5,18 +5,33 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+    ArrowUpRight,
+    Ban,
     Building2,
     CalendarDays,
+    CheckCircle2,
+    ClipboardCheck,
+    ClipboardList,
+    Clock3,
     CircleDollarSign,
-    FileText,
     FolderKanban,
+    LayoutList,
+    SendHorizonal,
     UserRound,
+    Wallet,
 } from "lucide-react";
 
 import { LanceActions } from "./lance-actions";
 import { StrategyPanel } from "./strategy-panel";
 import { EditCartaQuickAction } from "./edit-carta-quick-action";
-import type { LanceCartaListItem, StatusMes } from "../types";
+import { LanceMesCard } from "./LanceMesCard";
+import type { LanceCartaListItem } from "../types";
+import {
+    filterByOperacaoView,
+    getExecucaoLabel,
+    statusMesOrder,
+    type OperacaoView,
+} from "../lib/operacao";
 
 type Props = {
     items: LanceCartaListItem[];
@@ -54,29 +69,6 @@ function statusVariant(status: string) {
     }
 }
 
-function statusMesOrder(status: StatusMes) {
-    switch (status) {
-        case "pendente":
-            return 0;
-        case "planejado":
-            return 1;
-        case "feito":
-            return 2;
-        case "sem_lance":
-            return 3;
-        case "contemplada":
-            return 4;
-        case "cancelada":
-            return 5;
-        default:
-            return 99;
-    }
-}
-
-function isFeito(statusMes: StatusMes) {
-    return statusMes === "feito";
-}
-
 function cardClass(item: LanceCartaListItem) {
     if (item.status_mes === "feito") {
         return "border-emerald-500/40 bg-emerald-500/5";
@@ -102,8 +94,13 @@ function sortItems(items: LanceCartaListItem[]) {
         const byStatusMes = statusMesOrder(a.status_mes) - statusMesOrder(b.status_mes);
         if (byStatusMes !== 0) return byStatusMes;
 
-        const aAsm = a.assembleia_prevista ? new Date(`${a.assembleia_prevista}T00:00:00`).getTime() : Infinity;
-        const bAsm = b.assembleia_prevista ? new Date(`${b.assembleia_prevista}T00:00:00`).getTime() : Infinity;
+        const aAsm = a.assembleia_prevista
+            ? new Date(`${a.assembleia_prevista}T00:00:00`).getTime()
+            : Number.POSITIVE_INFINITY;
+        const bAsm = b.assembleia_prevista
+            ? new Date(`${b.assembleia_prevista}T00:00:00`).getTime()
+            : Number.POSITIVE_INFINITY;
+
         if (aAsm !== bAsm) return aAsm - bAsm;
 
         const byGrupo = a.grupo_codigo.localeCompare(b.grupo_codigo);
@@ -154,22 +151,46 @@ function buildGroups(items: LanceCartaListItem[]): OperadoraGroup[] {
         }));
 }
 
-function InfoRow({
-                     icon,
-                     label,
-                     value,
-                 }: {
-    icon: React.ReactNode;
-    label: string;
-    value: React.ReactNode;
+function OperacaoTabs({
+                          value,
+                          onChange,
+                      }: {
+    value: OperacaoView;
+    onChange: (value: OperacaoView) => void;
 }) {
+    const tabs: Array<{
+        value: OperacaoView;
+        label: string;
+        icon: React.ComponentType<{ className?: string }>;
+    }> = [
+        { value: "pendentes", label: "Pendentes", icon: Clock3 },
+        { value: "planejados", label: "Planejados", icon: SendHorizonal },
+        { value: "baixados", label: "Baixados", icon: ClipboardCheck },
+        { value: "sem_lance", label: "Sem lance", icon: Ban },
+        { value: "todas", label: "Todas", icon: LayoutList },
+    ];
+
     return (
-        <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="inline-flex items-center gap-2 text-muted-foreground">
-                {icon}
-                {label}
-            </span>
-            <strong className="text-right">{value}</strong>
+        <div className="-mx-1 overflow-x-auto px-1">
+            <div className="flex w-max gap-2">
+                {tabs.map((tab) => {
+                    const Icon = tab.icon;
+
+                    return (
+                        <Button
+                            key={tab.value}
+                            type="button"
+                            size="sm"
+                            variant={value === tab.value ? "default" : "outline"}
+                            onClick={() => onChange(tab.value)}
+                            className="inline-flex items-center gap-2 whitespace-nowrap"
+                        >
+                            <Icon className="h-4 w-4" />
+                            {tab.label}
+                        </Button>
+                    );
+                })}
+            </div>
         </div>
     );
 }
@@ -182,24 +203,32 @@ function CartaCard({
     competencia: string;
 }) {
     return (
-        <div className={`rounded-xl border p-4 space-y-4 ${cardClass(item)}`}>
-            <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div
+            className={`rounded-2xl border p-3 shadow-sm transition-all duration-200 hover:border-white/20 hover:bg-white/[0.06] sm:p-4 md:p-5 ${cardClass(item)}`}
+        >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-semibold">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-sm font-semibold text-white sm:text-base md:text-lg">
                             Grupo {item.grupo_codigo} • Cota {item.numero_cota}
                         </h4>
 
-                        <Badge variant={statusVariant(item.status)}>
-                            {item.status}
-                        </Badge>
+                        <Badge variant={statusVariant(item.status)}>{item.status}</Badge>
 
                         <Badge variant={statusVariant(item.status_mes)}>
-                            {item.status_mes}
+                            {getExecucaoLabel(item)}
                         </Badge>
                     </div>
 
-                    <p className="text-sm text-muted-foreground capitalize inline-flex items-center gap-2">
+                    <p className="inline-flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <UserRound className="h-4 w-4" />
+                        {item.cliente_nome || "—"}
+                        <span className="text-white/30">•</span>
+                        <Building2 className="h-4 w-4" />
+                        {item.administradora_nome || "—"}
+                    </p>
+
+                    <p className="inline-flex items-center gap-2 text-sm text-muted-foreground capitalize">
                         <CircleDollarSign className="h-4 w-4" />
                         {item.produto} • {money(item.valor_carta)}
                     </p>
@@ -207,16 +236,17 @@ function CartaCard({
 
                 <Link
                     href={`/app/lances/${item.cota_id}?competencia=${competencia}`}
-                    className="text-xs text-emerald-400 hover:underline"
+                    className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:underline"
                 >
                     Ver detalhe da carta
+                    <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
             </div>
 
-            <div className="grid gap-3 xl:grid-cols-[0.95fr_1.15fr_0.95fr]">
+            <div className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.2fr_0.95fr]">
                 <div className="space-y-3">
-                    <div className="rounded-lg border border-white/10 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground inline-flex items-center gap-2">
+                    <div className="rounded-xl border border-white/10 bg-black/10 p-3">
+                        <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
                             <CalendarDays className="h-3.5 w-3.5" />
                             Assembleia
                         </p>
@@ -233,38 +263,55 @@ function CartaCard({
                         )}
                     </div>
 
-                    <div className="rounded-lg border border-white/10 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground inline-flex items-center gap-2">
-                            <FileText className="h-3.5 w-3.5" />
-                            Resumo da carta
+                    <div className="rounded-xl border border-white/10 bg-black/10 p-3">
+                        <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                            <ClipboardList className="h-3.5 w-3.5" />
+                            Resumo operacional
                         </p>
 
-                        <div className="mt-3 space-y-2">
-                            <InfoRow
-                                icon={<UserRound className="h-4 w-4" />}
-                                label="Cliente"
-                                value={item.cliente_nome || "—"}
-                            />
+                        <div className="mt-3 space-y-2 text-sm">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <span className="inline-flex items-center gap-2 text-muted-foreground">
+                  <UserRound className="h-4 w-4" />
+                  Cliente
+                </span>
+                                <strong>{item.cliente_nome || "—"}</strong>
+                            </div>
 
-                            <InfoRow
-                                icon={<Building2 className="h-4 w-4" />}
-                                label="Operadora"
-                                value={item.administradora_nome || "—"}
-                            />
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <span className="inline-flex items-center gap-2 text-muted-foreground">
+                  <Building2 className="h-4 w-4" />
+                  Operadora
+                </span>
+                                <strong>{item.administradora_nome || "—"}</strong>
+                            </div>
 
-                            <InfoRow
-                                icon={<CircleDollarSign className="h-4 w-4" />}
-                                label="Valor carta"
-                                value={money(item.valor_carta)}
-                            />
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <span className="inline-flex items-center gap-2 text-muted-foreground">
+                  <Wallet className="h-4 w-4" />
+                  Valor carta
+                </span>
+                                <strong>{money(item.valor_carta)}</strong>
+                            </div>
+
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <span className="inline-flex items-center gap-2 text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Status do mês
+                </span>
+                                <strong>{getExecucaoLabel(item)}</strong>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <StrategyPanel item={item} />
+                <div className="space-y-3">
+                    <LanceMesCard item={item} />
+                    <StrategyPanel item={item} />
+                </div>
 
-                <div className="rounded-lg border border-white/10 p-3 space-y-3">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground inline-flex items-center gap-2">
+                <div className="space-y-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 md:border-white/10 md:bg-black/10">
+                    <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
                         <FolderKanban className="h-3.5 w-3.5" />
                         Ações
                     </p>
@@ -281,12 +328,15 @@ function CartaCard({
 }
 
 export function LancesTable({ items, competencia }: Props) {
-    const [hideFeitos, setHideFeitos] = React.useState(false);
+    const [view, setView] = React.useState<OperacaoView>("pendentes");
+    const [hideBaixados, setHideBaixados] = React.useState(false);
 
     const filteredItems = React.useMemo(() => {
-        if (!hideFeitos) return items;
-        return items.filter((item) => !isFeito(item.status_mes));
-    }, [items, hideFeitos]);
+        const base = filterByOperacaoView(items, view);
+
+        if (!hideBaixados) return base;
+        return base.filter((item) => item.status_mes !== "feito");
+    }, [items, view, hideBaixados]);
 
     const groups = React.useMemo(() => buildGroups(filteredItems), [filteredItems]);
 
@@ -299,20 +349,27 @@ export function LancesTable({ items, competencia }: Props) {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="text-sm text-muted-foreground">
-                    Visualização agrupada por operadora e cliente.
-                </div>
+        <div className="space-y-4 pb-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-sm text-muted-foreground">
+                        Gestão operacional do lance do mês por operadora e cliente.
+                    </div>
 
-                <Button
-                    type="button"
-                    variant={hideFeitos ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setHideFeitos((prev) => !prev)}
-                >
-                    {hideFeitos ? "Mostrando só pendentes" : "Ocultar feitas do mês"}
-                </Button>
+                    <div className="flex flex-col gap-2 sm:items-end">
+                        <OperacaoTabs value={view} onChange={setView} />
+
+                        <Button
+                            type="button"
+                            variant={hideBaixados ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setHideBaixados((prev) => !prev)}
+                            className="w-full sm:w-auto"
+                        >
+                            {hideBaixados ? "Ocultando baixados" : "Ocultar baixados"}
+                        </Button>
+                    </div>
+                </div>
             </div>
 
             {!groups.length && (
@@ -323,10 +380,10 @@ export function LancesTable({ items, competencia }: Props) {
 
             {groups.map((group) => (
                 <section key={group.operadora} className="space-y-4">
-                    <div className="rounded-xl border bg-white/5 p-4">
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <h3 className="text-lg font-semibold inline-flex items-center gap-2">
+                                <h3 className="inline-flex items-center gap-2 text-lg font-semibold">
                                     <Building2 className="h-5 w-5 text-muted-foreground" />
                                     {group.operadora}
                                 </h3>
@@ -342,11 +399,11 @@ export function LancesTable({ items, competencia }: Props) {
                         {group.clientes.map((clienteGroup) => (
                             <div
                                 key={`${group.operadora}-${clienteGroup.cliente}`}
-                                className="rounded-2xl border border-white/10 bg-background/40 p-4 space-y-4"
+                                className="space-y-4 rounded-2xl border border-white/10 bg-background/40 p-4 shadow-sm"
                             >
-                                <div className="flex items-center justify-between gap-3 flex-wrap">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
-                                        <h4 className="text-base font-semibold inline-flex items-center gap-2">
+                                        <h4 className="inline-flex items-center gap-2 text-base font-semibold">
                                             <UserRound className="h-4 w-4 text-muted-foreground" />
                                             {clienteGroup.cliente}
                                         </h4>
@@ -355,15 +412,15 @@ export function LancesTable({ items, competencia }: Props) {
                                         </p>
                                     </div>
 
-                                    <div className="flex gap-2 flex-wrap">
+                                    <div className="flex flex-wrap gap-2">
                                         <Badge variant="outline">
                                             Pendentes: {clienteGroup.items.filter((i) => i.status_mes === "pendente").length}
                                         </Badge>
                                         <Badge variant="outline">
-                                            Planejadas: {clienteGroup.items.filter((i) => i.status_mes === "planejado").length}
+                                            Planejados: {clienteGroup.items.filter((i) => i.status_mes === "planejado").length}
                                         </Badge>
                                         <Badge variant="outline">
-                                            Feitas: {clienteGroup.items.filter((i) => i.status_mes === "feito").length}
+                                            Baixados: {clienteGroup.items.filter((i) => i.status_mes === "feito").length}
                                         </Badge>
                                     </div>
                                 </div>

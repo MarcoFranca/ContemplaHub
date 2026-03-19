@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listLancesCartas, listRegrasOperadora } from "./actions/carta-actions";
 import { LancesFilters } from "./components/lances-filters";
 import { LancesTable } from "./components/lances-table";
+import { LancesOperacaoOverview } from "./components/LancesOperacaoOverview";
 import type { LanceCartaListResponse, RegraOperadora } from "./types";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -30,7 +31,10 @@ function getCompetenciaDefault() {
 
 export default async function LancesPage({ searchParams }: PageProps) {
     const me = await getCurrentProfile();
-    if (!me?.orgId) return <main className="p-6">Vincule-se a uma organização.</main>;
+
+    if (!me?.orgId) {
+        return <main className="p-6">Vincule-se a uma organização.</main>;
+    }
 
     const sp = (await searchParams) ?? {};
     const competencia = first(sp, "competencia") ?? getCompetenciaDefault();
@@ -59,99 +63,119 @@ export default async function LancesPage({ searchParams }: PageProps) {
             listRegrasOperadora(),
         ]);
     } catch (e: unknown) {
-        error = e instanceof Error ? e.message : "Erro ao carregar módulo de lances.";
+        error =
+            e instanceof Error ? e.message : "Erro ao carregar módulo de lances.";
     }
 
     return (
-        <div className="h-full w-full overflow-hidden px-4 md:px-6 py-4">
-            <main className="h-full flex flex-col gap-4">
-                <div className="flex items-start justify-between gap-3 flex-wrap shrink-0">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Controle de Lances</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Acompanhe cartas ativas, organize os lances do mês e registre contemplações.
-                        </p>
-                    </div>
+        <div className="h-full overflow-hidden">
+            <div className="h-full px-4 py-4 md:px-6">
+                <div className="flex h-full flex-col gap-4 overflow-hidden">
+                    {/* MOBILE: página inteira rola */}
+                    <div className="md:hidden h-full overflow-y-auto pr-1">
+                        <div className="flex flex-col gap-4 pb-4">
+                            <div className="flex flex-col gap-3">
+                                <div>
+                                    <h1 className="text-xl font-semibold">Lances do mês</h1>
+                                    <p className="text-sm text-muted-foreground">
+                                        Defina o lance, acompanhe a execução e dê baixa no que já foi tratado.
+                                    </p>
+                                </div>
 
-                    <div className="flex items-center gap-2">
-                        <Link href="/app/carteira">
-                            <Button variant="outline">Ver Carteira</Button>
-                        </Link>
-                    </div>
-                </div>
+                                <div className="flex items-center gap-2">
+                                    <Link href="/app/carteira">
+                                        <Button variant="outline" size="sm" className="w-full">
+                                            Ver Carteira
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
 
-                <div className="grid gap-3 md:grid-cols-4 shrink-0">
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Cartas carregadas</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-2xl font-semibold">
-                            {data?.total ?? 0}
-                        </CardContent>
-                    </Card>
+                            <LancesOperacaoOverview items={data?.items ?? []} />
 
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Pendentes do mês</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-2xl font-semibold">
-                            {data?.items?.filter((i) => i.status_mes === "pendente").length ?? 0}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Feitas</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-2xl font-semibold">
-                            {data?.items?.filter((i) => i.status_mes === "feito").length ?? 0}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Regras por operadora</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-2xl font-semibold">
-                            {regras.length}
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div className="shrink-0">
-                    <LancesFilters
-                        competencia={competencia}
-                        statusCota={status_cota}
-                        administradoraId={administradora_id}
-                        produto={produto}
-                        q={q}
-                        somenteAutorizadas={somente_autorizadas}
-                        regras={regras}
-                    />
-                </div>
-
-                {error && (
-                    <Card className="bg-red-500/10 border-red-500/30">
-                        <CardHeader>
-                            <CardTitle className="text-red-300">Erro</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-red-200">
-                            {error}
-                        </CardContent>
-                    </Card>
-                )}
-
-                {!error && (
-                    <div className="min-h-0 flex-1 overflow-hidden">
-                        <div className="h-full overflow-auto pr-1">
-                            <LancesTable
-                                items={data?.items ?? []}
+                            <LancesFilters
                                 competencia={competencia}
+                                statusCota={status_cota}
+                                administradoraId={administradora_id}
+                                produto={produto}
+                                q={q}
+                                somenteAutorizadas={somente_autorizadas}
+                                regras={regras}
                             />
+
+                            {error ? (
+                                <Card className="border-red-500/30 bg-red-500/10">
+                                    <CardHeader>
+                                        <CardTitle className="text-red-300">Erro</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-sm text-red-200">
+                                        {error}
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <LancesTable
+                                    items={data?.items ?? []}
+                                    competencia={competencia}
+                                />
+                            )}
                         </div>
                     </div>
-                )}
-            </main>
+
+                    {/* DESKTOP: topo fixo + somente tabela rola */}
+                    <div className="hidden md:flex md:h-full md:min-h-0 md:flex-col md:gap-4">
+                        <div className="shrink-0 space-y-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <h1 className="text-xl font-semibold md:text-2xl">
+                                        Lances do mês
+                                    </h1>
+                                    <p className="text-sm text-muted-foreground">
+                                        Defina o lance, acompanhe a execução e dê baixa no que já foi tratado.
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <Link href="/app/carteira">
+                                        <Button variant="outline" size="sm" className="sm:h-10">
+                                            Ver Carteira
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
+
+                            <LancesOperacaoOverview items={data?.items ?? []} />
+
+                            <LancesFilters
+                                competencia={competencia}
+                                statusCota={status_cota}
+                                administradoraId={administradora_id}
+                                produto={produto}
+                                q={q}
+                                somenteAutorizadas={somente_autorizadas}
+                                regras={regras}
+                            />
+                        </div>
+
+                        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                            {error ? (
+                                <Card className="border-red-500/30 bg-red-500/10">
+                                    <CardHeader>
+                                        <CardTitle className="text-red-300">Erro</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-sm text-red-200">
+                                        {error}
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <LancesTable
+                                    items={data?.items ?? []}
+                                    competencia={competencia}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

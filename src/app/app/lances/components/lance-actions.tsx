@@ -41,6 +41,66 @@ function formatBrl(value: number) {
     }).format(Number.isFinite(value) ? value : 0);
 }
 
+function PrimaryControleButton({
+                                   item,
+                                   competencia,
+                                   onSubmit,
+                               }: {
+    item: LanceCartaListItem;
+    competencia: string;
+    onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
+}) {
+    if (item.status !== "ativa") return null;
+
+    if (item.status_mes === "planejado") {
+        return (
+            <form
+                action={(formData) => onSubmit(salvarControleMensalAction, formData)}
+                className="inline-flex"
+            >
+                <input type="hidden" name="cota_id" value={item.cota_id} />
+                <input type="hidden" name="competencia" value={competencia} />
+                <input type="hidden" name="status_mes" value="feito" />
+                <input type="hidden" name="observacoes" value="Baixa operacional realizada no módulo de lances." />
+                <Button type="submit" size="sm">
+                    Dar baixa
+                </Button>
+            </form>
+        );
+    }
+
+    if (item.status_mes === "feito") {
+        return (
+            <Button type="button" size="sm" disabled>
+                Baixado
+            </Button>
+        );
+    }
+
+    if (item.status_mes === "sem_lance") {
+        return (
+            <Button type="button" size="sm" variant="outline" disabled>
+                Sem lance no mês
+            </Button>
+        );
+    }
+
+    return (
+        <form
+            action={(formData) => onSubmit(salvarControleMensalAction, formData)}
+            className="inline-flex"
+        >
+            <input type="hidden" name="cota_id" value={item.cota_id} />
+            <input type="hidden" name="competencia" value={competencia} />
+            <input type="hidden" name="status_mes" value="planejado" />
+            <input type="hidden" name="observacoes" value="Lance planejado no módulo de lances." />
+            <Button type="submit" size="sm">
+                Planejar lance
+            </Button>
+        </form>
+    );
+}
+
 function formatPercent(value: number) {
     return new Intl.NumberFormat("pt-BR", {
         minimumFractionDigits: 2,
@@ -108,11 +168,9 @@ export function LanceActions({ item, competencia }: Props) {
 
             {item.status === "ativa" && (
                 <>
-                    <QuickControleButton
-                        label="Planejar"
-                        cotaId={item.cota_id}
+                    <PrimaryControleButton
+                        item={item}
                         competencia={competencia}
-                        statusMes="planejado"
                         onSubmit={runAction}
                     />
 
