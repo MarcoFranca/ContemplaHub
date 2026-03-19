@@ -2,21 +2,52 @@ import { getBackendUrl } from "@/lib/backend";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export async function getBackendAuthContext() {
-    const profile = await getCurrentProfile();
-    if (!profile?.orgId) throw new Error("Organização inválida.");
+type SupabaseUserMetadata = {
+    org_id?: string;
+};
 
+export async function getBackendAuthContext() {
     const supabase = await supabaseServer();
+
     const {
         data: { session },
     } = await supabase.auth.getSession();
 
-    const accessToken = session?.access_token;
-    if (!accessToken) throw new Error("Sessão inválida. Faça login novamente.");
+    if (!session?.access_token) {
+        throw new Error("Sessão inválida. Faça login novamente.");
+    }
+
+    // tenta pegar profile
+    const profile = await getCurrentProfile();
+
+    let orgId = profile?.orgId;
+
+    // fallback: tenta pegar do JWT
+    if (!orgId) {
+        const user = session.user;
+
+        // 👇 ajuste conforme sua estrutura
+        const userMetadata = user?.user_metadata as unknown as SupabaseUserMetadata;
+        const appMetadata = user?.app_metadata as unknown as SupabaseUserMetadata;
+
+        orgId =
+            userMetadata?.org_id ||
+            appMetadata?.org_id ||
+            null;
+    }
+
+    if (!orgId) {
+        console.error("DEBUG AUTH", {
+            profile,
+            sessionUser: session.user,
+        });
+
+        throw new Error("Organização inválida.");
+    }
 
     return {
-        orgId: profile.orgId,
-        accessToken,
+        orgId,
+        accessToken: session.access_token,
     };
 }
 

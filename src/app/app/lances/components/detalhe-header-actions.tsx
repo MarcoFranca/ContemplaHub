@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { EditCartaSheet } from "@/app/app/lances/components/EditCartaSheet";
+import { EditCartaSheetV2 } from "@/app/app/lances/[cotaId]/components/edit-carta-v2/EditCartaSheetV2";
+import { mapLegacyCartaToEditSheetData } from "@/app/app/lances/[cotaId]/components/edit-carta-v2/utils/edit-carta-mappers";
 
 type Props = {
     cotaId: string;
@@ -23,6 +24,7 @@ type Props = {
         estrategia?: string | null;
         objetivo?: string | null;
         assembleia_dia?: number | null;
+        data_adesao?: string | null;
     };
     opcoesLanceFixo?: Array<{
         id: string;
@@ -43,17 +45,25 @@ export function DetalheHeaderActions({
                                      }: Props) {
     const [open, setOpen] = React.useState(false);
 
+    const data = React.useMemo(
+        () =>
+            mapLegacyCartaToEditSheetData({
+                cotaId,
+                competencia,
+                cota,
+                opcoesLanceFixo,
+            }),
+        [cotaId, competencia, cota, opcoesLanceFixo]
+    );
+
     return (
         <>
             <Button onClick={() => setOpen(true)}>Editar carta</Button>
 
-            <EditCartaSheet
+            <EditCartaSheetV2
                 open={open}
                 onOpenChange={setOpen}
-                cotaId={cotaId}
-                competencia={competencia}
-                initialData={cota}
-                opcoesLanceFixo={opcoesLanceFixo}
+                data={data}
                 onSuccess={() => window.location.reload()}
             />
         </>
