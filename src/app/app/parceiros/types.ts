@@ -42,3 +42,24 @@ export type ParceiroExtratoResponse = {
     pago_repasse?: number;
   } | null;
 };
+
+export type ParceiroAcesso = {
+  id: string;
+  org_id: string;
+  parceiro_id: string;
+  auth_user_id?: string | null;
+  email: string;
+  nome?: string | null;
+  telefone?: string | null;
+  ativo: boolean;
+  can_view_client_data: boolean;
+  can_view_contracts: boolean;
+  can_view_commissions: boolean;
+  invited_at?: string | null;
+  activated_at?: string | null;
+  last_login_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type ParceiroAcessoMap = Record<string, ParceiroAcesso | undefined>;
