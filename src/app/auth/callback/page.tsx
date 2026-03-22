@@ -4,37 +4,26 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { redirect } from "next/navigation";
+import { resolveUserDestination } from "@/lib/auth/resolve-user-destination";
 
 async function resolveDestination() {
-    const supabase = supabaseBrowser();
+    const res = await fetch("/api/auth/resolve-destination", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+    });
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    if (!res.ok) return "/login?msg=Falha%20ao%20resolver%20acesso";
 
-    if (!user) return "/login?msg=Falha%20na%20autenticacao";
-
-    const { data: profile } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-    if (profile) return "/app";
-
-    const { data: partner } = await supabase
-        .from("partner_users")
-        .select("id, ativo")
-        .eq("auth_user_id", user.id)
-        .eq("ativo", true)
-        .maybeSingle();
-
-    if (partner) return "/partner";
-
-    return "/login?msg=Usuario%20sem%20acesso";
+    const data = (await res.json()) as { destination?: string };
+    return data.destination || "/login?msg=Usuario%20sem%20acesso";
 }
 
-export default function AuthCallback() {
+export default async function AuthCallbackPage() {
+    const destination = await resolveUserDestination();
+    redirect(destination);
+
     const router = useRouter();
 
     useEffect(() => {

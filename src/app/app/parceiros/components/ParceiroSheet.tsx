@@ -1,378 +1,524 @@
 "use client";
 
 import * as React from "react";
+import {
+    BadgeCheck,
+    Building2,
+    CreditCard,
+    KeyRound,
+    Mail,
+    Phone,
+    Save,
+    Shield,
+    UserCog,
+    UserRound,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+    createParceiroAction,
+    invitePartnerUserAction,
+    updateParceiroAction,
+    updatePartnerUserAction,
+} from "../actions";
+import type { ParceiroWithAccess } from "../types";
 import { toast } from "sonner";
-import { Handshake, Save, ShieldCheck, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  resendPartnerInviteAction,
-  saveParceiroAndAccessAction,
-} from "../actions";
-import type { Parceiro, ParceiroAcesso, PixTipo } from "../types";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 
 type Props = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  parceiro?: Parceiro | null;
-  acesso?: ParceiroAcesso | null;
-  onSuccess?: () => void;
+    trigger?: React.ReactNode;
+    initialData?: ParceiroWithAccess;
 };
 
-const PIX_OPTIONS: Array<{ value: PixTipo; label: string }> = [
-  { value: "cpf", label: "CPF" },
-  { value: "cnpj", label: "CNPJ" },
-  { value: "email", label: "E-mail" },
-  { value: "telefone", label: "Telefone" },
-  { value: "aleatoria", label: "Chave aleatória" },
-];
+type FormState = {
+    nome: string;
+    cpf_cnpj: string;
+    telefone: string;
+    email: string;
+    ativo: boolean;
 
-export function ParceiroSheet({
-                                open,
-                                onOpenChange,
-                                parceiro,
-                                acesso,
-                                onSuccess,
-                              }: Props) {
-  const [ativo, setAtivo] = React.useState(true);
-  const [liberarAcesso, setLiberarAcesso] = React.useState(false);
-  const [acessoAtivo, setAcessoAtivo] = React.useState(true);
-  const [sendingInvite, setSendingInvite] = React.useState(false);
+    criar_acesso: boolean;
+    email_acesso: string;
+    nome_acesso: string;
+    telefone_acesso: string;
+    acesso_ativo: boolean;
 
-  React.useEffect(() => {
-    setAtivo(parceiro?.ativo ?? true);
-    setLiberarAcesso(Boolean(acesso));
-    setAcessoAtivo(acesso?.ativo ?? true);
-  }, [parceiro, acesso, open]);
+    can_view_client_data: boolean;
+    can_view_contracts: boolean;
+    can_view_commissions: boolean;
+};
 
-  return (
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Handshake className="h-5 w-5 text-emerald-400" />
-              {parceiro ? "Editar parceiro" : "Novo parceiro"}
-            </SheetTitle>
-          </SheetHeader>
+function onlyDigits(value: string) {
+    return value.replace(/\D/g, "");
+}
 
-          <form
-              action={async (formData: FormData) => {
-                try {
-                  toast.dismiss();
-                  toast.loading(parceiro ? "Salvando parceiro..." : "Criando parceiro...");
+function maskPhone(value: string) {
+    const digits = onlyDigits(value).slice(0, 11);
 
-                  if (parceiro?.id) {
-                    formData.set("parceiro_id", parceiro.id);
-                  }
+    if (digits.length <= 10) {
+        return digits
+            .replace(/^(\d{0,2})(\d{0,4})(\d{0,4}).*/, (_, ddd, a, b) => {
+                if (!ddd) return "";
+                if (!a) return `(${ddd}`;
+                if (!b) return `(${ddd}) ${a}`;
+                return `(${ddd}) ${a}-${b}`;
+            })
+            .trim();
+    }
 
-                  if (acesso?.id) {
-                    formData.set("partner_user_id", acesso.id);
-                  }
+    return digits.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
+}
 
-                  await saveParceiroAndAccessAction(formData);
+function maskCpfCnpj(value: string) {
+    const digits = onlyDigits(value).slice(0, 14);
 
-                  toast.dismiss();
-                  toast.success(
-                      parceiro
-                          ? "Parceiro atualizado com sucesso."
-                          : "Parceiro criado com sucesso."
-                  );
+    if (digits.length <= 11) {
+        return digits
+            .replace(/^(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,2}).*/, (_, a, b, c, d) => {
+                let out = a;
+                if (b) out += `.${b}`;
+                if (c) out += `.${c}`;
+                if (d) out += `-${d}`;
+                return out;
+            })
+            .trim();
+    }
 
-                  onOpenChange(false);
-                  onSuccess?.();
-                } catch (error) {
-                  console.error(error);
-                  toast.dismiss();
-                  toast.error(
-                      error instanceof Error
-                          ? error.message
-                          : "Erro ao salvar parceiro."
-                  );
+    return digits.replace(
+        /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2}).*/,
+        (_, a, b, c, d, e) => {
+            let out = `${a}.${b}.${c}/${d}`;
+            if (e) out += `-${e}`;
+            return out;
+        }
+    );
+}
+
+function toInitialState(data?: ParceiroWithAccess): FormState {
+    return {
+        nome: data?.nome ?? "",
+        cpf_cnpj: data?.cpf_cnpj ? maskCpfCnpj(data.cpf_cnpj) : "",
+        telefone: data?.telefone ? maskPhone(data.telefone) : "",
+        email: data?.email ?? "",
+        ativo: data?.ativo ?? true,
+
+        criar_acesso: Boolean(data?.partner_user),
+        email_acesso: data?.partner_user?.email ?? "",
+        nome_acesso: data?.partner_user?.nome ?? "",
+        telefone_acesso: data?.partner_user?.telefone
+            ? maskPhone(data.partner_user.telefone)
+            : "",
+        acesso_ativo: data?.partner_user?.ativo ?? true,
+
+        can_view_client_data: data?.partner_user?.can_view_client_data ?? false,
+        can_view_contracts: data?.partner_user?.can_view_contracts ?? true,
+        can_view_commissions: data?.partner_user?.can_view_commissions ?? true,
+    };
+}
+
+export function ParceiroSheet({ trigger, initialData }: Props) {
+    const router = useRouter();
+    const isEdit = Boolean(initialData?.id);
+
+    const [open, setOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+    const [form, setForm] = React.useState<FormState>(toInitialState(initialData));
+
+    React.useEffect(() => {
+        if (open) {
+            setForm(toInitialState(initialData));
+            setError(null);
+        }
+    }, [open, initialData]);
+
+    function update<K extends keyof FormState>(key: K, value: FormState[K]) {
+        setForm((prev) => ({ ...prev, [key]: value }));
+    }
+
+    async function handleSubmit() {
+        setError(null);
+
+        if (!form.nome.trim()) {
+            setError("Informe o nome do parceiro.");
+            return;
+        }
+
+        if (form.criar_acesso && !form.email_acesso.trim()) {
+            setError("Informe o e-mail de acesso do parceiro.");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const parceiroPayload = {
+                nome: form.nome.trim(),
+                cpf_cnpj: form.cpf_cnpj ? onlyDigits(form.cpf_cnpj) : undefined,
+                telefone: form.telefone ? onlyDigits(form.telefone) : undefined,
+                email: form.email.trim() || undefined,
+                ativo: form.ativo,
+            };
+
+            if (isEdit && initialData?.id) {
+                await updateParceiroAction(initialData.id, parceiroPayload);
+
+                if (form.criar_acesso) {
+                    if (initialData.partner_user?.id) {
+                        await updatePartnerUserAction(initialData.partner_user.id, {
+                            nome: form.nome_acesso.trim() || form.nome.trim(),
+                            telefone: form.telefone_acesso
+                                ? onlyDigits(form.telefone_acesso)
+                                : onlyDigits(form.telefone),
+                            ativo: form.acesso_ativo,
+                            can_view_client_data: form.can_view_client_data,
+                            can_view_contracts: form.can_view_contracts,
+                            can_view_commissions: form.can_view_commissions,
+                        });
+                    } else {
+                        await invitePartnerUserAction({
+                            parceiro_id: initialData.id,
+                            email: form.email_acesso.trim(),
+                            nome: form.nome_acesso.trim() || form.nome.trim(),
+                            telefone: form.telefone_acesso
+                                ? onlyDigits(form.telefone_acesso)
+                                : onlyDigits(form.telefone),
+                            ativo: form.acesso_ativo,
+                            can_view_client_data: form.can_view_client_data,
+                            can_view_contracts: form.can_view_contracts,
+                            can_view_commissions: form.can_view_commissions,
+                        });
+                    }
                 }
-              }}
-              className="mt-6 space-y-6"
-          >
-            {parceiro?.id ? (
-                <input type="hidden" name="parceiro_id" value={parceiro.id} />
-            ) : null}
 
-            {acesso?.id ? (
-                <input type="hidden" name="partner_user_id" value={acesso.id} />
-            ) : null}
+                toast.success("Parceiro atualizado com sucesso.");
+            } else {
+                await createParceiroAction({
+                    ...parceiroPayload,
+                    acesso: form.criar_acesso
+                        ? {
+                            criar_acesso: true,
+                            email_acesso: form.email_acesso.trim(),
+                            nome_acesso: form.nome_acesso.trim() || form.nome.trim(),
+                            telefone_acesso: form.telefone_acesso
+                                ? onlyDigits(form.telefone_acesso)
+                                : onlyDigits(form.telefone),
+                            ativo: form.acesso_ativo,
+                            can_view_client_data: form.can_view_client_data,
+                            can_view_contracts: form.can_view_contracts,
+                            can_view_commissions: form.can_view_commissions,
+                        }
+                        : undefined,
+                });
 
-            <section className="space-y-4">
-              <div>
-                <h3 className="text-sm font-semibold">Dados do parceiro</h3>
-                <p className="text-xs text-muted-foreground">
-                  Cadastro operacional usado na rotina comercial, comissões e repasses.
-                </p>
-              </div>
+                toast.success("Parceiro criado com sucesso.");
+            }
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="nome">Nome *</Label>
-                  <Input
-                      id="nome"
-                      name="nome"
-                      defaultValue={parceiro?.nome ?? ""}
-                      required
-                      placeholder="Ex.: Leandro Silva"
-                  />
-                </div>
+            setOpen(false);
+            router.refresh();
+        } catch (err) {
+            const message =
+                err instanceof Error ? err.message : "Erro ao salvar parceiro.";
+            setError(message);
+            toast.error(message);
+        } finally {
+            setLoading(false);
+        }
+    }
 
-                <div className="space-y-2">
-                  <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
-                  <Input
-                      id="cpf_cnpj"
-                      name="cpf_cnpj"
-                      defaultValue={parceiro?.cpf_cnpj ?? ""}
-                  />
-                </div>
+    return (
+        <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+                {trigger ?? <Button>{isEdit ? "Editar parceiro" : "Novo parceiro"}</Button>}
+            </SheetTrigger>
 
-                <div className="space-y-2">
-                  <Label htmlFor="telefone">Telefone</Label>
-                  <Input
-                      id="telefone"
-                      name="telefone"
-                      defaultValue={parceiro?.telefone ?? ""}
-                  />
-                </div>
+            <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-2xl">
+                <div className="px-4 py-5 md:px-6">
+                    <SheetHeader className="space-y-2 px-1">
+                        <SheetTitle className="flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-emerald-500" />
+                            {isEdit ? "Editar parceiro" : "Novo parceiro"}
+                        </SheetTitle>
+                        <SheetDescription>
+                            {isEdit
+                                ? "Atualize os dados do parceiro, configure o acesso ao portal e ajuste as permissões de visualização."
+                                : "Cadastre um parceiro comercial e, se desejar, libere acesso ao portal para consulta de contratos, clientes vinculados e comissões."}
+                        </SheetDescription>
+                    </SheetHeader>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail operacional</Label>
-                  <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      defaultValue={parceiro?.email ?? ""}
-                  />
-                </div>
+                    <div className="mt-6 space-y-6 px-1 md:px-2">
+                        <Card className="rounded-2xl border-emerald-500/15">
+                            <CardContent className="space-y-4 p-5 md:p-6">
+                                <div className="flex items-center gap-2">
+                                    <UserRound className="h-4 w-4 text-emerald-500" />
+                                    <h3 className="font-medium">Dados do parceiro</h3>
+                                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="pix_tipo">Tipo de chave PIX</Label>
-                  <select
-                      id="pix_tipo"
-                      name="pix_tipo"
-                      defaultValue={parceiro?.pix_tipo ?? ""}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">Selecione</option>
-                    {PIX_OPTIONS.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {item.label}
-                        </option>
-                    ))}
-                  </select>
-                </div>
+                                <div className="grid gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="nome">Nome do parceiro</Label>
+                                        <div className="relative">
+                                            <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                            <Input
+                                                id="nome"
+                                                className="pl-9"
+                                                placeholder="Ex.: Imobiliária Horizonte"
+                                                value={form.nome}
+                                                onChange={(e) => update("nome", e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="pix_chave">Chave PIX</Label>
-                  <Input
-                      id="pix_chave"
-                      name="pix_chave"
-                      defaultValue={parceiro?.pix_chave ?? ""}
-                  />
-                </div>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
+                                            <div className="relative">
+                                                <CreditCard className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                                <Input
+                                                    id="cpf_cnpj"
+                                                    className="pl-9"
+                                                    placeholder="000.000.000-00 / 00.000.000/0000-00"
+                                                    value={form.cpf_cnpj}
+                                                    onChange={(e) => update("cpf_cnpj", maskCpfCnpj(e.target.value))}
+                                                />
+                                            </div>
+                                        </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="observacoes">Observações</Label>
-                  <Textarea
-                      id="observacoes"
-                      name="observacoes"
-                      defaultValue={parceiro?.observacoes ?? ""}
-                      className="min-h-24"
-                  />
-                </div>
-              </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="telefone">Telefone</Label>
+                                            <div className="relative">
+                                                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                                <Input
+                                                    id="telefone"
+                                                    className="pl-9"
+                                                    placeholder="(11) 99999-9999"
+                                                    value={form.telefone}
+                                                    onChange={(e) => update("telefone", maskPhone(e.target.value))}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
 
-              <label className="flex items-center gap-3 rounded-lg border p-3 text-sm">
-                <input
-                    type="checkbox"
-                    name="ativo"
-                    checked={ativo}
-                    onChange={(e) => setAtivo(e.target.checked)}
-                />
-                Parceiro ativo para novas cartas e repasses
-              </label>
-            </section>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">E-mail principal</Label>
+                                        <div className="relative">
+                                            <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                className="pl-9"
+                                                placeholder="contato@parceiro.com.br"
+                                                value={form.email}
+                                                onChange={(e) => update("email", e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
 
-            <section className="space-y-4 rounded-2xl border border-border/60 p-4">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-400" />
-                <div>
-                  <h3 className="text-sm font-semibold">Acesso ao portal</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Libere o parceiro para entrar no portal e consultar contratos, comissões e documentos.
-                  </p>
-                </div>
-              </div>
+                                    <div className="flex items-center justify-between rounded-xl border p-4">
+                                        <div className="space-y-1 pr-4">
+                                            <p className="text-sm font-medium">Parceiro ativo</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Permite usar esse parceiro nas novas negociações.
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            checked={form.ativo}
+                                            onCheckedChange={(checked) => update("ativo", checked)}
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
 
-              <label className="flex items-center gap-3 rounded-lg border p-3 text-sm">
-                <input
-                    type="checkbox"
-                    name="liberar_acesso"
-                    checked={liberarAcesso}
-                    onChange={(e) => setLiberarAcesso(e.target.checked)}
-                />
-                Liberar acesso ao portal
-              </label>
+                        <Separator />
 
-              {liberarAcesso ? (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="access_email">E-mail de login *</Label>
-                      <Input
-                          id="access_email"
-                          name="access_email"
-                          type="email"
-                          defaultValue={acesso?.email ?? parceiro?.email ?? ""}
-                          required={liberarAcesso}
-                          placeholder="parceiro@email.com"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        O parceiro receberá um convite para definir a senha no primeiro acesso.
-                      </p>
-                    </div>
+                        <Card className="rounded-2xl border-emerald-500/15">
+                            <CardContent className="space-y-4 p-5 md:p-6">
+                                <div className="flex items-center gap-2">
+                                    <KeyRound className="h-4 w-4 text-emerald-500" />
+                                    <h3 className="font-medium">Acesso ao portal</h3>
+                                </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="access_nome">Nome exibido no acesso</Label>
-                      <Input
-                          id="access_nome"
-                          name="access_nome"
-                          defaultValue={acesso?.nome ?? parceiro?.nome ?? ""}
-                      />
-                    </div>
+                                <div className="flex items-center justify-between rounded-xl border p-4">
+                                    <div className="space-y-1 pr-4">
+                                        <p className="text-sm font-medium">
+                                            {initialData?.partner_user ? "Manter acesso ao portal" : "Criar acesso agora"}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            O parceiro acessa apenas o portal dele, sem entrar na área interna.
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        checked={form.criar_acesso}
+                                        onCheckedChange={(checked) => update("criar_acesso", checked)}
+                                    />
+                                </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="access_telefone">Telefone do acesso</Label>
-                      <Input
-                          id="access_telefone"
-                          name="access_telefone"
-                          defaultValue={acesso?.telefone ?? parceiro?.telefone ?? ""}
-                      />
-                    </div>
+                                {form.criar_acesso && (
+                                    <div className="grid gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="email_acesso">E-mail de acesso</Label>
+                                            <div className="relative">
+                                                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                                <Input
+                                                    id="email_acesso"
+                                                    type="email"
+                                                    className="pl-9"
+                                                    placeholder="portal@parceiro.com.br"
+                                                    value={form.email_acesso}
+                                                    onChange={(e) => update("email_acesso", e.target.value)}
+                                                    disabled={Boolean(initialData?.partner_user?.id)}
+                                                />
+                                            </div>
+                                        </div>
 
-                    {acesso ? (
-                        <label className="flex items-center gap-3 rounded-lg border p-3 text-sm">
-                          <input
-                              type="checkbox"
-                              name="access_ativo"
-                              checked={acessoAtivo}
-                              onChange={(e) => setAcessoAtivo(e.target.checked)}
-                          />
-                          Acesso ativo no portal
-                        </label>
-                    ) : (
-                        <input type="hidden" name="access_ativo" value="on" />
-                    )}
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="nome_acesso">Nome do acesso</Label>
+                                                <div className="relative">
+                                                    <UserCog className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                                    <Input
+                                                        id="nome_acesso"
+                                                        className="pl-9"
+                                                        placeholder="Nome do usuário parceiro"
+                                                        value={form.nome_acesso}
+                                                        onChange={(e) => update("nome_acesso", e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
 
-                    <div className="space-y-3 md:col-span-2">
-                      <div className="text-sm font-medium">Permissões</div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="telefone_acesso">Telefone do acesso</Label>
+                                                <div className="relative">
+                                                    <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                                    <Input
+                                                        id="telefone_acesso"
+                                                        className="pl-9"
+                                                        placeholder="(11) 99999-9999"
+                                                        value={form.telefone_acesso}
+                                                        onChange={(e) =>
+                                                            update("telefone_acesso", maskPhone(e.target.value))
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
 
-                      <label className="flex items-center gap-3 rounded-lg border p-3 text-sm">
-                        <input
-                            type="checkbox"
-                            name="can_view_contracts"
-                            defaultChecked={acesso?.can_view_contracts ?? true}
-                        />
-                        Ver contratos
-                      </label>
+                                        <div className="flex items-center justify-between rounded-xl border p-4">
+                                            <div className="space-y-1 pr-4">
+                                                <p className="text-sm font-medium">Acesso ativo</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Você pode deixar cadastrado agora e liberar depois.
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                checked={form.acesso_ativo}
+                                                onCheckedChange={(checked) => update("acesso_ativo", checked)}
+                                            />
+                                        </div>
 
-                      <label className="flex items-center gap-3 rounded-lg border p-3 text-sm">
-                        <input
-                            type="checkbox"
-                            name="can_view_commissions"
-                            defaultChecked={acesso?.can_view_commissions ?? true}
-                        />
-                        Ver comissões
-                      </label>
+                                        <div className="rounded-2xl border bg-muted/30 p-4">
+                                            <div className="mb-3 flex items-center gap-2">
+                                                <Shield className="h-4 w-4 text-emerald-500" />
+                                                <p className="text-sm font-medium">Permissões do portal</p>
+                                            </div>
 
-                      <label className="flex items-center gap-3 rounded-lg border p-3 text-sm">
-                        <input
-                            type="checkbox"
-                            name="can_view_client_data"
-                            defaultChecked={acesso?.can_view_client_data ?? false}
-                        />
-                        Ver dados do cliente
-                      </label>
-                    </div>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between gap-4 rounded-xl border bg-background p-4">
+                                                    <div>
+                                                        <p className="text-sm font-medium">Ver contratos</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Consulta dos contratos vinculados à parceria.
+                                                        </p>
+                                                    </div>
+                                                    <Switch
+                                                        checked={form.can_view_contracts}
+                                                        onCheckedChange={(checked) =>
+                                                            update("can_view_contracts", checked)
+                                                        }
+                                                    />
+                                                </div>
 
-                    {acesso ? (
-                        <div className="md:col-span-2 rounded-xl border border-dashed p-4 text-sm">
-                          <div className="font-medium">Acesso já criado</div>
-                          <div className="mt-1 text-muted-foreground">
-                            Email: {acesso.email}
-                          </div>
-                          <div className="text-muted-foreground">
-                            Último convite: {acesso.invited_at || "—"}
-                          </div>
-                          <div className="text-muted-foreground">
-                            Último login: {acesso.last_login_at || "—"}
-                          </div>
+                                                <div className="flex items-center justify-between gap-4 rounded-xl border bg-background p-4">
+                                                    <div>
+                                                        <p className="text-sm font-medium">Ver comissões</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Consulta dos repasses e lançamentos vinculados.
+                                                        </p>
+                                                    </div>
+                                                    <Switch
+                                                        checked={form.can_view_commissions}
+                                                        onCheckedChange={(checked) =>
+                                                            update("can_view_commissions", checked)
+                                                        }
+                                                    />
+                                                </div>
 
-                          <div className="mt-3">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={sendingInvite}
-                                onClick={async () => {
-                                  try {
-                                    setSendingInvite(true);
-                                    toast.dismiss();
-                                    toast.loading("Reenviando convite...");
-                                    await resendPartnerInviteAction(acesso.id);
-                                    toast.dismiss();
-                                    toast.success("Convite reenviado com sucesso.");
-                                    onSuccess?.();
-                                  } catch (error) {
-                                    console.error(error);
-                                    toast.dismiss();
-                                    toast.error(
-                                        error instanceof Error
-                                            ? error.message
-                                            : "Erro ao reenviar convite."
-                                    );
-                                  } finally {
-                                    setSendingInvite(false);
-                                  }
-                                }}
-                            >
-                              <Send className="mr-2 h-4 w-4" />
-                              Reenviar convite
-                            </Button>
-                          </div>
+                                                <div className="flex items-center justify-between gap-4 rounded-xl border bg-background p-4">
+                                                    <div>
+                                                        <p className="text-sm font-medium">Ver dados do cliente</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Habilite apenas quando a operação realmente exigir.
+                                                        </p>
+                                                    </div>
+                                                    <Switch
+                                                        checked={form.can_view_client_data}
+                                                        onCheckedChange={(checked) =>
+                                                            update("can_view_client_data", checked)
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                            <div className="flex items-start gap-3">
+                                <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-600" />
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium">Como esse cadastro funciona</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        O parceiro pertence à sua organização. O acesso ao portal é opcional
+                                        e permite apenas a visualização do que estiver vinculado à parceria.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    ) : null}
-                  </div>
-              ) : null}
-            </section>
 
-            <SheetFooter>
-              <div className="flex w-full items-center justify-end gap-2">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => onOpenChange(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit">
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar parceiro
-                </Button>
-              </div>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
-  );
+                        {error ? (
+                            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                                {error}
+                            </div>
+                        ) : null}
+                    </div>
+
+                    <SheetFooter className="mt-6 px-1 md:px-2">
+                        <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={handleSubmit} disabled={loading} className="gap-2">
+                            <Save className="h-4 w-4" />
+                            {loading ? "Salvando..." : isEdit ? "Salvar alterações" : "Salvar parceiro"}
+                        </Button>
+                    </SheetFooter>
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
 }

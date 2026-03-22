@@ -3,8 +3,13 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
+import { resolveUserDestination } from "@/lib/auth/resolve-user-destination";
 
-const passSchema  = z.object({ email: z.string().email(), password: z.string().min(6) });
+const passSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(6),
+});
+
 const signUpSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
@@ -14,19 +19,36 @@ const signUpSchema = z.object({
 export async function signInWithPasswordAction(formData: FormData) {
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
-    if (!passSchema.safeParse({ email, password }).success) return { ok:false, message:"Credenciais inválidas." };
+
+    if (!passSchema.safeParse({ email, password }).success) {
+        return { ok: false, message: "Credenciais inválidas." };
+    }
+
     const supabase = await supabaseServer();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { ok:false, message:error.message };
-    redirect("/app");
+
+    if (error) {
+        return { ok: false, message: error.message };
+    }
+
+    const destination = await resolveUserDestination();
+    redirect(destination);
 }
 
 export async function signUpWithPasswordAction(formData: FormData) {
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
     const name = String(formData.get("name") ?? "");
-    const parsed = signUpSchema.safeParse({ email, password, name: name || undefined });
-    if (!parsed.success) return { ok: false, message: "Preencha e-mail e senha válidos." };
+
+    const parsed = signUpSchema.safeParse({
+        email,
+        password,
+        name: name || undefined,
+    });
+
+    if (!parsed.success) {
+        return { ok: false, message: "Preencha e-mail e senha válidos." };
+    }
 
     const supabase = await supabaseServer();
     const { error } = await supabase.auth.signUp({
@@ -38,12 +60,23 @@ export async function signUpWithPasswordAction(formData: FormData) {
         },
     });
 
-    if (error) return { ok: false, message: error.message };
+    if (error) {
+        return { ok: false, message: error.message };
+    }
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) redirect("/app");
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
 
-    return { ok: true, message: "Conta criada! Enviamos um e-mail para confirmar seu acesso." };
+    if (session) {
+        const destination = await resolveUserDestination();
+        redirect(destination);
+    }
+
+    return {
+        ok: true,
+        message: "Conta criada! Enviamos um e-mail para confirmar seu acesso.",
+    };
 }
 
 export async function resendConfirmationAction(formData: FormData) {
@@ -54,7 +87,9 @@ export async function resendConfirmationAction(formData: FormData) {
     const { error } = await supabase.auth.resend({
         type: "signup",
         email,
-        options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` },
+        options: {
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        },
     });
 
     if (error) return { ok: false, message: error.message };

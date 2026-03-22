@@ -3,11 +3,32 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { SectionFX } from "@/components/marketing/SectionFX";
 import { AppShell } from "@/components/app/AppShell";
+import { getCurrentPartnerAccess } from "@/lib/auth/partner-server";
+import { getCurrentProfile } from "@/lib/auth/server";
 
-export default async function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({
+                                            children,
+                                        }: {
+    children: ReactNode;
+}) {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect("/login");
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+        redirect("/login");
+    }
+
+    const partner = await getCurrentPartnerAccess();
+    if (partner) {
+        redirect("/partner");
+    }
+
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) {
+        redirect("/login?msg=Usuario%20sem%20organizacao");
+    }
 
     return (
         <div
@@ -17,8 +38,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         dark:text-slate-50
       "
         >
-            {/* Background fixo, não rola nunca */}
-            {/* Background: só forte no dark, suave/light no claro */}
             <SectionFX
                 preset="mesh"
                 variant="emerald"
@@ -27,16 +46,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             />
             <div
                 aria-hidden
-                className="absolute inset-0 -z-10 mix-blend-overlay
-                   dark:opacity-[0.05] opacity-0"
+                className="absolute inset-0 -z-10 mix-blend-overlay dark:opacity-[0.05] opacity-0"
                 style={{
                     backgroundImage:
-                        "url(\"data:image/svg+xml;utf8,<svg ...></svg>\")",
+                        'url("data:image/svg+xml;utf8,<svg ...></svg>")',
                     backgroundSize: "300px 300px",
                 }}
             />
 
-            {/* AppShell controla sidebar/header/main e o espaço do children */}
             <AppShell>{children}</AppShell>
         </div>
     );

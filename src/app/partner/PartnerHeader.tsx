@@ -1,4 +1,4 @@
-import { SignOutButton } from "@/components/SignOutButton";
+import {LogoutButton} from "@/components/auth/LogoutButton";
 
 type Props = {
     partnerName?: string | null;
@@ -17,7 +17,7 @@ export function PartnerHeader({ partnerName }: Props) {
             </div>
 
             <div className="flex items-center gap-2">
-                <SignOutButton />
+                <LogoutButton className="flex items-center gap-1 text-slate-400 hover:text-red-400 transition"/>
             </div>
         </header>
     );

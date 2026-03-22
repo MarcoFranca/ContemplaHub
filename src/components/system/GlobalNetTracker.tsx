@@ -5,10 +5,17 @@ import * as React from "react";
 import { consumePendingPref, type PendingKind } from "@/lib/pendingPref";
 
 function dispatchStart(kind?: PendingKind, label?: string) {
-    window.dispatchEvent(new CustomEvent("pending:start", { detail: { kind, label } }));
+    setTimeout(() => {
+        window.dispatchEvent(
+            new CustomEvent("pending:start", { detail: { kind, label } })
+        );
+    }, 0);
 }
+
 function dispatchStop() {
-    window.dispatchEvent(new CustomEvent("pending:stop"));
+    setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("pending:stop"));
+    }, 0);
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {

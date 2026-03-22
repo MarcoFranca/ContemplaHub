@@ -7,6 +7,7 @@ import {
     Home, Trello, Users, Building2, Globe2, LogOut,
     PanelLeftClose, PanelLeftOpen, Briefcase, Target, Handshake, CircleDollarSign
 } from "lucide-react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 const links = [
     { href: "/app", icon: Home, label: "Painel" },
@@ -76,13 +77,7 @@ export function Sidebar({
             {/* footer */}
             <div className="px-3 py-3 border-t border-white/10 text-xs text-slate-500 flex items-center justify-between">
                 {!collapsed && <span>v1.0.0</span>}
-                <button
-                    className="flex items-center gap-1 text-slate-400 hover:text-red-400 transition"
-                    onClick={() => (window.location.href = "/logout")}
-                >
-                    <LogOut className="h-3.5 w-3.5" />
-                    {!collapsed && "Sair"}
-                </button>
+                <LogoutButton className="flex items-center gap-1 text-slate-400 hover:text-red-400 transition"/>
             </div>
         </aside>
     );
