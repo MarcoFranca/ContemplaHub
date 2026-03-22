@@ -1,109 +1,87 @@
-// src/app/auth/callback/page.tsx
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabase/client";
-import { redirect } from "next/navigation";
-import { resolveUserDestination } from "@/lib/auth/resolve-user-destination";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 
-async function resolveDestination() {
-    const res = await fetch("/api/auth/resolve-destination", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-    });
-
-    if (!res.ok) return "/login?msg=Falha%20ao%20resolver%20acesso";
-
-    const data = (await res.json()) as { destination?: string };
-    return data.destination || "/login?msg=Usuario%20sem%20acesso";
+function getSupabaseBrowserClient() {
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+            },
+        }
+    );
 }
 
-export default async function AuthCallbackPage() {
-    const destination = await resolveUserDestination();
-    redirect(destination);
-
+export default function AuthCallbackPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const [message, setMessage] = useState("Validando acesso...");
 
     useEffect(() => {
-        (async () => {
-            const supabase = supabaseBrowser();
-            const url = new URL(window.location.href);
+        let cancelled = false;
 
-            let {
-                data: { session },
-            } = await supabase.auth.getSession();
+        async function run() {
+            try {
+                const supabase = getSupabaseBrowserClient();
 
-            if (session) {
-                const destination = await resolveDestination();
-                return router.replace(destination);
-            }
+                const code = searchParams.get("code");
 
-            const token_hash = url.searchParams.get("token_hash");
-            const type = url.searchParams.get("type");
+                if (code) {
+                    const { error } = await supabase.auth.exchangeCodeForSession(code);
+                    if (error) {
+                        throw error;
+                    }
+                } else {
+                    // fallback para fluxos baseados em hash/token
+                    await supabase.auth.getSession();
+                }
 
-            if (token_hash) {
-                const otpType = (type === "recovery" ? "recovery" : "email") as "recovery" | "email";
-                const { error } = await supabase.auth.verifyOtp({
-                    type: otpType,
-                    token_hash,
+                const res = await fetch("/api/auth/resolve-destination", {
+                    method: "GET",
+                    credentials: "include",
+                    cache: "no-store",
                 });
 
-                if (!error) {
-                    if (otpType === "recovery") {
-                        return router.replace("/reset-password");
-                    }
-                    const destination = await resolveDestination();
-                    return router.replace(destination);
+                if (!res.ok) {
+                    throw new Error("Falha ao resolver destino do usuário.");
                 }
 
-                console.error("verifyOtp failed:", error?.message, error);
-                return router.replace("/login?msg=Falha%20no%20OTP");
+                const data = (await res.json()) as { destination?: string };
+                const destination = data.destination || "/login?msg=Usuario%20sem%20acesso";
+
+                if (!cancelled) {
+                    router.replace(destination);
+                }
+            } catch (err) {
+                const message =
+                    err instanceof Error ? err.message : "Falha ao concluir autenticação.";
+
+                if (!cancelled) {
+                    setMessage(message);
+                    router.replace(`/login?msg=${encodeURIComponent(message)}`);
+                }
             }
+        }
 
-            const hash = window.location.hash || "";
-            if (hash.includes("access_token=") && hash.includes("refresh_token=")) {
-                const hp = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
-                const access_token = hp.get("access_token")!;
-                const refresh_token = hp.get("refresh_token")!;
-                const typeFromHash = hp.get("type");
+        void run();
 
-                const { error } = await supabase.auth.setSession({
-                    access_token,
-                    refresh_token,
-                });
-
-                if (!error) {
-                    if (typeFromHash === "recovery") {
-                        return router.replace("/reset-password");
-                    }
-                    const destination = await resolveDestination();
-                    return router.replace(destination);
-                }
-
-                console.error("setSession error:", error?.message, error);
-                return router.replace("/login?msg=Falha%20ao%20autenticar");
-            }
-
-            setTimeout(async () => {
-                ({
-                    data: { session },
-                } = await supabase.auth.getSession());
-
-                if (session) {
-                    const destination = await resolveDestination();
-                    return router.replace(destination);
-                }
-
-                return router.replace("/login?msg=Inicie%20o%20login%20no%20MESMO%20navegador");
-            }, 600);
-        })();
-    }, [router]);
+        return () => {
+            cancelled = true;
+        };
+    }, [router, searchParams]);
 
     return (
-        <main className="min-h-[60dvh] grid place-items-center p-6">
-            <p className="text-sm text-muted-foreground">Autenticando…</p>
+        <main className="flex min-h-screen items-center justify-center p-6">
+            <div className="w-full max-w-md rounded-2xl border bg-background p-6 text-center shadow-sm">
+                <h1 className="text-lg font-semibold">Concluindo acesso</h1>
+                <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+            </div>
         </main>
     );
 }
