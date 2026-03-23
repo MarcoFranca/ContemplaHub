@@ -44,6 +44,7 @@ type Props = {
     grupoCodigo: string;
     numeroCota: string;
     produto: "imobiliario" | "auto";
+    valorCarta?: number | null;
     onDirtyChange?: (dirty: boolean) => void;
     onSuccess?: () => void;
 };
@@ -99,6 +100,7 @@ export function CartaComissoesForm({
                                        grupoCodigo,
                                        numeroCota,
                                        produto,
+                                       valorCarta,
                                        onDirtyChange,
                                        onSuccess,
                                    }: Props) {
@@ -201,7 +203,15 @@ export function CartaComissoesForm({
         return { gerouLancamentos: false, temContrato: !!contrato_id };
     }
 
+
     async function handleSave() {
+        function totalRegras(payload: CotaComissaoPayload) {
+            return payload.regras.reduce(
+                (acc, item) => acc + Number(item.percentual_comissao || 0),
+                0
+            );
+        }
+
         if (!currentDataAdesao) {
             setMissingAdesaoOpen(true);
             return;
@@ -217,8 +227,17 @@ export function CartaComissoesForm({
             const normalized = normalizeComissaoPayload(payload);
             setPayload(normalized);
             setInitialPayload(normalized);
+            const total = totalRegras(payload);
+            const saldo = Number((Number(payload.percentual_total || 0) - total).toFixed(4));
 
             toast.dismiss();
+
+
+            if (Math.abs(saldo) >= 0.0001) {
+                toast.dismiss();
+                toast.error("A distribuição da comissão não fecha com o percentual total.");
+                return;
+            }
 
             if (result.gerouLancamentos) {
                 toast.success("Comissão salva e lançamentos atualizados com sucesso.");
@@ -532,6 +551,7 @@ export function CartaComissoesForm({
                             value={payload}
                             onChange={setPayload}
                             parceirosDisponiveis={parceirosDisponiveis}
+                            valorBase={valorCarta ?? 0}
                         />
 
                         <Card className="border-white/10 bg-white/5">

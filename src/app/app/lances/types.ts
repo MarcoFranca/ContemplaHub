@@ -168,6 +168,7 @@ export type ComissaoRegra = {
     offset_meses: number;
     percentual_comissao: number;
     descricao?: string | null;
+    is_manual?: boolean;
 };
 
 export type CotaComissaoParceiro = {

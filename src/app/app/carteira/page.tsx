@@ -1,3 +1,5 @@
+import { CreateCarteiraCartaSheet, type ClienteCartaOption } from "@/app/app/carteira/ui/CreateCarteiraCartaSheet";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -112,21 +114,40 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
     let cartasData: CarteiraCartasResponse | null = null;
 
     try {
+        const clientesBasePromise = listCarteiraClientes({
+            include_all: true,
+            produto: null,
+            q: null,
+            status_carteira: null,
+            sort: "nome_asc",
+        });
+
         if (view === "clientes") {
-            clientesData = await listCarteiraClientes({
-                include_all: includeAll,
-                produto: produto || null,
-                q: q || null,
-                status_carteira: statusCarteira || null,
-                sort,
-            });
+            const [, clientesView] = await Promise.all([
+                clientesBasePromise,
+                listCarteiraClientes({
+                    include_all: includeAll,
+                    produto: produto || null,
+                    q: q || null,
+                    status_carteira: statusCarteira || null,
+                    sort,
+                }),
+            ]);
+
+            clientesData = clientesView;
         } else {
-            cartasData = await listCarteiraCartas({
-                include_all: includeAll,
-                produto: produto || null,
-                q: q || null,
-                status_carteira: statusCarteira || null,
-            });
+            const [clientesBase, cartasView] = await Promise.all([
+                clientesBasePromise,
+                listCarteiraCartas({
+                    include_all: includeAll,
+                    produto: produto || null,
+                    q: q || null,
+                    status_carteira: statusCarteira || null,
+                }),
+            ]);
+
+            clientesData = clientesBase;
+            cartasData = cartasView;
         }
     } catch (e: unknown) {
         err = e instanceof Error ? e.message : "Erro ao carregar carteira.";
@@ -134,6 +155,15 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
 
     const clientesItems = (clientesData?.items ?? []) as CarteiraClienteItem[];
     const cartasItems = (cartasData?.items ?? []) as CarteiraCartaItem[];
+
+    const clientesParaCarta: ClienteCartaOption[] = clientesItems
+        .map((item) => ({
+            id: String((item as { lead_id?: string }).lead_id ?? ""),
+            nome: String((item as { nome?: string }).nome ?? "Cliente sem nome"),
+            telefone: (item as { telefone?: string | null }).telefone ?? undefined,
+            email: (item as { email?: string | null }).email ?? undefined,
+        }))
+        .filter((item) => item.id.trim() !== "");
 
     const clientesHref = buildBaseHref({
         view: "clientes",
@@ -170,6 +200,7 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                                 <Button variant="outline">Ver Leads</Button>
                             </Link>
 
+                            <CreateCarteiraCartaSheet clientes={clientesParaCarta} />
                             <CreateCarteiraClienteSheet />
                         </div>
                     </div>
