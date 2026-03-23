@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { updateRepasseAction } from "../actions";
+import {marcarRepassePagoAction, updateRepasseAction} from "../actions";
 import type { ComissaoLancamento } from "../types";
 
 export function RepasseDialog({ lancamento, refreshPath }: { lancamento: ComissaoLancamento; refreshPath: string }) {
@@ -67,6 +67,28 @@ export function RepasseDialog({ lancamento, refreshPath }: { lancamento: Comissa
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
             <Button type="submit">Salvar repasse</Button>
+            <Button
+                type="button"
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    toast.loading("Marcando repasse como pago...");
+                    const fd = new FormData();
+                    fd.set("lancamento_id", lancamento.id);
+                    fd.set("refresh_path", refreshPath);
+                    fd.set("pago_em", new Date().toISOString());
+                    await marcarRepassePagoAction(fd);
+                    toast.dismiss();
+                    toast.success("Repasse marcado como pago.");
+                    setOpen(false);
+                  } catch (error) {
+                    toast.dismiss();
+                    toast.error(error instanceof Error ? error.message : "Erro ao marcar repasse.");
+                  }
+                }}
+            >
+              Marcar como pago agora
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -12,6 +12,9 @@ import type {
   ComissaoStatus,
   ParceiroOption,
   RepasseStatus,
+  CompetenciasContratoResponse,
+  ResumoFinanceiroContratoResponse,
+  TimelineContratoResponse,
 } from "./types";
 
 type Envelope<T> = {
@@ -161,6 +164,54 @@ export async function updateRepasseAction(formData: FormData) {
       repasse_previsto_em: repasse_previsto_em || null,
       repasse_pago_em: repasse_pago_em || null,
       repasse_observacoes: repasse_observacoes || null,
+    }),
+  });
+
+  revalidatePath("/app/comissoes");
+  revalidatePath(refreshPath);
+}
+
+export async function getCompetenciasContratoAction(contratoId: string): Promise<CompetenciasContratoResponse> {
+  return backendAuthed<CompetenciasContratoResponse>(`/comissoes/contratos/${contratoId}/competencias`, {
+    method: "GET",
+  });
+}
+
+export async function getResumoFinanceiroContratoAction(contratoId: string): Promise<ResumoFinanceiroContratoResponse> {
+  return backendAuthed<ResumoFinanceiroContratoResponse>(`/comissoes/contratos/${contratoId}/resumo-financeiro`, {
+    method: "GET",
+  });
+}
+
+export async function getTimelineContratoAction(contratoId: string): Promise<TimelineContratoResponse> {
+  return backendAuthed<TimelineContratoResponse>(`/comissoes/contratos/${contratoId}/timeline`, {
+    method: "GET",
+  });
+}
+
+export async function processarPagamentoComissaoAction(pagamentoId: string, refreshPath = "/app/comissoes") {
+  const data = await backendAuthed(`/comissoes/pagamentos/${pagamentoId}/processar`, {
+    method: "POST",
+  });
+
+  revalidatePath("/app/comissoes");
+  revalidatePath(refreshPath);
+  return data;
+}
+
+export async function marcarRepassePagoAction(formData: FormData) {
+  const lancamentoId = String(formData.get("lancamento_id") || "").trim();
+  const pagoEm = String(formData.get("pago_em") || "").trim();
+  const observacoes = String(formData.get("observacoes") || "").trim();
+  const refreshPath = String(formData.get("refresh_path") || "/app/comissoes");
+
+  if (!lancamentoId) throw new Error("Lançamento inválido.");
+
+  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/marcar-repasse-pago`, {
+    method: "POST",
+    body: JSON.stringify({
+      pago_em: pagoEm || null,
+      observacoes: observacoes || null,
     }),
   });
 

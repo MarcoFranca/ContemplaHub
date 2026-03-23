@@ -64,3 +64,78 @@ export type ParceiroOption = {
   id: string;
   nome: string;
 };
+
+export type CompetenciaStatus =
+    | "prevista"
+    | "sem_boleto"
+    | "aguardando_pagamento"
+    | "paga_sem_assembleia"
+    | "elegivel_comissao"
+    | "cancelada";
+
+export type CotaPagamentoCompetencia = {
+  id: string;
+  contrato_id: string;
+  cota_id: string;
+  competencia: string;
+  tem_boleto: boolean;
+  boleto_previsto_em?: string | null;
+  boleto_valor?: number | string | null;
+  pagamento_id?: string | null;
+  pago: boolean;
+  pago_em?: string | null;
+  valor_pago?: number | string | null;
+  vencimento?: string | null;
+  pago_no_prazo?: boolean | null;
+  participou_assembleia?: boolean | null;
+  motivo_nao_participacao?: string | null;
+  gera_comissao: boolean;
+  status: CompetenciaStatus;
+};
+
+export type CompetenciasContratoResponse = {
+  ok: boolean;
+  contrato: Record<string, unknown>;
+  items: CotaPagamentoCompetencia[];
+  total: number;
+};
+
+export type ResumoFinanceiroContratoResponse = {
+  ok: boolean;
+  contrato: Record<string, unknown>;
+  totais: {
+    total_bruto: string;
+    total_imposto: string;
+    total_liquido: string;
+    empresa: {
+      bruto: string;
+      liquido: string;
+    };
+    parceiro: {
+      bruto: string;
+      imposto: string;
+      liquido: string;
+    };
+  };
+  quantidades: {
+    lancamentos: number;
+    por_status: Record<string, number>;
+    por_repasse_status: Record<string, number>;
+  };
+  items: ComissaoLancamento[];
+};
+
+export type TimelineContratoItem = {
+  tipo: "pagamento" | "competencia" | "lancamento_comissao";
+  titulo: string;
+  data_ref?: string | null;
+  timestamp?: string | null;
+  payload: Record<string, unknown>;
+};
+
+export type TimelineContratoResponse = {
+  ok: boolean;
+  contrato: Record<string, unknown>;
+  items: TimelineContratoItem[];
+  total: number;
+};

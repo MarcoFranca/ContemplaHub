@@ -6,7 +6,11 @@ import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { getLancamentosContratoAction } from "@/app/app/comissoes/actions";
+import {
+    getCompetenciasContratoAction,
+    getLancamentosContratoAction,
+    getResumoFinanceiroContratoAction, getTimelineContratoAction
+} from "@/app/app/comissoes/actions";
 import { ComissoesContratoCard } from "./components/ComissoesContratoCard";
 
 // ------------------------------------------
@@ -41,7 +45,12 @@ export default async function ContratoDetailsPage({
     if (!contrato) notFound();
 
     const cota = contrato.cotas;
-    const comissoes = await getLancamentosContratoAction(contratoId).catch(() => ({ items: [], resumo: null }));
+    const [lancamentos, competencias, resumoFinanceiro, timeline] = await Promise.all([
+        getLancamentosContratoAction(contratoId),
+        getCompetenciasContratoAction(contratoId),
+        getResumoFinanceiroContratoAction(contratoId),
+        getTimelineContratoAction(contratoId),
+    ]);
 
     return (
         <div className="h-full overflow-auto px-4 py-6 max-w-4xl mx-auto space-y-6">
@@ -138,7 +147,13 @@ export default async function ContratoDetailsPage({
                 </CardContent>
             </Card>
 
-            <ComissoesContratoCard contratoId={contratoId} resumo={comissoes.resumo} items={comissoes.items} />
+            <ComissoesContratoCard
+                contratoId={contratoId}
+                resumoFinanceiro={resumoFinanceiro.totais}
+                lancamentos={lancamentos.items}
+                competencias={competencias.items}
+                timeline={timeline.items}
+            />
         </div>
     );
 }
