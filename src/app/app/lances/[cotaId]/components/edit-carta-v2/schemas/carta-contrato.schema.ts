@@ -39,26 +39,24 @@ function nullableNumberFromInput(min?: number) {
         );
 }
 
-export const cartaGeralSchema = z.object({
+export const cartaContratoSchema = z.object({
+    leadId: z.string().trim().min(1, "Lead inválido."),
+    clienteNome: z.string().trim().nullable().optional(),
+    administradoraId: z.string().trim().min(1, "Selecione a administradora."),
+
     grupoCodigo: z.string().trim().min(1, "Informe o grupo."),
     numeroCota: z.string().trim().min(1, "Informe o número da cota."),
-    produto: z.string().trim().min(1, "Informe o produto."),
-    status: z.string().trim().min(1, "Informe o status."),
+
+    produto: z.enum(["imobiliario", "auto"]),
+    status: z.enum(["ativa", "contemplada", "cancelada"]),
+
     dataAdesao: z.string().nullable().optional(),
     prazo: nullableNumberFromInput(1),
     valorCarta: nullableNumberFromInput(0),
     valorParcela: nullableNumberFromInput(0),
+
+    observacoes: z.string().nullable().optional(),
 });
 
-export type CartaGeralFormInput = {
-    grupoCodigo: string;
-    numeroCota: string;
-    produto: string;
-    status: string;
-    dataAdesao?: string | null;
-    prazo: string | number | null | undefined;
-    valorCarta: string | number | null | undefined;
-    valorParcela: string | number | null | undefined;
-};
-
-export type CartaGeralFormValues = z.output<typeof cartaGeralSchema>;
+export type CartaContratoFormInput = z.input<typeof cartaContratoSchema>;
+export type CartaContratoFormValues = z.output<typeof cartaContratoSchema>;

@@ -4,14 +4,14 @@ import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { Building2, CalendarDays, FileSignature, Wallet } from "lucide-react";
 
 import {
-    cartaGeralSchema,
-    type CartaGeralFormInput,
-    type CartaGeralFormValues,
-} from "../schemas/carta-geral.schema";
-import { updateCartaGeralAction } from "../actions/update-carta-geral";
-import { createCartaGeralAction } from "../actions/create-carta-geral";
+    cartaContratoSchema,
+    type CartaContratoFormInput,
+    type CartaContratoFormValues,
+} from "../schemas/carta-contrato.schema";
+import { createContratoCartaAction } from "../actions/create-contrato-carta";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,27 +32,31 @@ import {
     SelectItem,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, CalendarDays, CircleDollarSign, FileText } from "lucide-react";
 
-type Props = {
-    mode: "create" | "edit";
-    cotaId?: string | null;
-    initialValues: EditInputValues;
-    onCreated?: (payload: {
-        cotaId: string;
-        values: CartaGeralFormValues;
-    }) => void;
+type AdministradoraOption = {
+    id: string;
+    nome: string;
 };
 
-type EditInputValues = {
-    grupoCodigo: string;
-    numeroCota: string;
-    produto: string;
-    status: string;
-    dataAdesao?: string | null;
-    prazo: number | null;
-    valorCarta: number | null;
-    valorParcela: number | null;
+type Props = {
+    leadId: string;
+    clienteNome?: string | null;
+    administradoras?: AdministradoraOption[];
+    initialValues: {
+        grupoCodigo: string;
+        numeroCota: string;
+        produto: "imobiliario" | "auto";
+        status: "ativa" | "contemplada" | "cancelada";
+        dataAdesao?: string | null;
+        prazo: number | null;
+        valorCarta: number | null;
+        valorParcela: number | null;
+    };
+    onCreated: (payload: {
+        contractId: string;
+        cotaId: string;
+        values: CartaContratoFormValues;
+    }) => void;
 };
 
 function onlyDigits(value: string) {
@@ -73,10 +77,15 @@ function formatCurrencyBRL(value: string | number | null | undefined) {
     }).format(amount);
 }
 
-function defaultFormValues(
-    initialValues: EditInputValues
-): CartaGeralFormInput {
+function defaultValues(
+    leadId: string,
+    clienteNome: string | null | undefined,
+    initialValues: Props["initialValues"]
+): CartaContratoFormInput {
     return {
+        leadId,
+        clienteNome: clienteNome ?? "",
+        administradoraId: "",
         grupoCodigo: initialValues.grupoCodigo ?? "",
         numeroCota: initialValues.numeroCota ?? "",
         produto: initialValues.produto ?? "imobiliario",
@@ -91,77 +100,51 @@ function defaultFormValues(
             initialValues.valorParcela == null
                 ? null
                 : formatCurrencyBRL(initialValues.valorParcela),
+        observacoes: "",
     };
 }
 
-export function CartaGeralForm({
-                                   mode,
-                                   cotaId,
-                                   initialValues,
-                                   onCreated,
-                               }: Props) {
+export function CartaContratoForm({
+                                      leadId,
+                                      clienteNome,
+                                      administradoras,
+                                      initialValues,
+                                      onCreated,
+                                  }: Props) {
     const [isPending, startTransition] = useTransition();
-    const isCreate = mode === "create";
-
-    const form = useForm<CartaGeralFormInput>({
-        resolver: zodResolver(cartaGeralSchema),
-        defaultValues: defaultFormValues(initialValues),
+    const administradorasSafe = administradoras ?? [];
+    const form = useForm<CartaContratoFormInput, unknown, CartaContratoFormValues>({
+        resolver: zodResolver(cartaContratoSchema),
+        defaultValues: defaultValues(leadId, clienteNome, initialValues),
     });
 
-    function onSubmit(values: CartaGeralFormInput) {
+    function onSubmit(values: CartaContratoFormValues) {
         startTransition(async () => {
-            if (isCreate) {
-                const result = await createCartaGeralAction({ values });
-
-                if (!result.ok) {
-                    toast.error(result.message || "Não foi possível criar a carta.");
-                    return;
-                }
-
-                if (!result.cotaId) {
-                    toast.error("Carta criada sem retorno de cotaId.");
-                    return;
-                }
-
-                const parsed = cartaGeralSchema.safeParse(values);
-
-                if (!parsed.success) {
-                    toast.error("Carta criada, mas houve falha ao normalizar os dados.");
-                    return;
-                }
-
-                toast.success(result.message || "Carta criada com sucesso.");
-                form.reset(defaultFormValues(parsed.data));
-
-                onCreated?.({
-                    cotaId: result.cotaId,
-                    values: parsed.data,
-                });
-
-                return;
-            }
-
-            if (!cotaId) {
-                toast.error("Cota inválida para atualização.");
-                return;
-            }
-
-            const result = await updateCartaGeralAction({
-                cotaId,
-                values,
-            });
+            const result = await createContratoCartaAction({ values });
 
             if (!result.ok) {
-                toast.error(result.message || "Não foi possível salvar os dados gerais.");
+                toast.error(result.message || "Não foi possível criar contrato e carta.");
                 return;
             }
 
-            toast.success(result.message || "Dados gerais atualizados com sucesso.");
-
-            const parsed = cartaGeralSchema.safeParse(values);
-            if (parsed.success) {
-                form.reset(defaultFormValues(parsed.data));
+            const parsed = cartaContratoSchema.safeParse(values);
+            if (!parsed.success) {
+                toast.error("Contrato criado, mas houve falha ao normalizar os dados.");
+                return;
             }
+
+            if (!result.contractId || !result.cotaId) {
+                toast.error("Contrato criado sem retorno completo de contrato/cota.");
+                return;
+            }
+
+            toast.success(result.message || "Contrato e carta criados com sucesso.");
+
+            onCreated({
+                contractId: result.contractId,
+                cotaId: result.cotaId,
+                values: parsed.data,
+            });
         });
     }
 
@@ -172,8 +155,88 @@ export function CartaGeralForm({
                     <Card className="border-white/10 bg-white/5">
                         <CardHeader className="pb-3">
                             <CardTitle className="inline-flex items-center gap-2 text-base">
-                                <FileText className="h-4 w-4" />
-                                Identificação da carta
+                                <FileSignature className="h-4 w-4" />
+                                Formalização inicial
+                            </CardTitle>
+                        </CardHeader>
+
+                        <CardContent className="grid gap-4 md:grid-cols-2">
+                            <FormField
+                                control={form.control}
+                                name="administradoraId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Administradora</FormLabel>
+
+                                        <Select value={field.value} onValueChange={field.onChange}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecione a administradora" />
+                                                </SelectTrigger>
+                                            </FormControl>
+
+                                            <SelectContent>
+                                                {administradorasSafe.map((adm) => (
+                                                    <SelectItem key={adm.id} value={adm.id}>
+                                                        {adm.nome}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+
+                                        <FormDescription>
+                                            Obrigatório para formalização do contrato.
+                                        </FormDescription>
+
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="clienteNome"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Cliente</FormLabel>
+                                        <FormControl>
+                                            <Input value={field.value ?? ""} disabled />
+                                        </FormControl>
+                                        <FormDescription>
+                                            Cliente já vinculado ao fluxo.
+                                        </FormDescription>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="produto"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Produto</FormLabel>
+                                        <Select value={field.value} onValueChange={field.onChange}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecione o produto" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="imobiliario">Imobiliário</SelectItem>
+                                                <SelectItem value="auto">Auto</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-white/10 bg-white/5">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="inline-flex items-center gap-2 text-base">
+                                <Building2 className="h-4 w-4" />
+                                Identificação da cota
                             </CardTitle>
                         </CardHeader>
 
@@ -187,9 +250,6 @@ export function CartaGeralForm({
                                         <FormControl>
                                             <Input placeholder="Ex.: 4021" {...field} />
                                         </FormControl>
-                                        <FormDescription>
-                                            Código do grupo da cota.
-                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -210,35 +270,6 @@ export function CartaGeralForm({
                                                 }
                                             />
                                         </FormControl>
-                                        <FormDescription>
-                                            Número identificador da cota dentro do grupo.
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="produto"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Produto</FormLabel>
-                                        <Select value={field.value} onValueChange={field.onChange}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecione o produto" />
-                                                </SelectTrigger>
-                                            </FormControl>
-
-                                            <SelectContent>
-                                                <SelectItem value="imobiliario">Imobiliário</SelectItem>
-                                                <SelectItem value="auto">Auto</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormDescription>
-                                            Tipo principal do consórcio.
-                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -249,39 +280,24 @@ export function CartaGeralForm({
                                 name="status"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Status</FormLabel>
+                                        <FormLabel>Status inicial</FormLabel>
                                         <Select value={field.value} onValueChange={field.onChange}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecione o status" />
                                                 </SelectTrigger>
                                             </FormControl>
-
                                             <SelectContent>
                                                 <SelectItem value="ativa">Ativa</SelectItem>
                                                 <SelectItem value="contemplada">Contemplada</SelectItem>
                                                 <SelectItem value="cancelada">Cancelada</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <FormDescription>
-                                            Situação contratual atual da carta.
-                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                        </CardContent>
-                    </Card>
 
-                    <Card className="border-white/10 bg-white/5">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="inline-flex items-center gap-2 text-base">
-                                <CalendarDays className="h-4 w-4" />
-                                Datas e prazo
-                            </CardTitle>
-                        </CardHeader>
-
-                        <CardContent className="grid gap-4 md:grid-cols-2">
                             <FormField
                                 control={form.control}
                                 name="dataAdesao"
@@ -295,14 +311,22 @@ export function CartaGeralForm({
                                                 onChange={field.onChange}
                                             />
                                         </FormControl>
-                                        <FormDescription>
-                                            Data de entrada da carta.
-                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
+                        </CardContent>
+                    </Card>
 
+                    <Card className="border-white/10 bg-white/5">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="inline-flex items-center gap-2 text-base">
+                                <Wallet className="h-4 w-4" />
+                                Dados financeiros
+                            </CardTitle>
+                        </CardHeader>
+
+                        <CardContent className="grid gap-4 md:grid-cols-3">
                             <FormField
                                 control={form.control}
                                 name="prazo"
@@ -320,25 +344,11 @@ export function CartaGeralForm({
                                                 }}
                                             />
                                         </FormControl>
-                                        <FormDescription>
-                                            Quantidade total de meses do plano.
-                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                        </CardContent>
-                    </Card>
 
-                    <Card className="border-white/10 bg-white/5">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="inline-flex items-center gap-2 text-base">
-                                <CircleDollarSign className="h-4 w-4" />
-                                Valores principais
-                            </CardTitle>
-                        </CardHeader>
-
-                        <CardContent className="grid gap-4 md:grid-cols-2">
                             <FormField
                                 control={form.control}
                                 name="valorCarta"
@@ -356,9 +366,6 @@ export function CartaGeralForm({
                                                 }}
                                             />
                                         </FormControl>
-                                        <FormDescription>
-                                            Valor de crédito contratado da carta.
-                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -369,7 +376,7 @@ export function CartaGeralForm({
                                 name="valorParcela"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Valor da parcela</FormLabel>
+                                        <FormLabel>Parcela inicial</FormLabel>
                                         <FormControl>
                                             <Input
                                                 inputMode="numeric"
@@ -381,9 +388,6 @@ export function CartaGeralForm({
                                                 }}
                                             />
                                         </FormControl>
-                                        <FormDescription>
-                                            Parcela atual de referência da carta.
-                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -394,45 +398,44 @@ export function CartaGeralForm({
                     <Card className="border-white/10 bg-white/5">
                         <CardHeader className="pb-3">
                             <CardTitle className="inline-flex items-center gap-2 text-base">
-                                <Building2 className="h-4 w-4" />
-                                Observação de uso
+                                <CalendarDays className="h-4 w-4" />
+                                Observações
                             </CardTitle>
                         </CardHeader>
 
-                        <CardContent className="space-y-3">
-                            <div className="rounded-xl border border-white/10 bg-black/10 p-3 text-sm text-muted-foreground">
-                                Esta aba concentra os dados-base da carta. Estratégia, modalidades
-                                e operação ficam nas respectivas abas para evitar confusão no cadastro.
-                            </div>
+                        <CardContent>
+                            <FormField
+                                control={form.control}
+                                name="observacoes"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Observações</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="Observações iniciais da formalização"
+                                                value={field.value ?? ""}
+                                                onChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            Opcional. Use para registrar contexto inicial.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </CardContent>
                     </Card>
                 </div>
 
                 <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t bg-background/95 pt-4 backdrop-blur">
                     <div className="text-xs text-muted-foreground">
-                        {isCreate
-                            ? "Salve esta aba para criar a carta e liberar as demais configurações."
-                            : "Salve apenas esta aba para atualizar identificação, datas e valores da carta."}
+                        Primeiro formalize o contrato para criar a cota e liberar as demais abas.
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => form.reset(defaultFormValues(initialValues))}
-                            disabled={isPending || !form.formState.isDirty}
-                        >
-                            Descartar
-                        </Button>
-
-                        <Button type="submit" disabled={isPending || !form.formState.isDirty}>
-                            {isPending
-                                ? "Salvando..."
-                                : isCreate
-                                    ? "Criar carta"
-                                    : "Salvar dados gerais"}
-                        </Button>
-                    </div>
+                    <Button type="submit" disabled={isPending}>
+                        {isPending ? "Criando..." : "Criar contrato e continuar"}
+                    </Button>
                 </div>
             </form>
         </Form>

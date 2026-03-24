@@ -80,6 +80,55 @@ export async function updateCartaAction(formData: FormData): Promise<void> {
     revalidatePath("/app/lances");
 }
 
+function readCotaIdFromPayload(payload: unknown): string | null {
+    if (!payload || typeof payload !== "object") return null;
+
+    const record = payload as Record<string, unknown>;
+    const raw = record.cota_id ?? record.cotaId ?? record.id;
+
+    return typeof raw === "string" && raw.trim() ? raw : null;
+}
+
+type CreateCartaActionResult = {
+    cota_id: string | null;
+};
+
+export async function createCartaAction(
+    formData: FormData
+): Promise<CreateCartaActionResult> {
+    const payload = {
+        grupo_codigo: formNullableString(formData, "grupo_codigo"),
+        numero_cota: formNullableString(formData, "numero_cota"),
+        produto: formNullableString(formData, "produto"),
+        status: formNullableString(formData, "status"),
+        valor_carta: formNullableNumber(formData, "valor_carta"),
+        valor_parcela: formNullableNumber(formData, "valor_parcela"),
+        prazo: formNullableNumber(formData, "prazo"),
+        data_adesao: formNullableString(formData, "data_adesao"),
+
+        autorizacao_gestao: false,
+        embutido_permitido: false,
+        embutido_max_percent: null,
+        fgts_permitido: false,
+        tipo_lance_preferencial: null,
+        estrategia: null,
+        objetivo: null,
+        opcoes_lance_fixo: [],
+    };
+
+    const data = await backendAuthed<unknown>(`/lances/cartas`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+
+    revalidatePath("/app/lances");
+    revalidatePath("/app/carteira");
+
+    return {
+        cota_id: readCotaIdFromPayload(data),
+    };
+}
+
 export async function deleteCartaAction(cotaId: string) {
     const data = await backendAuthed<{ ok: boolean; deleted: boolean; cota_id: string }>(
         `/lances/cartas/${cotaId}`,

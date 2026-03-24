@@ -67,7 +67,6 @@ export async function listLeadsForKanban(options?: {
     const columns = data.columns as KanbanColumns;
     const rows: LeadCard[] = Object.values(columns).flat();
 
-    // enriquecimento da coluna contrato com status operacional real
     const contractLeadIds = rows
         .filter((row) => row.etapa === "contrato")
         .map((row) => row.id);
@@ -185,7 +184,6 @@ export async function listLeadsForKanban(options?: {
     });
 }
 
-// ====== Movimentação de estágio com histórico ======
 export async function moveLeadStage(args: {
     leadId: string;
     stage?: Stage;
@@ -209,7 +207,6 @@ export async function moveLeadStage(args: {
     return data;
 }
 
-// ====== Cadastro manual de lead ======
 export async function createLeadManual(formData: FormData): Promise<{ ok: boolean; error?: string }> {
     const me = await getCurrentProfile();
     if (!me?.orgId) return { ok: false, error: "Organização inválida." };
@@ -310,7 +307,6 @@ export async function createLeadManual(formData: FormData): Promise<{ ok: boolea
     }
 }
 
-// ====== Opções para o contrato ======
 export type AdminOption = { id: string; nome: string };
 export type GrupoOption = { id: string; administradoraId: string; codigo: string | null };
 
@@ -347,8 +343,14 @@ export async function listContractOptions(): Promise<{
     };
 }
 
-// ====== Criar contrato a partir do lead ======
-export async function createContractFromLead(formData: FormData): Promise<void> {
+export type CreateContractFromLeadResult = {
+    contrato_id: string;
+    cota_id: string;
+};
+
+export async function createContractFromLead(
+    formData: FormData
+): Promise<CreateContractFromLeadResult> {
     const me = await getCurrentProfile();
     if (!me?.orgId) throw new Error("Sem organização.");
 
@@ -432,13 +434,12 @@ export async function createContractFromLead(formData: FormData): Promise<void> 
         throw new Error("Campos obrigatórios ausentes.");
     }
 
-    await backendFetch("/contracts/from-lead", {
+    const data = await backendFetch("/contracts/from-lead", {
         method: "POST",
         orgId: me.orgId,
         body: JSON.stringify(payload),
     });
 
-    // move o lead para contrato após criação bem-sucedida
     await backendFetch(`/leads/${payload.lead_id}/stage`, {
         method: "PATCH",
         orgId: me.orgId,
@@ -451,6 +452,11 @@ export async function createContractFromLead(formData: FormData): Promise<void> 
     revalidatePath("/app/leads");
     revalidatePath(`/app/leads/${payload.lead_id}`);
     revalidatePath("/app/carteira");
+
+    return {
+        contrato_id: String(data?.contrato_id ?? ""),
+        cota_id: String(data?.cota_id ?? ""),
+    };
 }
 
 export async function updateContractStatus(
