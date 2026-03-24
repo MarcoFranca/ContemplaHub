@@ -8,6 +8,11 @@ import type {
     ClienteSort,
 } from "../lib/types";
 import { loadCarteiraUniverse } from "./shared";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { getCurrentProfile } from "@/lib/auth/server";
+import { backendFetch } from "@/lib/backend";
+
 
 function sortItems(items: CarteiraClienteItem[], sort?: ClienteSort | null) {
     const rows = [...items];
@@ -122,4 +127,29 @@ export async function listCarteiraClientes(
         items,
         total: items.length,
     };
+}
+
+export async function startClientNegotiationAction(formData: FormData) {
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) {
+        throw new Error("Organização inválida.");
+    }
+
+    const leadId = String(formData.get("leadId") ?? "").trim();
+    if (!leadId) {
+        throw new Error("Lead inválido.");
+    }
+
+    await backendFetch(`/leads/${leadId}/stage`, {
+        method: "PATCH",
+        orgId: profile.orgId,
+        body: JSON.stringify({
+            stage: "diagnostico",
+            reason: "Lead reativado a partir da carteira para nova negociação.",
+        }),
+    });
+
+    revalidatePath("/app/leads");
+    revalidatePath("/app/carteira");
+    redirect("/app/leads");
 }

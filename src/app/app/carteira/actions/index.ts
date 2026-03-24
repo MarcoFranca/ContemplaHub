@@ -1,2 +1,2 @@
-export { listCarteiraClientes } from "./clientes";
+export { startClientNegotiationAction, listCarteiraClientes } from "./clientes";
 export { listCarteiraCartas } from "./cartas";

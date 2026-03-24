@@ -200,7 +200,11 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                                 <Button variant="outline">Ver Leads</Button>
                             </Link>
 
-                            <CreateCarteiraCartaSheet clientes={clientesParaCarta} />
+                            <CreateCarteiraCartaSheet
+                                clientes={clientesParaCarta}
+                                triggerLabel="Cadastrar carta"
+                                triggerVariant="outline"
+                            />
                             <CreateCarteiraClienteSheet />
                         </div>
                     </div>
