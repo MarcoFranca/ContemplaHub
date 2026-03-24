@@ -158,12 +158,12 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
 
     const clientesParaCarta: ClienteCartaOption[] = clientesItems
         .map((item) => ({
-            id: String((item as { lead_id?: string }).lead_id ?? ""),
-            nome: String((item as { nome?: string }).nome ?? "Cliente sem nome"),
-            telefone: (item as { telefone?: string | null }).telefone ?? undefined,
-            email: (item as { email?: string | null }).email ?? undefined,
+            id: String(item.cliente?.lead_id ?? "").trim(),
+            nome: String(item.cliente?.nome ?? "Cliente sem nome"),
+            telefone: item.cliente?.telefone ?? undefined,
+            email: item.cliente?.email ?? undefined,
         }))
-        .filter((item) => item.id.trim() !== "");
+        .filter((item) => item.id !== "");
 
     const clientesHref = buildBaseHref({
         view: "clientes",
