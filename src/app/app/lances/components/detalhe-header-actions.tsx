@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { EditCartaSheetV2 } from "@/app/app/lances/[cotaId]/components/edit-carta-v2/EditCartaSheetV2";
-import { mapLegacyCartaToEditSheetData } from "@/app/app/lances/[cotaId]/components/edit-carta-v2/utils/edit-carta-mappers";
+
 
 type Props = {
     cotaId: string;
@@ -45,27 +44,27 @@ export function DetalheHeaderActions({
                                      }: Props) {
     const [open, setOpen] = React.useState(false);
 
-    const data = React.useMemo(
-        () =>
-            mapLegacyCartaToEditSheetData({
-                cotaId,
-                competencia,
-                cota,
-                opcoesLanceFixo,
-            }),
-        [cotaId, competencia, cota, opcoesLanceFixo]
-    );
+    // const data = React.useMemo(
+    //     () =>
+    //         mapLegacyCartaToEditSheetData({
+    //             cotaId,
+    //             competencia,
+    //             cota,
+    //             opcoesLanceFixo,
+    //         }),
+    //     [cotaId, competencia, cota, opcoesLanceFixo]
+    // );
 
     return (
         <>
             <Button onClick={() => setOpen(true)}>Editar carta</Button>
 
-            <EditCartaSheetV2
-                open={open}
-                onOpenChange={setOpen}
-                data={data}
-                onSuccess={() => window.location.reload()}
-            />
+            {/*<EditCartaSheetV2*/}
+            {/*    open={open}*/}
+            {/*    onOpenChange={setOpen}*/}
+            {/*    data={data}*/}
+            {/*    onSuccess={() => window.location.reload()}*/}
+            {/*/>*/}
         </>
     );
 }

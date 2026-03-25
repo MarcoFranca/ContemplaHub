@@ -13,7 +13,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-import { CartaSheet } from "@/app/app/lances/components/carta-sheet/CartaSheet";
+// import { CartaSheet } from "@/app/app/lances/components/carta-sheet/CartaSheet";
 import { getEmptyCartaData } from "@/app/app/lances/components/carta-sheet/get-empty-carta-data";
 import { fireConfetti } from "@/lib/ui/confetti";
 
@@ -153,17 +153,17 @@ export function CreateCarteiraCartaSheet({
                 </DialogContent>
             </Dialog>
 
-            <CartaSheet
-                open={openCarta}
-                onOpenChange={setOpenCarta}
-                mode="create"
-                data={data}
-                onSuccess={() => {
-                    setOpenCarta(false);
-                    fireConfetti();
-                    toast.success("Carta cadastrada com sucesso!");
-                }}
-            />
+            {/*<CartaSheet*/}
+            {/*    open={openCarta}*/}
+            {/*    onOpenChange={setOpenCarta}*/}
+            {/*    mode="create"*/}
+            {/*    data={data}*/}
+            {/*    onSuccess={() => {*/}
+            {/*        setOpenCarta(false);*/}
+            {/*        fireConfetti();*/}
+            {/*        toast.success("Carta cadastrada com sucesso!");*/}
+            {/*    }}*/}
+            {/*/>*/}
         </>
     );
 }

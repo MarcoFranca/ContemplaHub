@@ -114,7 +114,7 @@ export const cotas = pgTable(
         observacoes: text("observacoes"),
 
         // status e controle
-        situacao: text("situacao").default("ativa"), // ativa/contemplada/quitada/cancelada
+        situacao: text("situacao").default("ativa"), // ativa/contemplada/cancelada/quitada
         produto: produtoEnum("produto").notNull(),
         dataAdesao: date("data_adesao"),
         assembleiaDia: integer("assembleia_dia"), // 1–31
@@ -198,8 +198,19 @@ export const contratos = pgTable("contratos", {
     cotaId: uuid("cota_id").references(() => cotas.id),
     numero: text("numero"),
     dataAssinatura: date("data_assinatura"),
-    status: text("status").default("ativo"), // ativo, suspenso, cancelado, quitado
+    status: text("status").default("pendente_assinatura"), // pendente_assinatura/pendente_pagamento/alocado/contemplado/cancelado
+    dataPagamento: date("data_pagamento"),
+    dataAlocacao: date("data_alocacao"),
+    dataContemplacao: date("data_contemplacao"),
     pdfPath: text("pdf_path"),
+    pdfFilename: text("pdf_filename"),
+    pdfMimeType: text("pdf_mime_type"),
+    pdfSizeBytes: integer("pdf_size_bytes"),
+    pdfUploadedAt: timestamp("pdf_uploaded_at", { withTimezone: true }),
+    pdfUploadedBy: uuid("pdf_uploaded_by"),
+    pdfUploadedActorType: text("pdf_uploaded_actor_type"),
+    pdfVersion: integer("pdf_version").default(1),
+    pdfStatus: text("pdf_status").default("pendente"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
