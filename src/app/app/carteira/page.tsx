@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { getContratoFormOptions } from "@/features/contratos/server/get-form-options";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { listCarteiraClientes, listCarteiraCartas } from "./actions/index";
 
@@ -112,6 +112,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
 
     let clientesData: CarteiraClientesResponse | null = null;
     let cartasData: CarteiraCartasResponse | null = null;
+    let administradoras: { id: string; nome: string }[] = [];
+    let parceiros: { id: string; nome: string }[] = [];
 
     try {
         const clientesBasePromise = listCarteiraClientes({
@@ -122,8 +124,10 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
             sort: "nome_asc",
         });
 
+        const formOptionsPromise = getContratoFormOptions();
+
         if (view === "clientes") {
-            const [, clientesView] = await Promise.all([
+            const [, clientesView, formOptions] = await Promise.all([
                 clientesBasePromise,
                 listCarteiraClientes({
                     include_all: includeAll,
@@ -132,11 +136,14 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                     status_carteira: statusCarteira || null,
                     sort,
                 }),
+                formOptionsPromise,
             ]);
 
             clientesData = clientesView;
+            administradoras = formOptions.administradoras;
+            parceiros = formOptions.parceiros;
         } else {
-            const [clientesBase, cartasView] = await Promise.all([
+            const [clientesBase, cartasView, formOptions] = await Promise.all([
                 clientesBasePromise,
                 listCarteiraCartas({
                     include_all: includeAll,
@@ -144,10 +151,13 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                     q: q || null,
                     status_carteira: statusCarteira || null,
                 }),
+                formOptionsPromise,
             ]);
 
             clientesData = clientesBase;
             cartasData = cartasView;
+            administradoras = formOptions.administradoras;
+            parceiros = formOptions.parceiros;
         }
     } catch (e: unknown) {
         err = e instanceof Error ? e.message : "Erro ao carregar carteira.";
@@ -202,6 +212,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
 
                             <CreateCarteiraCartaSheet
                                 clientes={clientesParaCarta}
+                                administradoras={administradoras}
+                                parceiros={parceiros}
                                 triggerLabel="Cadastrar carta"
                                 triggerVariant="outline"
                             />

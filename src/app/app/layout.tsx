@@ -32,11 +32,7 @@ export default async function AppLayout({
 
     return (
         <div
-            className="
-        relative isolate h-[100dvh] w-full overflow-hidden
-        bg-background text-foreground
-        dark:text-slate-50
-      "
+            className="relative isolate h-[100dvh] w-full overflow-hidden bg-background text-foreground dark:text-slate-50"
         >
             <SectionFX
                 preset="mesh"

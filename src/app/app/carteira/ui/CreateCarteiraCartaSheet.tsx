@@ -1,21 +1,31 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle, Search } from "lucide-react";
-import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
-// import { CartaSheet } from "@/app/app/lances/components/carta-sheet/CartaSheet";
-import { getEmptyCartaData } from "@/app/app/lances/components/carta-sheet/get-empty-carta-data";
-import { fireConfetti } from "@/lib/ui/confetti";
+import { ContratoFormShellV2 } from "@/features/contratos/components/contrato-form-shell-v2";
+import type {
+    AdministradoraOption,
+    ParceiroOption,
+} from "@/features/contratos/types/contrato-form.types";
 
 export type ClienteCartaOption = {
     id: string;
@@ -24,146 +34,87 @@ export type ClienteCartaOption = {
     email?: string;
 };
 
-type Props = {
-    clientes?: ClienteCartaOption[];
-    clienteId?: string;
+interface Props {
+    clientes: ClienteCartaOption[];
+    administradoras: AdministradoraOption[];
+    parceiros?: ParceiroOption[];
     triggerLabel?: string;
-    triggerVariant?: "default" | "outline" | "secondary" | "ghost";
-    triggerClassName?: string;
-    triggerIcon?: React.ReactNode;
-};
+    triggerVariant?: "default" | "outline" | "secondary";
+}
 
 export function CreateCarteiraCartaSheet({
-                                             clientes = [],
-                                             clienteId,
+                                             clientes,
+                                             administradoras,
+                                             parceiros = [],
                                              triggerLabel = "Cadastrar carta",
-                                             triggerVariant = "default",
-                                             triggerClassName,
-                                             triggerIcon,
+                                             triggerVariant = "outline",
                                          }: Props) {
-    const [openSelector, setOpenSelector] = React.useState(false);
-    const [openCarta, setOpenCarta] = React.useState(false);
-    const [search, setSearch] = React.useState("");
-    const [selectedCliente, setSelectedCliente] =
-        React.useState<ClienteCartaOption | null>(null);
+    const router = useRouter();
+    const [open, setOpen] = React.useState(false);
+    const [clienteId, setClienteId] = React.useState<string>("");
 
-    const clientePreSelecionado = React.useMemo(() => {
-        if (!clienteId) return null;
-        return clientes.find((c) => c.id === clienteId) ?? null;
-    }, [clienteId, clientes]);
+    const clienteSelecionado = React.useMemo(
+        () => clientes.find((cliente) => cliente.id === clienteId) ?? null,
+        [clientes, clienteId]
+    );
 
-    const filtered = React.useMemo(() => {
-        const term = search.trim().toLowerCase();
-        if (!term) return clientes;
-
-        return clientes.filter((c) => {
-            const nome = c.nome?.toLowerCase() ?? "";
-            const email = c.email?.toLowerCase() ?? "";
-            const telefone = c.telefone?.toLowerCase() ?? "";
-            return (
-                nome.includes(term) ||
-                email.includes(term) ||
-                telefone.includes(term)
-            );
-        });
-    }, [clientes, search]);
-
-    const resolvedCliente = selectedCliente ?? clientePreSelecionado;
-
-    const data = React.useMemo(() => {
-        const base = getEmptyCartaData();
-
-        return {
-            ...base,
-            clienteId: resolvedCliente?.id || "",
-            clienteNome: resolvedCliente?.nome || null,
-        };
-    }, [resolvedCliente]);
-
-    function handleOpenFlow() {
-        if (clientePreSelecionado) {
-            setSelectedCliente(clientePreSelecionado);
-            setOpenCarta(true);
-            return;
-        }
-
-        setOpenSelector(true);
-    }
-
-    function handleSelectCliente(cliente: ClienteCartaOption) {
-        setSelectedCliente(cliente);
-        setOpenSelector(false);
-
-        window.setTimeout(() => {
-            setOpenCarta(true);
-        }, 50);
+    function handleCloseAndRefresh() {
+        setOpen(false);
+        setClienteId("");
+        router.refresh();
     }
 
     return (
-        <>
-            <Button
-                type="button"
-                variant={triggerVariant}
-                className={triggerClassName}
-                onClick={handleOpenFlow}
+        <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+                <Button variant={triggerVariant}>{triggerLabel}</Button>
+            </SheetTrigger>
+
+            <SheetContent
+                side="right"
+                className="w-full overflow-y-auto sm:max-w-[980px]"
             >
-                {triggerIcon ?? <PlusCircle className="mr-2 h-4 w-4" />}
-                {triggerLabel ? <span>{triggerLabel}</span> : null}
-            </Button>
+                <SheetHeader className="mb-6">
+                    <SheetTitle>
+                        {!clienteSelecionado ? "Selecionar cliente" : "Cadastrar carta / contrato"}
+                    </SheetTitle>
 
-            <Dialog open={openSelector} onOpenChange={setOpenSelector}>
-                <DialogContent className="sm:max-w-[560px]">
-                    <DialogHeader>
-                        <DialogTitle>Selecionar cliente</DialogTitle>
-                    </DialogHeader>
+                    <SheetDescription>
+                        {!clienteSelecionado
+                            ? "Escolha um cliente da carteira para cadastrar uma nova carta e contrato."
+                            : `Cadastro para ${clienteSelecionado.nome}.`}
+                    </SheetDescription>
+                </SheetHeader>
 
+                {!clienteSelecionado ? (
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3">
-                            <Search className="h-4 w-4 text-muted-foreground" />
-                            <Input
-                                className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-                                placeholder="Buscar por nome, email ou telefone..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
-                            {filtered.map((cliente) => (
-                                <button
-                                    key={cliente.id}
-                                    type="button"
-                                    onClick={() => handleSelectCliente(cliente)}
-                                    className="w-full rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-left transition hover:bg-white/[0.06]"
-                                >
-                                    <div className="font-medium text-foreground">{cliente.nome}</div>
-                                    <div className="mt-1 text-xs text-muted-foreground">
-                                        {cliente.email || cliente.telefone || "Sem contato"}
-                                    </div>
-                                </button>
-                            ))}
-
-                            {filtered.length === 0 ? (
-                                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-10 text-center text-sm text-muted-foreground">
-                                    Nenhum cliente encontrado.
-                                </div>
-                            ) : null}
+                        <div className="space-y-2">
+                            <Label>Cliente</Label>
+                            <Select value={clienteId} onValueChange={setClienteId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um cliente" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {clientes.map((cliente) => (
+                                        <SelectItem key={cliente.id} value={cliente.id}>
+                                            {cliente.nome}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
-                </DialogContent>
-            </Dialog>
-
-            {/*<CartaSheet*/}
-            {/*    open={openCarta}*/}
-            {/*    onOpenChange={setOpenCarta}*/}
-            {/*    mode="create"*/}
-            {/*    data={data}*/}
-            {/*    onSuccess={() => {*/}
-            {/*        setOpenCarta(false);*/}
-            {/*        fireConfetti();*/}
-            {/*        toast.success("Carta cadastrada com sucesso!");*/}
-            {/*    }}*/}
-            {/*/>*/}
-        </>
+                ) : (
+                    <ContratoFormShellV2
+                        mode="registerExisting"
+                        leadId={clienteSelecionado.id}
+                        administradoras={administradoras}
+                        parceiros={parceiros}
+                        onSuccess={() => handleCloseAndRefresh()}
+                        insideSheet
+                    />
+                )}
+            </SheetContent>
+        </Sheet>
     );
 }

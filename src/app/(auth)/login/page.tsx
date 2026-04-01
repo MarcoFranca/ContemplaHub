@@ -22,11 +22,7 @@ export default function LoginPage() {
 
     return (
         <main
-            className="
-    flex isolate items-center justify-center relative min-h-[100dvh] overflow-hidden
-    bg-background text-foreground
-    dark:bg-slate-950 dark:text-slate-50
-  "
+            className="flex isolate items-center justify-center relative min-h-[100dvh] overflow-hidden bg-background text-foreground dark:bg-slate-950 dark:text-slate-50"
         >
             {/* ✨ Fundo animado igual ao Hero */}
             <SectionFX variant="emerald" preset="mesh" beamsTilt={-14}/>

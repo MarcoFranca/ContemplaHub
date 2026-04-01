@@ -2,9 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import type { ZodType } from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,19 +33,29 @@ export function ContratoFormShellV2({
                                         administradoras,
                                         parceiros = [],
                                         existingContractId,
+                                        onSuccess,
+                                        insideSheet = false,
                                     }: ContratoFormShellV2Props) {
     const router = useRouter();
 
-    const schema = useMemo<ZodType<ContratoFormValues>>(
+    const resolver = useMemo<Resolver<ContratoFormValues, any, ContratoFormValues>>(
         () =>
-            (mode === "fromLead"
-                ? fromLeadSchema
-                : registerExistingSchema) as ZodType<ContratoFormValues>,
+            mode === "fromLead"
+                ? (zodResolver(fromLeadSchema) as Resolver<
+                    ContratoFormValues,
+                    any,
+                    ContratoFormValues
+                >)
+                : (zodResolver(registerExistingSchema) as Resolver<
+                    ContratoFormValues,
+                    any,
+                    ContratoFormValues
+                >),
         [mode]
     );
 
-    const form = useForm<ContratoFormValues>({
-        resolver: zodResolver(schema),
+    const form = useForm<ContratoFormValues, any, ContratoFormValues>({
+        resolver,
         defaultValues: getContratoDefaultValues({ mode, leadId, dealId }),
     });
 
@@ -56,7 +65,7 @@ export function ContratoFormShellV2({
     const contractId = existingContractId ?? createdContractId;
 
     return (
-        <div className="mx-auto max-w-5xl space-y-6">
+        <div className={insideSheet ? "space-y-6" : "mx-auto max-w-5xl space-y-6"}>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight">
@@ -104,6 +113,10 @@ export function ContratoFormShellV2({
                     const result = await submit(values);
 
                     if (!result.ok) return;
+
+                    onSuccess?.({ contractId: result.contractId });
+
+                    if (insideSheet) return;
 
                     if (result.contractId) {
                         router.push(`/app/contratos/${result.contractId}`);

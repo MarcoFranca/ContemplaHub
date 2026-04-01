@@ -32,4 +32,6 @@ export interface ContratoFormShellV2Props {
     administradoras: AdministradoraOption[];
     parceiros?: ParceiroOption[];
     existingContractId?: string | null;
+    onSuccess?: (params: { contractId: string | null }) => void;
+    insideSheet?: boolean;
 }

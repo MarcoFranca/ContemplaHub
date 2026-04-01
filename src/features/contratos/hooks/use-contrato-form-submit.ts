@@ -49,10 +49,10 @@ export function useContratoFormSubmit(mode: ContratoFormMode) {
                 toast.success(
                     mode === "fromLead"
                         ? "Contrato criado com sucesso."
-                        : "Contrato existente registrado com sucesso."
+                        : "Carta e contrato cadastrados com sucesso."
                 );
 
-                fireSuccessConfetti();
+                void fireSuccessConfetti();
 
                 resolve({ ok: true, contractId });
             });

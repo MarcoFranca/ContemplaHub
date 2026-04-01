@@ -9,19 +9,21 @@ export async function getContratoFormOptions() {
         throw new Error("Org não identificada.");
     }
 
-    const [{ data: administradoras, error: administradorasError }, { data: parceiros, error: parceirosError }] =
-        await Promise.all([
-            supabase
-                .from("administradoras")
-                .select("id, nome")
-                .eq("org_id", profile.orgId)
-                .order("nome", { ascending: true }),
-            supabase
-                .from("parceiros")
-                .select("id, nome")
-                .eq("org_id", profile.orgId)
-                .order("nome", { ascending: true }),
-        ]);
+    const [
+        { data: administradoras, error: administradorasError },
+        { data: parceiros, error: parceirosError },
+    ] = await Promise.all([
+        supabase
+            .from("administradoras")
+            .select("id, nome")
+            .order("nome", { ascending: true }),
+
+        supabase
+            .from("parceiros_corretores")
+            .select("id, nome")
+            .eq("org_id", profile.orgId)
+            .order("nome", { ascending: true }),
+    ]);
 
     if (administradorasError) {
         throw new Error(administradorasError.message);
