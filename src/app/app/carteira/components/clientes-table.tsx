@@ -21,10 +21,17 @@ import { ClienteRowActions } from "./clientes-row-actions";
 import { contratoBadgeVariant } from "../lib/badges";
 import { fmtCurrency, fmtDate } from "../lib/format";
 import type { CarteiraClienteItem } from "../lib/types";
-import {ClienteCartasSheet} from "@/app/app/carteira/components/cliente-cartas-sheet";
+import { ClienteCartasSheet } from "@/app/app/carteira/components/cliente-cartas-sheet";
+
+type Option = {
+    id: string;
+    nome: string;
+};
 
 type ClientesTableProps = {
     items: CarteiraClienteItem[];
+    administradoras: Option[];
+    parceiros?: Option[];
 };
 
 function getCarteiraBadgeClass(status?: string | null) {
@@ -40,7 +47,11 @@ function getCarteiraBadgeClass(status?: string | null) {
     }
 }
 
-export function ClientesTable({ items }: ClientesTableProps) {
+export function ClientesTable({
+                                  items,
+                                  administradoras,
+                                  parceiros = [],
+                              }: ClientesTableProps) {
     if (items.length === 0) {
         return (
             <EmptyState
@@ -90,15 +101,15 @@ export function ClientesTable({ items }: ClientesTableProps) {
                                                 </div>
 
                                                 <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                          <span className="inline-flex items-center gap-1.5">
-                            <Phone className="h-3.5 w-3.5" />
-                              {clienteTelefone || "Sem telefone"}
-                          </span>
+                                                    <span className="inline-flex items-center gap-1.5">
+                                                        <Phone className="h-3.5 w-3.5" />
+                                                        {clienteTelefone || "Sem telefone"}
+                                                    </span>
 
                                                     <span className="inline-flex items-center gap-1.5">
-                            <Mail className="h-3.5 w-3.5" />
+                                                        <Mail className="h-3.5 w-3.5" />
                                                         {clienteEmail || "Sem email"}
-                          </span>
+                                                    </span>
                                                 </div>
                                             </div>
 
@@ -156,26 +167,26 @@ export function ClientesTable({ items }: ClientesTableProps) {
                                                 <div className="flex items-center justify-between gap-3">
                                                     <span className="text-muted-foreground">Cartas</span>
                                                     <span className="font-medium">
-                            {it.resumo?.qtd_cartas ?? 0}
-                          </span>
+                                                        {it.resumo?.qtd_cartas ?? 0}
+                                                    </span>
                                                 </div>
 
                                                 <div className="flex items-center justify-between gap-3">
-                          <span className="text-muted-foreground">
-                            Possui contrato
-                          </span>
+                                                    <span className="text-muted-foreground">
+                                                        Possui contrato
+                                                    </span>
                                                     <span className="font-medium">
-                            {it.resumo?.possui_contrato ? "Sim" : "Não"}
-                          </span>
+                                                        {it.resumo?.possui_contrato ? "Sim" : "Não"}
+                                                    </span>
                                                 </div>
 
                                                 <div className="flex items-center justify-between gap-3">
-                          <span className="text-muted-foreground">
-                            Maior carta
-                          </span>
+                                                    <span className="text-muted-foreground">
+                                                        Maior carta
+                                                    </span>
                                                     <span className="font-medium">
-                            {fmtCurrency(it.resumo?.maior_carta_valor ?? 0)}
-                          </span>
+                                                        {fmtCurrency(it.resumo?.maior_carta_valor ?? 0)}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -257,6 +268,8 @@ export function ClientesTable({ items }: ClientesTableProps) {
                                             clienteNome={clienteNome}
                                             clienteTelefone={clienteTelefone}
                                             clienteEmail={clienteEmail}
+                                            administradoras={administradoras}
+                                            parceiros={parceiros}
                                             compact
                                         />
                                     </div>

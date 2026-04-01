@@ -74,6 +74,7 @@ function buildBaseHref(params: {
 
 export default async function CarteiraPage({ searchParams }: PageProps) {
     const me = await getCurrentProfile();
+
     if (!me?.orgId) {
         return <main className="p-6">Vincule-se a uma organização.</main>;
     }
@@ -217,6 +218,7 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                                 triggerLabel="Cadastrar carta"
                                 triggerVariant="outline"
                             />
+
                             <CreateCarteiraClienteSheet />
                         </div>
                     </div>
@@ -263,11 +265,19 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                                 {view === "clientes" ? (
                                     mode === "cards" ? (
                                         <div className="h-full overflow-auto pr-1">
-                                            <ClientesCards items={clientesItems} />
+                                            <ClientesCards
+                                                items={clientesItems}
+                                                administradoras={administradoras}
+                                                parceiros={parceiros}
+                                            />
                                         </div>
                                     ) : (
                                         <div className="h-full overflow-auto pr-1">
-                                            <ClientesTable items={clientesItems} />
+                                            <ClientesTable
+                                                items={clientesItems}
+                                                administradoras={administradoras}
+                                                parceiros={parceiros}
+                                            />
                                         </div>
                                     )
                                 ) : (

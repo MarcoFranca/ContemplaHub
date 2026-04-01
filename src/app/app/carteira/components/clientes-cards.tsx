@@ -22,6 +22,8 @@ import type { CarteiraClienteItem } from "../lib/types";
 
 type ClientesCardsProps = {
     items: CarteiraClienteItem[];
+    administradoras: { id: string; nome: string }[];
+    parceiros?: { id: string; nome: string }[];
 };
 
 function getCarteiraBadgeClass(status?: string | null) {
@@ -37,7 +39,11 @@ function getCarteiraBadgeClass(status?: string | null) {
     }
 }
 
-export function ClientesCards({ items }: ClientesCardsProps) {
+export function ClientesCards({
+                                  items,
+                                  administradoras,
+                                  parceiros = [],
+                              }: ClientesCardsProps) {
     if (items.length === 0) {
         return (
             <EmptyState
@@ -66,32 +72,37 @@ export function ClientesCards({ items }: ClientesCardsProps) {
                         <CardHeader className="space-y-4 pb-3">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <CardTitle className="flex items-center gap-3 text-base">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10">
-                      <UserRound className="h-4 w-4 text-emerald-300" />
-                    </span>
-                                        <span className="truncate">{clienteNome}</span>
+                                    <CardTitle className="flex min-w-0 items-start gap-3 text-base leading-tight">
+                                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10">
+                                            <UserRound className="h-4 w-4 text-emerald-300" />
+                                        </span>
+                                        <span className="min-w-0 flex-1 break-words">
+                                            {clienteNome}
+                                        </span>
                                     </CardTitle>
 
                                     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Phone className="h-3.5 w-3.5" />
-                        {clienteTelefone || "Sem telefone"}
-                    </span>
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <Phone className="h-3.5 w-3.5" />
+                                            {clienteTelefone || "Sem telefone"}
+                                        </span>
 
                                         <span className="inline-flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5" />
+                                            <Mail className="h-3.5 w-3.5" />
                                             {clienteEmail || "Sem email"}
-                    </span>
+                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="opacity-100 transition md:opacity-0 md:group-hover:opacity-100">
+                                <div className="shrink-0 opacity-100 transition">
                                     <ClienteRowActions
                                         clienteId={clienteId}
                                         clienteNome={clienteNome}
                                         clienteTelefone={clienteTelefone}
                                         clienteEmail={clienteEmail}
+                                        administradoras={administradoras}
+                                        parceiros={parceiros}
+                                        compact
                                     />
                                 </div>
                             </div>
@@ -134,9 +145,8 @@ export function ClientesCards({ items }: ClientesCardsProps) {
                         <CardContent className="space-y-4">
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                                    <div
-                                        className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                                        <Wallet className="h-3.5 w-3.5"/>
+                                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                                        <Wallet className="h-3.5 w-3.5" />
                                         Total em cartas
                                     </div>
                                     <div className="mt-2 text-lg font-semibold">
@@ -148,9 +158,8 @@ export function ClientesCards({ items }: ClientesCardsProps) {
                                 </div>
 
                                 <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                                    <div
-                                        className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                                        <CalendarDays className="h-3.5 w-3.5"/>
+                                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                                        <CalendarDays className="h-3.5 w-3.5" />
                                         Entrada na carteira
                                     </div>
                                     <div className="mt-2 text-sm font-medium">
@@ -164,9 +173,8 @@ export function ClientesCards({ items }: ClientesCardsProps) {
 
                             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                                 <div className="mb-3 flex items-center justify-between gap-3">
-                                    <div
-                                        className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                                        <FileText className="h-3.5 w-3.5"/>
+                                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                                        <FileText className="h-3.5 w-3.5" />
                                         Cartas em destaque
                                     </div>
 
@@ -202,8 +210,7 @@ export function ClientesCards({ items }: ClientesCardsProps) {
                                     ))}
 
                                     {cartasExtras > 0 ? (
-                                        <div
-                                            className="flex items-center justify-between rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-3 py-2.5">
+                                        <div className="flex items-center justify-between rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-3 py-2.5">
                                             <div className="text-sm text-muted-foreground">
                                                 +{cartasExtras} cota(s) adicionais
                                             </div>
@@ -215,8 +222,7 @@ export function ClientesCards({ items }: ClientesCardsProps) {
                                     ) : null}
 
                                     {cartas.length === 0 ? (
-                                        <div
-                                            className="rounded-xl border border-dashed border-white/10 bg-black/10 px-3 py-3 text-sm text-muted-foreground">
+                                        <div className="rounded-xl border border-dashed border-white/10 bg-black/10 px-3 py-3 text-sm text-muted-foreground">
                                             Sem cartas no filtro atual.
                                         </div>
                                     ) : null}
@@ -225,7 +231,7 @@ export function ClientesCards({ items }: ClientesCardsProps) {
 
                             <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
                                 <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Workflow className="h-4 w-4"/>
+                                    <Workflow className="h-4 w-4" />
                                     <span>Etapa: {it.cliente.etapa ?? "—"}</span>
                                 </div>
 

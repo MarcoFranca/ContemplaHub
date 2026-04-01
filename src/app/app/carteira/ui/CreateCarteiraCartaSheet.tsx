@@ -36,38 +36,68 @@ export type ClienteCartaOption = {
 
 interface Props {
     clientes: ClienteCartaOption[];
-    administradoras: AdministradoraOption[];
+    administradoras?: AdministradoraOption[];
     parceiros?: ParceiroOption[];
+
+    clienteId?: string;
+
     triggerLabel?: string;
-    triggerVariant?: "default" | "outline" | "secondary";
+    triggerVariant?: "default" | "outline" | "secondary" | "ghost";
+    triggerClassName?: string;
+    triggerIcon?: React.ReactNode;
 }
 
 export function CreateCarteiraCartaSheet({
                                              clientes,
-                                             administradoras,
+                                             administradoras = [],
                                              parceiros = [],
+                                             clienteId,
                                              triggerLabel = "Cadastrar carta",
                                              triggerVariant = "outline",
+                                             triggerClassName,
+                                             triggerIcon,
                                          }: Props) {
     const router = useRouter();
     const [open, setOpen] = React.useState(false);
-    const [clienteId, setClienteId] = React.useState<string>("");
-
-    const clienteSelecionado = React.useMemo(
-        () => clientes.find((cliente) => cliente.id === clienteId) ?? null,
-        [clientes, clienteId]
+    const [selectedClienteId, setSelectedClienteId] = React.useState<string>(
+        clienteId ?? ""
     );
+    console.log("administradoras sheet", administradoras);
+    const clienteSelecionado = React.useMemo(
+        () => clientes.find((cliente) => cliente.id === selectedClienteId) ?? null,
+        [clientes, selectedClienteId]
+    );
+
+    function handleOpenChange(nextOpen: boolean) {
+        setOpen(nextOpen);
+
+        if (nextOpen && clienteId) {
+            setSelectedClienteId(clienteId);
+        }
+
+        if (!nextOpen && !clienteId) {
+            setSelectedClienteId("");
+        }
+    }
 
     function handleCloseAndRefresh() {
         setOpen(false);
-        setClienteId("");
+        setSelectedClienteId(clienteId ?? "");
         router.refresh();
     }
 
     return (
-        <Sheet open={open} onOpenChange={setOpen}>
+        <Sheet open={open} onOpenChange={handleOpenChange}>
             <SheetTrigger asChild>
-                <Button variant={triggerVariant}>{triggerLabel}</Button>
+                <Button
+                    type="button"
+                    variant={triggerVariant}
+                    size={triggerLabel ? "default" : "icon"}
+                    className={triggerClassName}
+                >
+                    {triggerIcon}
+                    {triggerLabel ? <span>{triggerLabel}</span> : null}
+                </Button>
             </SheetTrigger>
 
             <SheetContent
@@ -76,7 +106,9 @@ export function CreateCarteiraCartaSheet({
             >
                 <SheetHeader className="mb-6">
                     <SheetTitle>
-                        {!clienteSelecionado ? "Selecionar cliente" : "Cadastrar carta / contrato"}
+                        {!clienteSelecionado
+                            ? "Selecionar cliente"
+                            : "Cadastrar carta / contrato"}
                     </SheetTitle>
 
                     <SheetDescription>
@@ -90,7 +122,10 @@ export function CreateCarteiraCartaSheet({
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label>Cliente</Label>
-                            <Select value={clienteId} onValueChange={setClienteId}>
+                            <Select
+                                value={selectedClienteId}
+                                onValueChange={setSelectedClienteId}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione um cliente" />
                                 </SelectTrigger>
@@ -104,13 +139,17 @@ export function CreateCarteiraCartaSheet({
                             </Select>
                         </div>
                     </div>
+                ) : administradoras.length === 0 ? (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+                        Não foi possível carregar as administradoras. Recarregue a página e tente novamente.
+                    </div>
                 ) : (
                     <ContratoFormShellV2
                         mode="registerExisting"
                         leadId={clienteSelecionado.id}
                         administradoras={administradoras}
                         parceiros={parceiros}
-                        onSuccess={() => handleCloseAndRefresh()}
+                        onSuccess={handleCloseAndRefresh}
                         insideSheet
                     />
                 )}

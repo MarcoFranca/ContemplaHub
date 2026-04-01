@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
     Eye,
+    CirclePlus,
     FilePlus2,
     MoreHorizontal,
     RefreshCcw,
@@ -27,12 +28,19 @@ import { DeleteLeadButton } from "@/app/app/leads/ui/DeleteLeadButton";
 import { CreateCarteiraCartaSheet } from "@/app/app/carteira/ui/CreateCarteiraCartaSheet";
 import { startClientNegotiationAction } from "../actions";
 
+type Option = {
+    id: string;
+    nome: string;
+};
+
 type ClienteRowActionsProps = {
     clienteId: string;
     clienteNome: string;
     clienteTelefone?: string;
     clienteEmail?: string;
     compact?: boolean;
+    administradoras: Option[];
+    parceiros?: Option[];
 };
 
 function IconAction({
@@ -56,7 +64,11 @@ export function ClienteRowActions({
                                       clienteTelefone,
                                       clienteEmail,
                                       compact = false,
+                                      administradoras,
+                                      parceiros = [],
                                   }: ClienteRowActionsProps) {
+    console.log("ROW administradoras", clienteId, administradoras);
+
     const iconClass = compact ? "h-8 w-8" : "h-9 w-9";
 
     return (
@@ -85,6 +97,8 @@ export function ClienteRowActions({
                                 email: clienteEmail,
                             },
                         ]}
+                        administradoras={administradoras}
+                        parceiros={parceiros}
                         clienteId={clienteId}
                         triggerLabel=""
                         triggerVariant="ghost"
@@ -127,11 +141,13 @@ export function ClienteRowActions({
                                     email: clienteEmail,
                                 },
                             ]}
+                            administradoras={administradoras}
+                            parceiros={parceiros}
                             clienteId={clienteId}
                             triggerLabel="Cadastrar nova carta"
                             triggerVariant="ghost"
                             triggerClassName="h-9 w-full justify-start rounded-md px-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                            triggerIcon={<FilePlus2 className="h-4 w-4 mr-2" />}
+                            triggerIcon={<FilePlus2 className="mr-2 h-4 w-4" />}
                         />
                     </div>
 
