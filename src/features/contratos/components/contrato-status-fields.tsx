@@ -1,7 +1,15 @@
 "use client";
 
 import { Controller, type Control } from "react-hook-form";
-import type { ContratoFormInput } from "../schemas/contrato-base.schema";
+import { z } from "zod";
+import {
+    fromLeadSchema,
+    registerExistingSchema,
+} from "../schemas/contrato-base.schema";
+
+type ContratoFormInput =
+    | z.input<typeof fromLeadSchema>
+    | z.input<typeof registerExistingSchema>;
 
 interface Props {
     control: Control<ContratoFormInput>;
