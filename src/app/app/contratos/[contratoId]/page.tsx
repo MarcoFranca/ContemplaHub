@@ -121,7 +121,7 @@ export default async function ContratoDetailsPage({
                             <strong>Prazo:</strong> {cota.prazo} meses
                         </p>
                         <p>
-                            <strong>Situação:</strong> {cota.status ?? "—"}
+                            <strong>Situação:</strong> {cota.situacao ?? "—"}
                         </p>
                         <p>
                             <strong>Grupo:</strong> {cota.grupo_codigo}

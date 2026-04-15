@@ -11,7 +11,7 @@ export type ContratoStatus =
 
 export type CotaSituacao = "ativa" | "contemplada" | "cancelada";
 
-export type Produto = "imovel" | "auto" | "servico";
+export type Produto = "imobiliario" | "auto";
 
 export interface AdministradoraOption {
     id: string;

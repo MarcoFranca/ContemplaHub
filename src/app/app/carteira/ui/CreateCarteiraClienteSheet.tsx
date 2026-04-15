@@ -101,12 +101,7 @@ export function CreateCarteiraClienteSheet({ variant = "button" }: Props) {
                         try {
                             const result = await createClienteCarteiraAction({}, fd);
 
-                            if (
-                                result &&
-                                typeof result === "object" &&
-                                "error" in result &&
-                                result.error
-                            ) {
+                            if (result?.error) {
                                 toast.error(String(result.error), { id: toastId });
                                 return;
                             }
@@ -114,18 +109,15 @@ export function CreateCarteiraClienteSheet({ variant = "button" }: Props) {
                             toast.success("Cliente criado com sucesso!", { id: toastId });
                             setOpen(false);
 
-                            setTimeout(() => {
-                                router.refresh();
-                            }, 150);
+                            if (result?.leadId) {
+                                router.push(`/app/leads/${result.leadId}`);
+                                return;
+                            }
+
+                            router.refresh();
                         } catch (error) {
-                            console.error("Erro após criar cliente:", error);
-
-                            toast.success("Cliente criado com sucesso!", { id: toastId });
-                            setOpen(false);
-
-                            setTimeout(() => {
-                                router.refresh();
-                            }, 150);
+                            console.error("Erro ao criar cliente:", error);
+                            toast.error("Não foi possível criar o cliente.", { id: toastId });
                         }
                     }}
                     className="relative flex h-[calc(100dvh-56px)] flex-col overflow-hidden"

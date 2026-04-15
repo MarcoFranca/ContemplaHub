@@ -38,9 +38,8 @@ export function CotaFinanceiraSection({ control }: Props) {
                                     <SelectValue placeholder="Selecione o produto" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="imovel">Imóvel</SelectItem>
+                                    <SelectItem value="imobiliario">Imóvel</SelectItem>
                                     <SelectItem value="auto">Auto</SelectItem>
-                                    <SelectItem value="servico">Serviço</SelectItem>
                                 </SelectContent>
                             </Select>
                             {fieldState.error && (

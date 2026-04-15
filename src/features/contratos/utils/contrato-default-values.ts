@@ -21,7 +21,7 @@ export function getContratoDefaultValues({
         administradoraId: "",
         grupoCodigo: "",
         numeroCota: "",
-        produto: "imovel",
+        produto: "imobiliario",
 
         valorCarta: 0,
         prazo: 0,

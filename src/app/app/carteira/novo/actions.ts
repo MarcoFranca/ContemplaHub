@@ -1,10 +1,11 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/server";
 
 type CreateClienteCarteiraState = {
     error?: string;
+    ok?: boolean;
+    leadId?: string;
 };
 
 export async function createClienteCarteiraAction(
@@ -12,6 +13,7 @@ export async function createClienteCarteiraAction(
     formData: FormData
 ): Promise<CreateClienteCarteiraState> {
     const me = await getCurrentProfile();
+
     if (!me?.orgId) {
         return { error: "Usuário sem organização vinculada." };
     }
@@ -27,7 +29,7 @@ export async function createClienteCarteiraAction(
 
     const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
     if (!baseUrl) {
-        return { error: "NEXT_PUBLIC_API_URL não configurado." };
+        return { error: "NEXT_PUBLIC_BACKEND_URL não configurado." };
     }
 
     const resp = await fetch(`${baseUrl}/carteira/clientes`, {
@@ -62,5 +64,8 @@ export async function createClienteCarteiraAction(
         return { error: "Cliente criado, mas sem lead retornado pela API." };
     }
 
-    redirect(`/app/leads/${leadId}`);
+    return {
+        ok: true,
+        leadId,
+    };
 }
