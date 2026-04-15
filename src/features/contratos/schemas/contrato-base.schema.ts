@@ -94,7 +94,7 @@ export const registerExistingSchema = contratoBaseSchema.superRefine(
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ["repassePercentual"],
-                message: "Parceiro exige repasse percentual ou valor.",
+                message: "Quando houver parceiro, informe repasse percentual ou valor.",
             });
         }
 
@@ -102,7 +102,7 @@ export const registerExistingSchema = contratoBaseSchema.superRefine(
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ["parceiroId"],
-                message: "Repasse não pode existir sem parceiro.",
+                message: "Repasse só pode existir quando houver parceiro.",
             });
         }
     }

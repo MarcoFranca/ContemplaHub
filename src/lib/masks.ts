@@ -62,3 +62,38 @@ export function buildWhatsAppLinkBR(phoneDigits: string, text: string) {
     return target ? `https://wa.me/${target}?text=${msg}` : `https://wa.me/?text=${msg}`;
 }
 
+export function maskDateBR(raw: string): string {
+    const d = onlyDigits(raw).slice(0, 8);
+
+    if (d.length <= 2) return d;
+    if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+    return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
+
+export function parseDateBRToISO(value: string | null | undefined): string | null {
+    const raw = value ?? "";
+    const digits = onlyDigits(raw);
+
+    if (digits.length !== 8) return null;
+
+    const dd = digits.slice(0, 2);
+    const mm = digits.slice(2, 4);
+    const yyyy = digits.slice(4, 8);
+
+    const day = Number(dd);
+    const month = Number(mm);
+    const year = Number(yyyy);
+
+    if (!day || !month || !year) return null;
+    if (month < 1 || month > 12) return null;
+    if (day < 1 || day > 31) return null;
+
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+export function formatISODateToBR(value: string | null | undefined): string {
+    if (!value) return "";
+    const [yyyy, mm, dd] = value.split("-");
+    if (!yyyy || !mm || !dd) return "";
+    return `${dd}/${mm}/${yyyy}`;
+}

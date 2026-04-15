@@ -1,4 +1,7 @@
-import type { ContratoFormMode, ContratoFormValues } from "../types/contrato-form.types";
+import type {
+    ContratoFormMode,
+    ContratoFormValues,
+} from "../types/contrato-form.types";
 
 function emptyToNull(value?: string | null) {
     if (value == null) return null;
@@ -10,6 +13,8 @@ export function mapContratoFormToApi(
     mode: ContratoFormMode,
     values: ContratoFormValues
 ) {
+    const hasPartner = !!values.parceiroId;
+
     const base = {
         lead_id: values.leadId,
         deal_id: values.dealId ?? null,
@@ -29,10 +34,12 @@ export function mapContratoFormToApi(
         numero_contrato: emptyToNull(values.numeroContrato),
         data_assinatura: emptyToNull(values.dataAssinatura),
 
-        parceiro_id: values.parceiroId ?? null,
-        repasse_percentual: values.repassePercentual ?? null,
-        repasse_valor: values.repasseValor ?? null,
-        parceiro_observacoes: emptyToNull(values.parceiroObservacoes),
+        parceiro_id: hasPartner ? values.parceiroId : null,
+        repasse_percentual: hasPartner ? values.repassePercentual ?? null : null,
+        repasse_valor: hasPartner ? values.repasseValor ?? null : null,
+        parceiro_observacoes: hasPartner
+            ? emptyToNull(values.parceiroObservacoes)
+            : null,
     };
 
     if (mode === "fromLead") {

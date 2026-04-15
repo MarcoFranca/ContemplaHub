@@ -24,7 +24,7 @@ export function AdministradoraSelectField({
                                           }: Props) {
     return (
         <Select value={value} onValueChange={onChange} disabled={disabled}>
-            <SelectTrigger>
+            <SelectTrigger className="border-white/10 bg-white/5 text-white">
                 <SelectValue placeholder="Selecione a administradora" />
             </SelectTrigger>
             <SelectContent>

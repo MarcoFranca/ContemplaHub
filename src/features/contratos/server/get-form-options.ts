@@ -1,8 +1,7 @@
-import { supabaseServer } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/server";
+import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 
 export async function getContratoFormOptions() {
-    const supabase = await supabaseServer();
     const profile = await getCurrentProfile();
 
     if (!profile?.orgId) {
@@ -13,12 +12,13 @@ export async function getContratoFormOptions() {
         { data: administradoras, error: administradorasError },
         { data: parceiros, error: parceirosError },
     ] = await Promise.all([
-        supabase
+        supabaseAdmin
             .from("administradoras")
-            .select("id, nome")
+            .select("id, nome, org_id")
+            .or(`org_id.eq.${profile.orgId},org_id.is.null`)
             .order("nome", { ascending: true }),
 
-        supabase
+        supabaseAdmin
             .from("parceiros_corretores")
             .select("id, nome")
             .eq("org_id", profile.orgId)
@@ -34,7 +34,10 @@ export async function getContratoFormOptions() {
     }
 
     return {
-        administradoras: administradoras ?? [],
+        administradoras: (administradoras ?? []).map((item) => ({
+            id: item.id,
+            nome: item.nome,
+        })),
         parceiros: parceiros ?? [],
     };
 }
