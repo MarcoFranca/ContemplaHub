@@ -33,6 +33,10 @@ export async function registerExistingContratoAction(
         return { ok: false, error: "Org não identificada." };
     }
 
+    const payload = mapContratoFormToApi("registerExisting", parsed.data);
+
+    console.log("REGISTER EXISTING PAYLOAD", payload);
+
     const response = await fetch(`${getBackendUrl()}/contracts/register-existing`, {
         method: "POST",
         headers: {
@@ -40,16 +44,24 @@ export async function registerExistingContratoAction(
             Authorization: `Bearer ${session.access_token}`,
             "X-Org-Id": profile.orgId,
         },
-        body: JSON.stringify(mapContratoFormToApi("registerExisting", parsed.data)),
+        body: JSON.stringify(payload),
         cache: "no-store",
     });
 
     const data = await response.json().catch(() => null);
 
+    console.log("REGISTER EXISTING STATUS", response.status);
+    console.log("REGISTER EXISTING RESPONSE", data);
+
     if (!response.ok) {
         return {
             ok: false,
-            error: data?.detail ?? "Erro ao registrar contrato já existente.",
+            error:
+                data?.detail
+                    ? typeof data.detail === "string"
+                        ? data.detail
+                        : JSON.stringify(data.detail)
+                    : "Erro ao registrar contrato já existente.",
         };
     }
 

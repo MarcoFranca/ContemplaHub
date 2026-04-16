@@ -1,189 +1,276 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Controller, type Control, useWatch } from "react-hook-form";
-import { ChevronDown, Handshake } from "lucide-react";
+import { useMemo } from "react";
+import {
+    type Control,
+    type FieldErrors,
+    type UseFormClearErrors,
+    type UseFormSetValue,
+    useController,
+    useWatch,
+} from "react-hook-form";
+import { Handshake, Info, Percent, Wallet } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
-import { MoneyField } from "../../fields/money-field";
-import { ParceiroSelectField } from "../../fields/parceiro-select-field";
 import type {
     ContratoFormValues,
     ParceiroOption,
 } from "../../types/contrato-form.types";
+import { PremiumFormSection } from "../section-base/premium-form-section";
 
-interface Props {
+type Props = {
     control: Control<ContratoFormValues>;
-    parceiros: ParceiroOption[];
+    parceiros?: ParceiroOption[];
+    setValue: UseFormSetValue<ContratoFormValues>;
+    clearErrors: UseFormClearErrors<ContratoFormValues>;
+    errors: FieldErrors<ContratoFormValues>;
+};
+
+function parseNumberInput(value: string): number | undefined {
+    if (!value) return undefined;
+
+    const normalized = value.replace(/\./g, "").replace(",", ".");
+    const parsed = Number(normalized);
+
+    if (Number.isNaN(parsed)) return undefined;
+    return parsed;
 }
 
-export function ParceiroSection({ control, parceiros }: Props) {
-    const [expanded, setExpanded] = useState(false);
-
+export function ParceiroSection({
+                                    control,
+                                    parceiros = [],
+                                    setValue,
+                                    clearErrors,
+                                    errors,
+                                }: Props) {
     const parceiroId = useWatch({
         control,
         name: "parceiroId",
     });
 
-    const showBody = expanded || !!parceiroId;
+    const parceiroField = useController({
+        control,
+        name: "parceiroId",
+    });
+
+    const repassePercentualField = useController({
+        control,
+        name: "repassePercentual",
+    });
+
+    const repasseValorField = useController({
+        control,
+        name: "repasseValor",
+    });
+
+    const parceiroObservacoesField = useController({
+        control,
+        name: "parceiroObservacoes",
+    });
+
+    const hasPartner = !!parceiroId;
 
     const parceiroSelecionado = useMemo(
-        () => parceiros.find((item) => item.id === parceiroId)?.nome ?? null,
-        [parceiroId, parceiros]
+        () => parceiros.find((item) => item.id === parceiroId),
+        [parceiros, parceiroId]
     );
 
+    function handleParceiroChange(value: string) {
+        const semParceiro = value === "none";
+
+        parceiroField.field.onChange(semParceiro ? null : value);
+
+        if (semParceiro) {
+            setValue("repassePercentual", undefined, { shouldValidate: false });
+            setValue("repasseValor", undefined, { shouldValidate: false });
+            setValue("parceiroObservacoes", null, { shouldValidate: false });
+
+            clearErrors([
+                "parceiroId",
+                "repassePercentual",
+                "repasseValor",
+                "parceiroObservacoes",
+            ]);
+        }
+    }
+
     return (
-        <Card className="rounded-[28px] border border-white/10 bg-white/[0.035] text-white shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
-            <CardHeader className="space-y-3">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-3">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                            <Handshake className="h-3.5 w-3.5" />
-                            Opcional
+        <PremiumFormSection
+            badge="Opcional"
+            eyebrow="Parceria"
+            title="Parceiro comercial"
+            description="Use esta seção apenas quando a operação tiver origem compartilhada. Sem parceiro, o cadastro segue normalmente."
+            icon={<Handshake className="h-3.5 w-3.5" />}
+            headerAside={
+                hasPartner ? (
+                    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-200">
+                        Parceiro selecionado
+                    </div>
+                ) : (
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-300">
+                        Sem parceiro
+                    </div>
+                )
+            }
+        >
+            <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                    <Label className="text-slate-200">Parceiro</Label>
+                    <Select
+                        value={parceiroId ?? "none"}
+                        onValueChange={handleParceiroChange}
+                    >
+                        <SelectTrigger className="h-12 border-white/10 bg-white/[0.03] text-white">
+                            <SelectValue placeholder="Selecione um parceiro" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">Sem parceiro</SelectItem>
+                            {parceiros.map((parceiro) => (
+                                <SelectItem key={parceiro.id} value={parceiro.id}>
+                                    {parceiro.nome}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    {errors.parceiroId?.message ? (
+                        <p className="text-sm text-red-400">
+                            {String(errors.parceiroId.message)}
+                        </p>
+                    ) : null}
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="mt-0.5 rounded-xl bg-white/5 p-2 text-slate-300">
+                            <Info className="h-4 w-4" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-white">
+                                Regra operacional
+                            </p>
+                            <p className="text-sm leading-6 text-slate-400">
+                                O repasse só deve ser informado quando houver parceiro
+                                vinculado. Sem parceiro, a operação segue sem comissão.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {!hasPartner ? (
+                <Alert className="border-blue-400/20 bg-blue-500/10 text-slate-100">
+                    <AlertTitle className="text-white">Operação sem parceiro</AlertTitle>
+                    <AlertDescription className="text-slate-300">
+                        Perfeito. Esta venda pode ser salva normalmente sem parceiro
+                        vinculado.
+                    </AlertDescription>
+                </Alert>
+            ) : (
+                <>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label className="flex items-center gap-2 text-slate-200">
+                                <Percent className="h-4 w-4 text-slate-400" />
+                                Repasse percentual
+                            </Label>
+                            <Input
+                                value={
+                                    repassePercentualField.field.value == null
+                                        ? ""
+                                        : String(repassePercentualField.field.value).replace(
+                                            ".",
+                                            ","
+                                        )
+                                }
+                                onChange={(e) => {
+                                    repassePercentualField.field.onChange(
+                                        parseNumberInput(e.target.value)
+                                    );
+                                }}
+                                placeholder="Ex.: 5,00"
+                                inputMode="decimal"
+                                className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-slate-500"
+                            />
+                            {errors.repassePercentual?.message ? (
+                                <p className="text-sm text-red-400">
+                                    {String(errors.repassePercentual.message)}
+                                </p>
+                            ) : null}
                         </div>
 
                         <div className="space-y-2">
-                            <CardTitle className="text-2xl text-white">
-                                Parceiro comercial
-                            </CardTitle>
-
-                            <CardDescription className="max-w-2xl text-sm leading-6 text-slate-400">
-                                Use esta seção apenas quando a operação tiver origem compartilhada.
-                                Sem parceiro, o cadastro segue normalmente.
-                            </CardDescription>
+                            <Label className="flex items-center gap-2 text-slate-200">
+                                <Wallet className="h-4 w-4 text-slate-400" />
+                                Repasse em valor
+                            </Label>
+                            <Input
+                                value={
+                                    repasseValorField.field.value == null
+                                        ? ""
+                                        : String(repasseValorField.field.value).replace(
+                                            ".",
+                                            ","
+                                        )
+                                }
+                                onChange={(e) => {
+                                    repasseValorField.field.onChange(
+                                        parseNumberInput(e.target.value)
+                                    );
+                                }}
+                                placeholder="Ex.: 2.500,00"
+                                inputMode="decimal"
+                                className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-slate-500"
+                            />
+                            {errors.repasseValor?.message ? (
+                                <p className="text-sm text-red-400">
+                                    {String(errors.repasseValor.message)}
+                                </p>
+                            ) : null}
                         </div>
                     </div>
 
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setExpanded((v) => !v)}
-                        className="border-white/10 bg-white/[0.03] text-slate-100 hover:bg-white/[0.06]"
-                    >
-                        {showBody ? "Ocultar parceiro" : "Vincular parceiro"}
-                        <ChevronDown
-                            className={`ml-2 h-4 w-4 transition-transform ${showBody ? "rotate-180" : ""}`}
+                    <div className="space-y-2">
+                        <Label className="text-slate-200">Observações do parceiro</Label>
+                        <textarea
+                            value={parceiroObservacoesField.field.value ?? ""}
+                            onChange={(e) =>
+                                parceiroObservacoesField.field.onChange(
+                                    e.target.value || null
+                                )
+                            }
+                            placeholder="Ex.: origem da parceria, regra combinada, observações do fechamento..."
+                            rows={4}
+                            className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-400/30 focus:ring-2 focus:ring-blue-400/10"
                         />
-                    </Button>
-                </div>
-            </CardHeader>
+                        {errors.parceiroObservacoes?.message ? (
+                            <p className="text-sm text-red-400">
+                                {String(errors.parceiroObservacoes.message)}
+                            </p>
+                        ) : null}
+                    </div>
 
-            {showBody && (
-                <CardContent className="space-y-5">
-                    <Controller
-                        name="parceiroId"
-                        control={control}
-                        render={({ field, fieldState }) => (
-                            <div className="space-y-2">
-                                <Label className="text-slate-200">Parceiro</Label>
-                                <ParceiroSelectField
-                                    value={field.value}
-                                    onChange={field.onChange}
-                                    options={parceiros}
-                                />
-                                {fieldState.error && (
-                                    <p className="text-sm text-red-400">{fieldState.error.message}</p>
-                                )}
-                            </div>
-                        )}
-                    />
-
-                    {parceiroId ? (
-                        <>
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                                <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">
-                                    Parceiro vinculado
-                                </div>
-                                <div className="mt-1 text-sm font-medium text-slate-100">
-                                    {parceiroSelecionado}
-                                </div>
-                            </div>
-
-                            <div className="grid gap-5 md:grid-cols-2">
-                                <Controller
-                                    name="repassePercentual"
-                                    control={control}
-                                    render={({ field, fieldState }) => (
-                                        <div className="space-y-2">
-                                            <Label className="text-slate-200">Repasse percentual</Label>
-                                            <Input
-                                                type="number"
-                                                step="0.001"
-                                                min="0"
-                                                max="100"
-                                                value={field.value ?? ""}
-                                                onChange={(e) =>
-                                                    field.onChange(
-                                                        e.target.value === "" ? null : Number(e.target.value)
-                                                    )
-                                                }
-                                                placeholder="Ex.: 1,500"
-                                                className="h-12 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500"
-                                            />
-                                            <p className="text-xs text-slate-500">
-                                                Use percentual quando o repasse for proporcional à operação.
-                                            </p>
-                                            {fieldState.error && (
-                                                <p className="text-sm text-red-400">{fieldState.error.message}</p>
-                                            )}
-                                        </div>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="repasseValor"
-                                    control={control}
-                                    render={({ field, fieldState }) => (
-                                        <div className="space-y-2">
-                                            <Label className="text-slate-200">Repasse valor fixo</Label>
-                                            <MoneyField value={field.value} onChange={field.onChange} />
-                                            <p className="text-xs text-slate-500">
-                                                Use valor fixo quando o repasse já estiver fechado em R$.
-                                            </p>
-                                            {fieldState.error && (
-                                                <p className="text-sm text-red-400">{fieldState.error.message}</p>
-                                            )}
-                                        </div>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="parceiroObservacoes"
-                                    control={control}
-                                    render={({ field, fieldState }) => (
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label className="text-slate-200">Observações do parceiro</Label>
-                                            <Textarea
-                                                value={field.value ?? ""}
-                                                onChange={field.onChange}
-                                                rows={3}
-                                                placeholder="Contexto comercial, regra de repasse, observações operacionais..."
-                                                className="rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500"
-                                            />
-                                            {fieldState.error && (
-                                                <p className="text-sm text-red-400">{fieldState.error.message}</p>
-                                            )}
-                                        </div>
-                                    )}
-                                />
-                            </div>
-                        </>
-                    ) : (
-                        <Alert className="border-white/10 bg-white/[0.03] text-slate-100">
-                            <AlertTitle className="text-white">Operação sem parceiro</AlertTitle>
-                            <AlertDescription className="text-slate-400">
-                                Perfeito. Esta venda pode ser salva normalmente sem parceiro vinculado.
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                </CardContent>
+                    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
+                        <div className="text-sm font-medium text-emerald-100">
+                            Parceiro vinculado
+                        </div>
+                        <div className="mt-1 text-sm text-emerald-200/90">
+                            {parceiroSelecionado?.nome ?? "Parceiro selecionado"} será
+                            considerado no fechamento e no histórico comercial.
+                        </div>
+                    </div>
+                </>
             )}
-        </Card>
+        </PremiumFormSection>
     );
 }

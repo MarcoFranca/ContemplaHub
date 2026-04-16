@@ -9,6 +9,11 @@ function emptyToNull(value?: string | null) {
     return trimmed.length ? trimmed : null;
 }
 
+function numberToBackendString(value?: number | null) {
+    if (value == null || Number.isNaN(value)) return null;
+    return value.toFixed(2);
+}
+
 export function mapContratoFormToApi(
     mode: ContratoFormMode,
     values: ContratoFormValues
@@ -24,9 +29,9 @@ export function mapContratoFormToApi(
         numero_cota: values.numeroCota,
         produto: values.produto,
 
-        valor_carta: values.valorCarta,
+        valor_carta: numberToBackendString(values.valorCarta),
         prazo: values.prazo,
-        valor_parcela: values.valorParcela ?? null,
+        valor_parcela: numberToBackendString(values.valorParcela),
         data_adesao: emptyToNull(values.dataAdesao),
         assembleia_dia: values.assembleiaDia ?? null,
         observacoes: emptyToNull(values.observacoes),
@@ -35,8 +40,12 @@ export function mapContratoFormToApi(
         data_assinatura: emptyToNull(values.dataAssinatura),
 
         parceiro_id: hasPartner ? values.parceiroId : null,
-        repasse_percentual: hasPartner ? values.repassePercentual ?? null : null,
-        repasse_valor: hasPartner ? values.repasseValor ?? null : null,
+        repasse_percentual:
+            hasPartner && values.repassePercentual != null
+                ? String(values.repassePercentual)
+                : null,
+        repasse_valor:
+            hasPartner ? numberToBackendString(values.repasseValor) : null,
         parceiro_observacoes: hasPartner
             ? emptyToNull(values.parceiroObservacoes)
             : null,

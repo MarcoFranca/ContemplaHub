@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
     Eye,
-    CirclePlus,
     FilePlus2,
     MoreHorizontal,
     RefreshCcw,
@@ -67,8 +66,6 @@ export function ClienteRowActions({
                                       administradoras,
                                       parceiros = [],
                                   }: ClienteRowActionsProps) {
-    console.log("ROW administradoras", clienteId, administradoras);
-
     const iconClass = compact ? "h-8 w-8" : "h-9 w-9";
 
     return (
