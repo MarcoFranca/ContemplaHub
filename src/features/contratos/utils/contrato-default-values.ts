@@ -33,9 +33,12 @@ export function getContratoDefaultValues({
         numeroContrato: null,
         dataAssinatura: null,
 
+        percentualComissao: 4,
+        impostoRetidoPct: 10,
+        comissaoObservacoes: null,
+
         parceiroId: null,
-        repassePercentual: null,
-        repasseValor: null,
+        repassePercentualComissao: null,
         parceiroObservacoes: null,
 
         contractStatus: mode === "registerExisting" ? "alocado" : null,

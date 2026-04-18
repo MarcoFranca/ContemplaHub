@@ -16,8 +16,13 @@ export const cotaSituacaoSchema = z.enum([
 
 const optionalNullableString = z.string().trim().optional().nullable();
 
-const optionalNullableNumber = z
-    .union([z.coerce.number(), z.null()])
+const optionalNullableNumber = z.preprocess((value) => {
+    if (value === "" || value === undefined) return null;
+    return value;
+}, z.number().nullable().optional());
+
+const optionalPartnerId = z
+    .union([z.string().uuid(), z.literal(""), z.null()])
     .optional();
 
 export const contratoBaseSchema = z.object({
@@ -41,9 +46,22 @@ export const contratoBaseSchema = z.object({
     numeroContrato: optionalNullableString,
     dataAssinatura: optionalNullableString,
 
-    parceiroId: z.string().uuid().optional().nullable(),
-    repassePercentual: optionalNullableNumber,
-    repasseValor: optionalNullableNumber,
+    percentualComissao: z.coerce
+        .number()
+        .positive("Informe o percentual da comissão.")
+        .max(100, "A comissão não pode ser maior que 100%."),
+
+    impostoRetidoPct: z.coerce
+        .number()
+        .min(0, "Imposto inválido.")
+        .max(100, "Imposto inválido.")
+        .optional()
+        .nullable(),
+
+    comissaoObservacoes: optionalNullableString,
+
+    parceiroId: optionalPartnerId,
+    repassePercentualComissao: optionalNullableNumber,
     parceiroObservacoes: optionalNullableString,
 
     contractStatus: contratoStatusSchema.optional().nullable(),
@@ -86,15 +104,26 @@ export const registerExistingSchema = contratoBaseSchema.superRefine(
             });
         }
 
-        const hasParceiro = !!data.parceiroId;
-        const hasRepasse =
-            data.repassePercentual != null || data.repasseValor != null;
+        const parceiroNormalizado =
+            data.parceiroId == null || data.parceiroId === ""
+                ? null
+                : data.parceiroId;
+
+        const repasseNormalizado =
+            data.repassePercentualComissao == null ||
+            Number.isNaN(data.repassePercentualComissao)
+                ? null
+                : data.repassePercentualComissao;
+
+        const hasParceiro = !!parceiroNormalizado;
+        const hasRepasse = repasseNormalizado != null;
 
         if (hasParceiro && !hasRepasse) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: ["repassePercentual"],
-                message: "Quando houver parceiro, informe repasse percentual ou valor.",
+                path: ["repassePercentualComissao"],
+                message:
+                    "Quando houver parceiro, informe o percentual de repasse sobre a comissão.",
             });
         }
 

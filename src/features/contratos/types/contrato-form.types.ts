@@ -23,7 +23,44 @@ export interface ParceiroOption {
     nome: string;
 }
 
-export type ContratoFormValues = ContratoBaseFormValues;
+export type ContratoFormValues = {
+    leadId: string;
+    dealId?: string | null;
+
+    administradoraId: string;
+    grupoCodigo: string;
+    numeroCota: string;
+    produto: "imobiliario" | "auto";
+
+    valorCarta: number;
+    prazo: number;
+    valorParcela?: number | null;
+    dataAdesao?: string | null;
+    assembleiaDia?: number | null;
+    observacoes?: string | null;
+
+    numeroContrato?: string | null;
+    dataAssinatura?: string | null;
+
+    percentualComissao: number;
+    impostoRetidoPct?: number | null;
+    comissaoObservacoes?: string | null;
+
+    parceiroId?: string | null;
+    repassePercentualComissao?: number | null;
+    parceiroObservacoes?: string | null;
+
+    contractStatus?:
+        | "pendente_assinatura"
+        | "pendente_pagamento"
+        | "alocado"
+        | "contemplado"
+        | "cancelado"
+        | null;
+
+    cotaSituacao?: "ativa" | "contemplada" | "cancelada" | null;
+};
+
 
 export interface ContratoFormShellV2Props {
     mode: ContratoFormMode;

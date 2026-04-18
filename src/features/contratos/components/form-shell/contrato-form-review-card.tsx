@@ -1,43 +1,92 @@
-import { FileCheck2 } from "lucide-react";
 import { ContratoFormSummaryItem } from "./contrato-form-summary-item";
+import type { ContratoFormValues } from "../../types/contrato-form.types";
 
 function formatMoneyBR(value?: number | null) {
-  if (value == null || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
+    if (value == null || Number.isNaN(value)) return "—";
+    return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+    }).format(value);
+}
+
+function formatPercentBR(value?: number | null, suffix = "%") {
+    if (value == null || Number.isNaN(value)) return "—";
+    return `${String(value).replace(".", ",")}${suffix}`;
 }
 
 interface Props {
-  administradoraNome: string;
-  grupoCodigo?: string | null;
-  numeroCota?: string | null;
-  numeroContrato?: string | null;
-  valorCarta?: number | null;
-  prazo?: number | null;
+    values: Partial<ContratoFormValues>;
+    administradoraNome: string;
+    parceiroNome: string;
+    className?: string;
 }
 
-export function ContratoFormReviewCard(props: Props) {
-  return (
-    <section className="rounded-[28px] border border-white/10 bg-white/[0.035] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
-      <div className="flex items-center gap-2 text-sm font-semibold text-white">
-        <FileCheck2 className="h-4 w-4 text-emerald-300" />
-        Revisão antes de salvar
-      </div>
+export function ContratoFormReviewCard({
+                                           values,
+                                           administradoraNome,
+                                           parceiroNome,
+                                           className,
+                                       }: Props) {
+    return (
+        <div className={className}>
+            <div className="space-y-2">
+                <h3 className="text-xl font-semibold text-white">
+                    Revisão antes de salvar
+                </h3>
+                <p className="text-sm leading-6 text-slate-400">
+                    Confira os principais dados da operação antes de concluir o cadastro.
+                </p>
+            </div>
 
-      <p className="mt-2 text-sm leading-6 text-slate-400">
-        Confira os principais dados da operação antes de concluir o cadastro.
-      </p>
-
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
-        <ContratoFormSummaryItem label="Administradora" value={props.administradoraNome} />
-        <ContratoFormSummaryItem label="Grupo" value={props.grupoCodigo} />
-        <ContratoFormSummaryItem label="Cota" value={props.numeroCota} />
-        <ContratoFormSummaryItem label="Contrato" value={props.numeroContrato} />
-        <ContratoFormSummaryItem label="Valor da carta" value={formatMoneyBR(props.valorCarta)} />
-        <ContratoFormSummaryItem label="Prazo" value={props.prazo ? `${props.prazo} meses` : "—"} />
-      </div>
-    </section>
-  );
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+                <ContratoFormSummaryItem
+                    label="Administradora"
+                    value={administradoraNome}
+                />
+                <ContratoFormSummaryItem
+                    label="Grupo"
+                    value={values.grupoCodigo || "—"}
+                />
+                <ContratoFormSummaryItem
+                    label="Cota"
+                    value={values.numeroCota || "—"}
+                />
+                <ContratoFormSummaryItem
+                    label="Contrato"
+                    value={values.numeroContrato || "—"}
+                />
+                <ContratoFormSummaryItem
+                    label="Valor da carta"
+                    value={formatMoneyBR(values.valorCarta)}
+                />
+                <ContratoFormSummaryItem
+                    label="Prazo"
+                    value={values.prazo ? `${values.prazo} meses` : "—"}
+                />
+                <ContratoFormSummaryItem
+                    label="Comissão da carta"
+                    value={formatPercentBR(values.percentualComissao)}
+                />
+                <ContratoFormSummaryItem
+                    label="Imposto parceiro"
+                    value={formatPercentBR(values.impostoRetidoPct)}
+                />
+                <ContratoFormSummaryItem
+                    label="Parceiro"
+                    value={parceiroNome}
+                />
+                <ContratoFormSummaryItem
+                    label="Repasse parceiro"
+                    value={
+                        values.parceiroId
+                            ? formatPercentBR(
+                                values.repassePercentualComissao,
+                                "% da comissão"
+                            )
+                            : "Sem parceiro"
+                    }
+                />
+            </div>
+        </div>
+    );
 }

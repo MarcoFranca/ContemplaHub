@@ -9,9 +9,14 @@ function emptyToNull(value?: string | null) {
     return trimmed.length ? trimmed : null;
 }
 
-function numberToBackendString(value?: number | null) {
+function numberToBackendMoneyString(value?: number | null) {
     if (value == null || Number.isNaN(value)) return null;
     return value.toFixed(2);
+}
+
+function numberToBackendPercentString(value?: number | null) {
+    if (value == null || Number.isNaN(value)) return null;
+    return value.toFixed(4);
 }
 
 export function mapContratoFormToApi(
@@ -29,9 +34,9 @@ export function mapContratoFormToApi(
         numero_cota: values.numeroCota,
         produto: values.produto,
 
-        valor_carta: numberToBackendString(values.valorCarta),
+        valor_carta: numberToBackendMoneyString(values.valorCarta),
         prazo: values.prazo,
-        valor_parcela: numberToBackendString(values.valorParcela),
+        valor_parcela: numberToBackendMoneyString(values.valorParcela),
         data_adesao: emptyToNull(values.dataAdesao),
         assembleia_dia: values.assembleiaDia ?? null,
         observacoes: emptyToNull(values.observacoes),
@@ -39,13 +44,17 @@ export function mapContratoFormToApi(
         numero_contrato: emptyToNull(values.numeroContrato),
         data_assinatura: emptyToNull(values.dataAssinatura),
 
+        percentual_comissao: numberToBackendPercentString(values.percentualComissao),
+        imposto_retido_pct: numberToBackendPercentString(
+            values.impostoRetidoPct ?? 10
+        ),
+        comissao_observacoes: emptyToNull(values.comissaoObservacoes),
+
         parceiro_id: hasPartner ? values.parceiroId : null,
-        repasse_percentual:
-            hasPartner && values.repassePercentual != null
-                ? String(values.repassePercentual)
+        repasse_percentual_comissao:
+            hasPartner && values.repassePercentualComissao != null
+                ? numberToBackendPercentString(values.repassePercentualComissao)
                 : null,
-        repasse_valor:
-            hasPartner ? numberToBackendString(values.repasseValor) : null,
         parceiro_observacoes: hasPartner
             ? emptyToNull(values.parceiroObservacoes)
             : null,

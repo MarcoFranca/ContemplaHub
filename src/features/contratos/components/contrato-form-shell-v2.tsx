@@ -6,7 +6,6 @@ import { useForm, type Resolver, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -29,12 +28,17 @@ import type {
   ContratoFormValues,
 } from "../types/contrato-form.types";
 import { getContratoDefaultValues } from "../utils/contrato-default-values";
+
 import { IdentificacaoSection } from "./sections/identificacao-section";
 import { CotaFinanceiraSection } from "./sections/cota-financeira-section";
 import { ParceiroSection } from "./sections/parceiro-section";
 import { StatusInicialSection } from "./sections/status-inicial-section";
 import { DocumentoSection } from "./sections/documento-section";
 import { useContratoFormSubmit } from "../hooks/use-contrato-form-submit";
+
+import { ContratoFormStepper } from "./form-shell/contrato-form-stepper";
+import { ContratoFormReviewCard } from "./form-shell/contrato-form-review-card";
+import { ContratoFormSummaryItem } from "./form-shell/contrato-form-summary-item";
 
 type StepKey = "identificacao" | "financeiro" | "fechamento";
 
@@ -46,21 +50,9 @@ function formatMoneyBR(value?: number | null) {
   }).format(value);
 }
 
-function SummaryItem({
-                       label,
-                       value,
-                     }: {
-  label: string;
-  value: string;
-}) {
-  return (
-      <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-        <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">
-          {label}
-        </div>
-        <div className="mt-1 text-sm font-medium text-slate-100">{value}</div>
-      </div>
-  );
+function formatPercentBR(value?: number | null, suffix = "%") {
+  if (value == null || Number.isNaN(value)) return "—";
+  return `${String(value).replace(".", ",")}${suffix}`;
 }
 
 export function ContratoFormShellV2({
@@ -141,12 +133,14 @@ export function ContratoFormShellV2({
     {
       key: "fechamento" as const,
       title: "Fechamento",
-      description: "Parceiro, status inicial e documento.",
+      description: "Comissão, parceiro, status inicial e documento.",
       icon: ShieldCheck,
       fields: [
+        "percentualComissao",
+        "impostoRetidoPct",
+        "comissaoObservacoes",
         "parceiroId",
-        "repassePercentual",
-        "repasseValor",
+        "repassePercentualComissao",
         "parceiroObservacoes",
         "contractStatus",
         "cotaSituacao",
@@ -164,7 +158,10 @@ export function ContratoFormShellV2({
   const showAside = !insideSheet;
   const formId = `contrato-form-${leadId}`;
 
-  async function nextStep() {
+  async function nextStep(e?: React.MouseEvent<HTMLButtonElement>) {
+    e?.preventDefault();
+    e?.stopPropagation();
+
     const current = steps[currentIndex];
     const valid = await form.trigger([...current.fields]);
     if (!valid) return;
@@ -268,55 +265,12 @@ export function ContratoFormShellV2({
                 <div className="mt-5 space-y-3">
                   <Progress value={progress} className="h-2 bg-white/10" />
 
-                  <div className="grid gap-3 md:grid-cols-3">
-                    {steps.map((item, index) => {
-                      const Icon = item.icon;
-                      const isActive = item.key === step;
-                      const isDone = index < currentIndex;
-
-                      return (
-                          <button
-                              key={item.key}
-                              type="button"
-                              onClick={() => setStep(item.key)}
-                              className={[
-                                "rounded-2xl border px-4 py-4 text-left transition-all",
-                                isActive
-                                    ? "border-blue-400/35 bg-blue-500/10 shadow-[0_0_0_1px_rgba(96,165,250,0.12)]"
-                                    : "border-white/10 bg-white/[0.025] hover:bg-white/[0.045]",
-                              ].join(" ")}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div
-                                  className={[
-                                    "mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl",
-                                    isDone
-                                        ? "bg-emerald-400/15 text-emerald-300"
-                                        : isActive
-                                            ? "bg-blue-400/15 text-blue-300"
-                                            : "bg-white/5 text-slate-300",
-                                  ].join(" ")}
-                              >
-                                {isDone ? (
-                                    <CheckCircle2 className="h-5 w-5" />
-                                ) : (
-                                    <Icon className="h-5 w-5" />
-                                )}
-                              </div>
-
-                              <div className="space-y-1">
-                                <p className="text-sm font-semibold text-white">
-                                  {item.title}
-                                </p>
-                                <p className="text-xs leading-5 text-slate-400">
-                                  {item.description}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                      );
-                    })}
-                  </div>
+                  <ContratoFormStepper
+                      steps={steps}
+                      currentIndex={currentIndex}
+                      currentStep={step}
+                      onChange={(nextStep) => setStep(nextStep as StepKey)}
+                  />
                 </div>
               </div>
 
@@ -368,45 +322,12 @@ export function ContratoFormShellV2({
 
                     <DocumentoSection contractId={contractId} />
 
-                    <div className={shellCardClassName}>
-                      <div className="space-y-2">
-                        <h3 className="text-xl font-semibold text-white">
-                          Revisão antes de salvar
-                        </h3>
-                        <p className="text-sm leading-6 text-slate-400">
-                          Confira os principais dados da operação antes de concluir
-                          o cadastro.
-                        </p>
-                      </div>
-
-                      <div className="mt-5 grid gap-3 md:grid-cols-2">
-                        <SummaryItem
-                            label="Administradora"
-                            value={administradoraNome}
-                        />
-                        <SummaryItem
-                            label="Grupo"
-                            value={watched.grupoCodigo || "—"}
-                        />
-                        <SummaryItem
-                            label="Cota"
-                            value={watched.numeroCota || "—"}
-                        />
-                        <SummaryItem
-                            label="Contrato"
-                            value={watched.numeroContrato || "—"}
-                        />
-                        <SummaryItem
-                            label="Valor da carta"
-                            value={formatMoneyBR(watched.valorCarta)}
-                        />
-                        <SummaryItem
-                            label="Prazo"
-                            value={watched.prazo ? `${watched.prazo} meses` : "—"}
-                        />
-                        <SummaryItem label="Parceiro" value={parceiroNome} />
-                      </div>
-                    </div>
+                    <ContratoFormReviewCard
+                        className={shellCardClassName}
+                        values={watched}
+                        administradoraNome={administradoraNome}
+                        parceiroNome={parceiroNome}
+                    />
                   </div>
               )}
             </div>
@@ -421,29 +342,53 @@ export function ContratoFormShellV2({
                       </div>
 
                       <div className="mt-5 space-y-4">
-                        <SummaryItem
+                        <ContratoFormSummaryItem
                             label="Administradora"
                             value={administradoraNome}
                         />
-                        <SummaryItem
+                        <ContratoFormSummaryItem
                             label="Grupo"
                             value={watched.grupoCodigo || "—"}
                         />
-                        <SummaryItem label="Cota" value={watched.numeroCota || "—"} />
-                        <SummaryItem
+                        <ContratoFormSummaryItem
+                            label="Cota"
+                            value={watched.numeroCota || "—"}
+                        />
+                        <ContratoFormSummaryItem
                             label="Contrato"
                             value={watched.numeroContrato || "—"}
                         />
-                        <SummaryItem label="Produto" value={watched.produto || "—"} />
-                        <SummaryItem
+                        <ContratoFormSummaryItem
+                            label="Produto"
+                            value={watched.produto || "—"}
+                        />
+                        <ContratoFormSummaryItem
                             label="Valor da carta"
                             value={formatMoneyBR(watched.valorCarta)}
                         />
-                        <SummaryItem
+                        <ContratoFormSummaryItem
                             label="Prazo"
                             value={watched.prazo ? `${watched.prazo} meses` : "—"}
                         />
-                        <SummaryItem label="Parceiro" value={parceiroNome} />
+                        <ContratoFormSummaryItem
+                            label="Comissão"
+                            value={formatPercentBR(watched.percentualComissao)}
+                        />
+                        <ContratoFormSummaryItem
+                            label="Parceiro"
+                            value={parceiroNome}
+                        />
+                        <ContratoFormSummaryItem
+                            label="Repasse"
+                            value={
+                              watched.parceiroId
+                                  ? formatPercentBR(
+                                      watched.repassePercentualComissao,
+                                      "% da comissão"
+                                  )
+                                  : "Sem parceiro"
+                            }
+                        />
 
                         <Separator className="bg-white/10" />
 
@@ -512,6 +457,7 @@ export function ContratoFormShellV2({
 
               {currentIndex > 0 && (
                   <Button
+                      key={`back-${step}`}
                       type="button"
                       variant="outline"
                       onClick={prevStep}
@@ -523,12 +469,18 @@ export function ContratoFormShellV2({
               )}
 
               {currentIndex < steps.length - 1 ? (
-                  <Button type="button" onClick={nextStep} disabled={isPending}>
+                  <Button
+                      key={`next-${step}`}
+                      type="button"
+                      onClick={(e) => void nextStep(e)}
+                      disabled={isPending}
+                  >
                     Próximo
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
               ) : (
                   <Button
+                      key={`submit-${step}`}
                       type="submit"
                       form={formId}
                       disabled={isPending}

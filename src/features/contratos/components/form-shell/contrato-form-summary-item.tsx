@@ -1,19 +1,17 @@
-function formatText(value?: string | null) {
-  const normalized = value?.trim();
-  return normalized ? normalized : "—";
+interface Props {
+  label: string;
+  value: string;
 }
 
-export function ContratoFormSummaryItem({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | null;
-}) {
+export function ContratoFormSummaryItem({ label, value }: Props) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-      <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{label}</div>
-      <div className="mt-1 text-sm font-medium text-slate-100">{formatText(value)}</div>
-    </div>
+      <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+        <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">
+          {label}
+        </div>
+        <div className="mt-1 text-sm font-medium text-slate-100">
+          {value}
+        </div>
+      </div>
   );
 }
