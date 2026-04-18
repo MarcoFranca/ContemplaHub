@@ -35,8 +35,6 @@ export async function registerExistingContratoAction(
 
     const payload = mapContratoFormToApi("registerExisting", parsed.data);
 
-    console.log("REGISTER EXISTING PAYLOAD", payload);
-
     const response = await fetch(`${getBackendUrl()}/contracts/register-existing`, {
         method: "POST",
         headers: {
@@ -49,9 +47,6 @@ export async function registerExistingContratoAction(
     });
 
     const data = await response.json().catch(() => null);
-
-    console.log("REGISTER EXISTING STATUS", response.status);
-    console.log("REGISTER EXISTING RESPONSE", data);
 
     if (!response.ok) {
         return {
@@ -73,6 +68,10 @@ export async function registerExistingContratoAction(
                 data?.contract_id ??
                 data?.contrato_id ??
                 data?.id ??
+                null,
+            cota_id:
+                data?.cota_id ??
+                data?.cotaId ??
                 null,
         },
     };

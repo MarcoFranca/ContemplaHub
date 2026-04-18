@@ -60,6 +60,10 @@ export async function createContratoFromLeadAction(values: ContratoFormValues) {
                 data?.contrato_id ??
                 data?.id ??
                 null,
+            cota_id:
+                data?.cota_id ??
+                data?.cotaId ??
+                null,
         },
     };
 }

@@ -27,8 +27,10 @@ import type {
   ParceiroOption,
 } from "@/features/contratos/types/contrato-form.types";
 
-import { CartaCadastroSuccessDialog } from "./CartaCadastroSuccessDialog";
-import { CartaPostSaveDocumentStep } from "./CartaPostSaveDocumentStep";
+import {
+  PostSaveModal,
+  type CartaModalidadesInitialValues,
+} from "./PostSaveModal";
 
 export type ClienteCartaOption = {
   id: string;
@@ -50,7 +52,18 @@ interface Props {
   triggerIcon?: React.ReactNode;
 }
 
-type PostSaveMode = "form" | "document";
+function buildDefaultModalidades(): CartaModalidadesInitialValues {
+  return {
+    embutidoPermitido: false,
+    embutidoMaxPercent: null,
+    fgtsPermitido: false,
+    opcoesLanceFixo: [
+      { ordem: 1, percentual: null, ativo: false },
+      { ordem: 2, percentual: null, ativo: false },
+      { ordem: 3, percentual: null, ativo: false },
+    ],
+  };
+}
 
 export function CreateCarteiraCartaSheet({
                                            clientes,
@@ -69,19 +82,26 @@ export function CreateCarteiraCartaSheet({
       clienteId ?? ""
   );
 
-  const [savedContractId, setSavedContractId] = React.useState<string | null>(null);
-  const [showSuccessDialog, setShowSuccessDialog] = React.useState(false);
-  const [postSaveMode, setPostSaveMode] = React.useState<PostSaveMode>("form");
+  const [postSaveOpen, setPostSaveOpen] = React.useState(false);
+  const [savedContractId, setSavedContractId] = React.useState<string | null>(
+      null
+  );
+  const [savedCotaId, setSavedCotaId] = React.useState<string | null>(null);
 
   const clienteSelecionado = React.useMemo(
       () => clientes.find((cliente) => cliente.id === selectedClienteId) ?? null,
       [clientes, selectedClienteId]
   );
 
+  const modalidadesInitialValues = React.useMemo(
+      () => buildDefaultModalidades(),
+      []
+  );
+
   function resetInternalState() {
+    setPostSaveOpen(false);
     setSavedContractId(null);
-    setShowSuccessDialog(false);
-    setPostSaveMode("form");
+    setSavedCotaId(null);
 
     if (!clienteId) {
       setSelectedClienteId("");
@@ -102,22 +122,21 @@ export function CreateCarteiraCartaSheet({
     }
   }
 
-  function handleCadastroSuccess(params: { contractId: string | null }) {
+  function handleCadastroSuccess(params: {
+    contractId: string | null;
+    cotaId: string | null;
+  }) {
     setSavedContractId(params.contractId ?? null);
-    setShowSuccessDialog(true);
+    setSavedCotaId(params.cotaId ?? null);
+    setPostSaveOpen(true);
     router.refresh();
   }
 
   function handleFinishFlow() {
-    setShowSuccessDialog(false);
+    setPostSaveOpen(false);
     setOpen(false);
     resetInternalState();
     router.refresh();
-  }
-
-  function handleAddDocumentNow() {
-    setShowSuccessDialog(false);
-    setPostSaveMode("document");
   }
 
   const hiddenTitle = clienteSelecionado
@@ -165,17 +184,13 @@ export function CreateCarteiraCartaSheet({
                       <SheetTitle className="text-3xl font-semibold tracking-tight text-white">
                         {!clienteSelecionado
                             ? "Cadastro de carta da carteira"
-                            : postSaveMode === "document"
-                                ? "Documento do contrato"
-                                : "Cadastrar carta / contrato"}
+                            : "Cadastrar carta / contrato"}
                       </SheetTitle>
 
                       <SheetDescription className="max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
                         {!clienteSelecionado
                             ? "Escolha um cliente da carteira para iniciar o cadastro com contexto, fluidez e leitura operacional."
-                            : postSaveMode === "document"
-                                ? `Cadastro concluído para ${clienteSelecionado.nome}. Agora você pode anexar o documento do contrato.`
-                                : `Cadastro para ${clienteSelecionado.nome}. Fluxo guiado, elegante e integrado ao operacional da carteira.`}
+                            : `Cadastro para ${clienteSelecionado.nome}. Fluxo guiado, elegante e integrado ao operacional da carteira.`}
                       </SheetDescription>
                     </div>
 
@@ -240,11 +255,6 @@ export function CreateCarteiraCartaSheet({
                       Não foi possível carregar as administradoras. Recarregue a
                       página e tente novamente.
                     </div>
-                ) : postSaveMode === "document" && savedContractId ? (
-                    <CartaPostSaveDocumentStep
-                        contractId={savedContractId}
-                        onFinish={handleFinishFlow}
-                    />
                 ) : (
                     <ContratoFormShellV2
                         mode="registerExisting"
@@ -260,10 +270,14 @@ export function CreateCarteiraCartaSheet({
           </SheetContent>
         </Sheet>
 
-        <CartaCadastroSuccessDialog
-            open={showSuccessDialog}
-            onOpenChange={setShowSuccessDialog}
-            onAddDocumentNow={handleAddDocumentNow}
+        <PostSaveModal
+            open={postSaveOpen}
+            onOpenChange={setPostSaveOpen}
+            contractId={savedContractId}
+            cotaId={savedCotaId}
+            modalidadesInitialValues={modalidadesInitialValues}
+            parceirosDisponiveis={parceiros}
+            valorBaseComissao={0}
             onFinish={handleFinishFlow}
         />
       </>

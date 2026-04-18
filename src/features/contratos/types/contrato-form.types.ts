@@ -1,5 +1,3 @@
-import type { ContratoBaseFormValues } from "../schemas/contrato-base.schema";
-
 export type ContratoFormMode = "fromLead" | "registerExisting";
 
 export type ContratoStatus =
@@ -69,6 +67,9 @@ export interface ContratoFormShellV2Props {
     administradoras: AdministradoraOption[];
     parceiros?: ParceiroOption[];
     existingContractId?: string | null;
-    onSuccess?: (params: { contractId: string | null }) => void;
+    onSuccess?: (params: {
+        contractId: string | null;
+        cotaId: string | null;
+    }) => void;
     insideSheet?: boolean;
 }

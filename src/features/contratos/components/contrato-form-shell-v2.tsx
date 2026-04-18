@@ -181,7 +181,10 @@ export function ContratoFormShellV2({
     const result = await submit(values);
     if (!result.ok) return;
 
-    onSuccess?.({ contractId: result.contractId });
+    onSuccess?.({
+      contractId: result.contractId,
+      cotaId: result.cotaId ?? null,
+    });
 
     if (insideSheet) return;
 
