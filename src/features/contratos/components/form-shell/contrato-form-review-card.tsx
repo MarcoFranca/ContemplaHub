@@ -1,4 +1,5 @@
 import { BadgePercent, HandCoins, Shield, WalletCards } from "lucide-react";
+import type { DeepPartial } from "react-hook-form";
 
 import { ContratoFormSummaryItem } from "./contrato-form-summary-item";
 import type { ContratoFormValues } from "../../types/contrato-form.types";
@@ -17,7 +18,7 @@ function formatPercentBR(value?: number | null, suffix = "%") {
 }
 
 interface Props {
-  values: Partial<ContratoFormValues>;
+  values: DeepPartial<ContratoFormValues>;
   administradoraNome: string;
   parceiroNome: string;
   className?: string;
@@ -54,7 +55,7 @@ export function ContratoFormReviewCard({
   className,
 }: Props) {
   const fixosAtivos = (values.opcoesLanceFixo ?? []).filter(
-    (item) => item.ativo && item.percentual != null,
+    (item) => item?.ativo && item.percentual != null,
   );
 
   return (

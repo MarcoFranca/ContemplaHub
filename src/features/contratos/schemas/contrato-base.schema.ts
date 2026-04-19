@@ -28,7 +28,10 @@ const optionalPartnerId = z
 const lanceFixoOptionSchema = z.object({
     id: z.string().optional(),
     ordem: z.number().int().min(1).max(6),
-    percentual: z.number().min(0).max(100).nullable().optional(),
+    percentual: z.preprocess((value) => {
+        if (value === undefined || value === "") return null;
+        return value;
+    }, z.number().min(0).max(100).nullable()),
     ativo: z.boolean(),
     observacoes: optionalNullableString,
 });

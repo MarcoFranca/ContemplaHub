@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
+
 interface Props {
   label: string;
-  value: string;
+  value?: ReactNode;
 }
 
 export function ContratoFormSummaryItem({ label, value }: Props) {
@@ -10,7 +12,7 @@ export function ContratoFormSummaryItem({ label, value }: Props) {
           {label}
         </div>
         <div className="mt-1 text-sm font-medium text-slate-100">
-          {value}
+          {value ?? "—"}
         </div>
       </div>
   );
