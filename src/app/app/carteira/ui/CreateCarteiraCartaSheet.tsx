@@ -165,7 +165,7 @@ export function CreateCarteiraCartaSheet({
           <SheetContent
               side="right"
               size="full"
-              className="overflow-hidden border-l border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.10),_transparent_22%),radial-gradient(circle_at_top_right,_rgba(37,99,235,0.14),_transparent_30%),linear-gradient(180deg,_#07111f_0%,_#091427_42%,_#08111d_100%)] p-0 text-white"
+              className="overflow-hidden border-l border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.10),_transparent_22%),radial-gradient(circle_at_top_right,_rgba(34,197,94,0.10),_transparent_30%),linear-gradient(180deg,_#07111f_0%,_#091427_42%,_#08111d_100%)] p-0 text-white"
           >
             <SheetTitle className="sr-only">{hiddenTitle}</SheetTitle>
             <SheetDescription className="sr-only">
@@ -175,13 +175,13 @@ export function CreateCarteiraCartaSheet({
             <div className="flex h-full min-h-0 flex-col">
               <div className="border-b border-white/10 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
                 <SheetHeader className="space-y-4 text-left">
-                  <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-200">
+                  <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold text-emerald-100">
                     Experiência premium de cadastro
                   </div>
 
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div className="space-y-2">
-                      <SheetTitle className="text-3xl font-semibold tracking-tight text-white">
+                      <SheetTitle className="text-[1.8rem] font-semibold tracking-tight text-white sm:text-[2rem]">
                         {!clienteSelecionado
                             ? "Cadastro de carta da carteira"
                             : "Cadastrar carta / contrato"}

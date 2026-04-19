@@ -25,6 +25,14 @@ const optionalPartnerId = z
     .union([z.string().uuid(), z.literal(""), z.null()])
     .optional();
 
+const lanceFixoOptionSchema = z.object({
+    id: z.string().optional(),
+    ordem: z.number().int().min(1).max(6),
+    percentual: z.number().min(0).max(100).nullable().optional(),
+    ativo: z.boolean(),
+    observacoes: optionalNullableString,
+});
+
 export const contratoBaseSchema = z.object({
     leadId: z.string().uuid("Lead inválido."),
     dealId: z.string().uuid().optional().nullable(),
@@ -37,6 +45,7 @@ export const contratoBaseSchema = z.object({
     valorCarta: z.coerce.number().positive("Informe o valor da carta."),
     prazo: z.coerce.number().int().positive("Informe o prazo."),
     valorParcela: optionalNullableNumber,
+    valorParcelaSemRedutor: optionalNullableNumber,
     dataAdesao: optionalNullableString,
     assembleiaDia: z
         .union([z.coerce.number().int().min(1).max(31), z.null()])
@@ -45,6 +54,14 @@ export const contratoBaseSchema = z.object({
 
     numeroContrato: optionalNullableString,
     dataAssinatura: optionalNullableString,
+
+    parcelaReduzida: z.boolean(),
+    percentualReducao: z.coerce.number().min(0).max(100).nullable().optional(),
+    autorizacaoGestao: z.boolean(),
+    fgtsPermitido: z.boolean(),
+    embutidoPermitido: z.boolean(),
+    embutidoMaxPercent: z.coerce.number().min(0).max(100).nullable().optional(),
+    opcoesLanceFixo: z.array(lanceFixoOptionSchema).max(6),
 
     percentualComissao: z.coerce
         .number()
@@ -66,6 +83,55 @@ export const contratoBaseSchema = z.object({
 
     contractStatus: contratoStatusSchema.optional().nullable(),
     cotaSituacao: cotaSituacaoSchema.optional().nullable(),
+}).superRefine((data, ctx) => {
+    if (data.parcelaReduzida && data.percentualReducao == null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["percentualReducao"],
+            message: "Informe o percentual do redutor.",
+        });
+    }
+
+    if (data.embutidoPermitido && data.embutidoMaxPercent == null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["embutidoMaxPercent"],
+            message: "Informe o percentual máximo do embutido.",
+        });
+    }
+
+    const ativos = data.opcoesLanceFixo.filter((item) => item.ativo);
+    const percentuais = new Set<string>();
+    const ordens = new Set<number>();
+
+    for (const item of ativos) {
+        if (item.percentual == null) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["opcoesLanceFixo"],
+                message: "Informe o percentual de todas as opções ativas de lance fixo.",
+            });
+            continue;
+        }
+
+        const pctKey = item.percentual.toFixed(4);
+        if (percentuais.has(pctKey)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["opcoesLanceFixo"],
+                message: "Não repita percentuais entre modalidades ativas.",
+            });
+        }
+        if (ordens.has(item.ordem)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["opcoesLanceFixo"],
+                message: "Não repita a ordem das modalidades de lance fixo.",
+            });
+        }
+        percentuais.add(pctKey);
+        ordens.add(item.ordem);
+    }
 });
 
 export const fromLeadSchema = contratoBaseSchema.superRefine((data, ctx) => {

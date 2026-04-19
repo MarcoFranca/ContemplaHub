@@ -27,32 +27,32 @@ export function PremiumFormSection({
     return (
         <section
             className={cn(
-                "rounded-[28px] border border-white/10 bg-white/[0.035] p-5 text-white shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-xl md:p-6",
+                "rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.02))] p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl md:p-5",
                 className
             )}
         >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                     {(eyebrow || icon) && (
-                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-300">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-100">
                             {icon}
                             {eyebrow}
                         </div>
                     )}
 
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                         {badge ? (
-                            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
+                            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                 {badge}
                             </div>
                         ) : null}
 
-                        <h3 className="text-2xl font-semibold tracking-tight text-white">
+                        <h3 className="text-xl font-semibold tracking-tight text-white md:text-[1.35rem]">
                             {title}
                         </h3>
 
                         {description ? (
-                            <p className="max-w-3xl text-sm leading-6 text-slate-400">
+                            <p className="max-w-3xl text-[13px] leading-6 text-slate-400 md:text-sm">
                                 {description}
                             </p>
                         ) : null}
@@ -62,7 +62,7 @@ export function PremiumFormSection({
                 {headerAside ? <div className="shrink-0">{headerAside}</div> : null}
             </div>
 
-            <div className={cn("mt-5", contentClassName)}>{children}</div>
+            <div className={cn("mt-4", contentClassName)}>{children}</div>
         </section>
     );
 }

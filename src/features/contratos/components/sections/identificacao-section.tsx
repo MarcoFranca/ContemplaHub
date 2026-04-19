@@ -1,7 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Controller, type Control } from "react-hook-form";
-import { Building2 } from "lucide-react";
+import { Building2, FileBadge2, FolderKanban, Hash, Signature } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DateField } from "../../fields/date-field";
@@ -14,6 +15,17 @@ interface Props {
   administradoras: AdministradoraOption[];
 }
 
+function FieldLabel({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <Label className="flex items-center gap-2 text-[13px] font-medium text-slate-200">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-400/15 bg-emerald-400/10 text-emerald-100">
+        {icon}
+      </span>
+      {children}
+    </Label>
+  );
+}
+
 export function IdentificacaoSection({ control, administradoras }: Props) {
   return (
     <PremiumFormSection
@@ -21,14 +33,14 @@ export function IdentificacaoSection({ control, administradoras }: Props) {
       description="Selecione a administradora e preencha os identificadores principais da carta e do contrato."
       eyebrow="Identificação"
       icon={<Building2 className="h-3.5 w-3.5" />}
-      contentClassName="grid gap-5 md:grid-cols-2"
+      contentClassName="grid gap-4 md:grid-cols-2"
     >
       <Controller
         name="administradoraId"
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2 md:col-span-2">
-            <Label className="text-slate-200">Administradora</Label>
+            <FieldLabel icon={<Building2 className="h-3.5 w-3.5" />}>Administradora</FieldLabel>
             <AdministradoraSelectField value={field.value} onChange={field.onChange} options={administradoras} />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
@@ -40,12 +52,12 @@ export function IdentificacaoSection({ control, administradoras }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Grupo</Label>
+            <FieldLabel icon={<FolderKanban className="h-3.5 w-3.5" />}>Grupo</FieldLabel>
             <Input
               value={field.value}
               onChange={(e) => field.onChange(e.target.value.toUpperCase())}
               placeholder="Ex.: IM-2030"
-              className="h-12 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500"
+              className="h-11 rounded-2xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500 focus-visible:border-emerald-400/35 focus-visible:ring-emerald-400/15"
             />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
@@ -57,11 +69,11 @@ export function IdentificacaoSection({ control, administradoras }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Número da cota</Label>
+            <FieldLabel icon={<Hash className="h-3.5 w-3.5" />}>Número da cota</FieldLabel>
             <Input
               {...field}
               placeholder="Ex.: 1302-004"
-              className="h-12 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500"
+              className="h-11 rounded-2xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500 focus-visible:border-emerald-400/35 focus-visible:ring-emerald-400/15"
             />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
@@ -73,12 +85,12 @@ export function IdentificacaoSection({ control, administradoras }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Número do contrato</Label>
+            <FieldLabel icon={<FileBadge2 className="h-3.5 w-3.5" />}>Número do contrato</FieldLabel>
             <Input
               value={field.value ?? ""}
               onChange={field.onChange}
               placeholder="Ex.: CTR-2026-001"
-              className="h-12 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500"
+              className="h-11 rounded-2xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500 focus-visible:border-emerald-400/35 focus-visible:ring-emerald-400/15"
             />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
@@ -90,16 +102,16 @@ export function IdentificacaoSection({ control, administradoras }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Data de assinatura</Label>
+            <FieldLabel icon={<Signature className="h-3.5 w-3.5" />}>Data de assinatura</FieldLabel>
             <DateField value={field.value} onChange={field.onChange} />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
         )}
       />
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-        <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Leitura do corretor</div>
-        <p className="mt-1 text-sm leading-6 text-slate-300">
+      <div className="rounded-2xl border border-emerald-400/12 bg-emerald-400/[0.05] px-4 py-3">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-100/80">Leitura do corretor</div>
+        <p className="mt-1.5 text-sm leading-6 text-slate-300">
           Aqui fica a base da carta. Quanto mais clara essa etapa, mais rápido o restante do fluxo anda.
         </p>
       </div>

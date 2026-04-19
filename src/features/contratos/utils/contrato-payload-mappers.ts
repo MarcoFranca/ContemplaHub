@@ -11,7 +11,11 @@ function emptyToNull(value?: string | null) {
 
 function numberToBackendMoneyString(value?: number | null) {
     if (value == null || Number.isNaN(value)) return null;
-    return value.toFixed(2);
+
+    return new Intl.NumberFormat("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(value);
 }
 
 function numberToBackendPercentString(value?: number | null) {
@@ -43,6 +47,20 @@ export function mapContratoFormToApi(
 
         numero_contrato: emptyToNull(values.numeroContrato),
         data_assinatura: emptyToNull(values.dataAssinatura),
+
+        parcela_reduzida: values.parcelaReduzida,
+        fgts_permitido: values.fgtsPermitido,
+        embutido_permitido: values.embutidoPermitido,
+        autorizacao_gestao: values.autorizacaoGestao,
+        opcoes_lance_fixo: values.opcoesLanceFixo
+            .filter((item) => item.ativo && item.percentual != null)
+            .map((item) => ({
+                id: item.id ?? null,
+                ordem: item.ordem,
+                percentual: item.percentual,
+                ativo: item.ativo,
+                observacoes: emptyToNull(item.observacoes),
+            })),
 
         percentual_comissao: numberToBackendPercentString(values.percentualComissao),
         imposto_retido_pct: numberToBackendPercentString(

@@ -1,4 +1,5 @@
 import { CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StepItem {
     key: string;
@@ -21,7 +22,7 @@ export function ContratoFormStepper({
                                         onChange,
                                     }: Props) {
     return (
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className={cn("grid gap-3", steps.length >= 4 ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-3")}>
             {steps.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = item.key === currentStep;
@@ -35,7 +36,7 @@ export function ContratoFormStepper({
                         className={[
                             "rounded-2xl border px-4 py-4 text-left transition-all",
                             isActive
-                                ? "border-blue-400/35 bg-blue-500/10 shadow-[0_0_0_1px_rgba(96,165,250,0.12)]"
+                                ? "border-emerald-400/35 bg-emerald-500/10 shadow-[0_0_0_1px_rgba(16,185,129,0.12)]"
                                 : "border-white/10 bg-white/[0.025] hover:bg-white/[0.045]",
                         ].join(" ")}
                     >
@@ -43,11 +44,9 @@ export function ContratoFormStepper({
                             <div
                                 className={[
                                     "mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl",
-                                    isDone
+                                    isDone || isActive
                                         ? "bg-emerald-400/15 text-emerald-300"
-                                        : isActive
-                                            ? "bg-blue-400/15 text-blue-300"
-                                            : "bg-white/5 text-slate-300",
+                                        : "bg-white/5 text-slate-300",
                                 ].join(" ")}
                             >
                                 {isDone ? (

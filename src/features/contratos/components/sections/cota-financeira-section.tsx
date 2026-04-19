@@ -1,7 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Controller, type Control } from "react-hook-form";
-import { WalletCards } from "lucide-react";
+import { CalendarDays, FileText, Landmark, NotebookPen, WalletCards } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,17 @@ interface Props {
   control: Control<ContratoFormValues>;
 }
 
+function FieldLabel({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <Label className="flex items-center gap-2 text-[13px] font-medium text-slate-200">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-400/15 bg-emerald-400/10 text-emerald-100">
+        {icon}
+      </span>
+      {children}
+    </Label>
+  );
+}
+
 export function CotaFinanceiraSection({ control }: Props) {
   return (
     <PremiumFormSection
@@ -28,16 +40,16 @@ export function CotaFinanceiraSection({ control }: Props) {
       description="Preencha produto, prazo, valores e observações com foco em conferência rápida e leitura operacional."
       eyebrow="Carta / cota"
       icon={<WalletCards className="h-3.5 w-3.5" />}
-      contentClassName="grid gap-5 md:grid-cols-2"
+      contentClassName="grid gap-4 md:grid-cols-2"
     >
       <Controller
         name="produto"
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Produto</Label>
+            <FieldLabel icon={<FileText className="h-3.5 w-3.5" />}>Produto</FieldLabel>
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className="h-12 rounded-2xl border-white/10 bg-white/5 text-white">
+              <SelectTrigger className="h-11 rounded-2xl border-white/10 bg-white/[0.04] text-white">
                 <SelectValue placeholder="Selecione o produto" />
               </SelectTrigger>
               <SelectContent>
@@ -55,14 +67,14 @@ export function CotaFinanceiraSection({ control }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Prazo</Label>
+            <FieldLabel icon={<CalendarDays className="h-3.5 w-3.5" />}>Prazo</FieldLabel>
             <Input
               type="number"
               min={1}
               value={field.value ?? ""}
               onChange={(e) => field.onChange(Number(e.target.value))}
-              placeholder="Ex.: 200"
-              className="h-12 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500"
+              placeholder="Ex.: 200 meses"
+              className="h-11 rounded-2xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500 focus-visible:border-emerald-400/35 focus-visible:ring-emerald-400/15"
             />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
@@ -74,7 +86,7 @@ export function CotaFinanceiraSection({ control }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Valor da carta</Label>
+            <FieldLabel icon={<Landmark className="h-3.5 w-3.5" />}>Valor da carta</FieldLabel>
             <MoneyField value={field.value} onChange={field.onChange} />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
@@ -86,7 +98,7 @@ export function CotaFinanceiraSection({ control }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Valor da parcela</Label>
+            <FieldLabel icon={<WalletCards className="h-3.5 w-3.5" />}>Valor da parcela</FieldLabel>
             <MoneyField value={field.value} onChange={field.onChange} />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
@@ -98,7 +110,7 @@ export function CotaFinanceiraSection({ control }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Data de adesão</Label>
+            <FieldLabel icon={<NotebookPen className="h-3.5 w-3.5" />}>Data de adesão</FieldLabel>
             <DateField value={field.value} onChange={field.onChange} />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
@@ -110,7 +122,7 @@ export function CotaFinanceiraSection({ control }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label className="text-slate-200">Dia da assembleia</Label>
+            <FieldLabel icon={<CalendarDays className="h-3.5 w-3.5" />}>Dia da assembleia</FieldLabel>
             <Input
               type="number"
               min={1}
@@ -118,7 +130,7 @@ export function CotaFinanceiraSection({ control }: Props) {
               value={field.value ?? ""}
               onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
               placeholder="Ex.: 15"
-              className="h-12 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500"
+              className="h-11 rounded-2xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500 focus-visible:border-emerald-400/35 focus-visible:ring-emerald-400/15"
             />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>
@@ -130,13 +142,13 @@ export function CotaFinanceiraSection({ control }: Props) {
         control={control}
         render={({ field, fieldState }) => (
           <div className="space-y-2 md:col-span-2">
-            <Label className="text-slate-200">Observações</Label>
+            <FieldLabel icon={<NotebookPen className="h-3.5 w-3.5" />}>Observações</FieldLabel>
             <Textarea
               value={field.value ?? ""}
               onChange={field.onChange}
               rows={4}
               placeholder="Observações operacionais, histórico, pontos relevantes da carta..."
-              className="rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500"
+              className="min-h-[112px] rounded-2xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500 focus-visible:border-emerald-400/35 focus-visible:ring-emerald-400/15"
             />
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
           </div>

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   FileText,
   Landmark,
+  Settings2,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -34,13 +35,14 @@ import { CotaFinanceiraSection } from "./sections/cota-financeira-section";
 import { ParceiroSection } from "./sections/parceiro-section";
 import { StatusInicialSection } from "./sections/status-inicial-section";
 import { DocumentoSection } from "./sections/documento-section";
+import { CondicoesOperacionaisSection } from "./sections/condicoes-operacionais-section";
 import { useContratoFormSubmit } from "../hooks/use-contrato-form-submit";
 
 import { ContratoFormStepper } from "./form-shell/contrato-form-stepper";
 import { ContratoFormReviewCard } from "./form-shell/contrato-form-review-card";
 import { ContratoFormSummaryItem } from "./form-shell/contrato-form-summary-item";
 
-type StepKey = "identificacao" | "financeiro" | "fechamento";
+type StepKey = "identificacao" | "financeiro" | "modalidades" | "fechamento";
 
 function formatMoneyBR(value?: number | null) {
   if (value == null || Number.isNaN(value)) return "—";
@@ -131,6 +133,22 @@ export function ContratoFormShellV2({
       ] as const,
     },
     {
+      key: "modalidades" as const,
+      title: "Modalidades",
+      description: "Redutor, embutido, FGTS e lance fixo.",
+      icon: Settings2,
+      fields: [
+        "parcelaReduzida",
+        "percentualReducao",
+        "valorParcelaSemRedutor",
+        "embutidoPermitido",
+        "embutidoMaxPercent",
+        "fgtsPermitido",
+        "autorizacaoGestao",
+        "opcoesLanceFixo",
+      ] as const,
+    },
+    {
       key: "fechamento" as const,
       title: "Fechamento",
       description: "Comissão, parceiro, status inicial e documento.",
@@ -152,8 +170,8 @@ export function ContratoFormShellV2({
   const progress = ((currentIndex + 1) / steps.length) * 100;
 
   const shellCardClassName = insideSheet
-      ? "rounded-[24px] border border-white/10 bg-white/[0.035] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6"
-      : "rounded-[28px] border border-white/10 bg-white/[0.035] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-xl";
+      ? "rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-5"
+      : "rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl";
 
   const showAside = !insideSheet;
   const formId = `contrato-form-${leadId}`;
@@ -204,6 +222,7 @@ export function ContratoFormShellV2({
     { label: "Cota", ok: !!watched.numeroCota },
     { label: "Valor da carta", ok: !!watched.valorCarta && watched.valorCarta > 0 },
     { label: "Prazo", ok: !!watched.prazo && watched.prazo > 0 },
+    { label: "Modalidades revisadas", ok: !watched.parcelaReduzida || watched.percentualReducao != null },
   ];
 
   return (
@@ -235,13 +254,13 @@ export function ContratoFormShellV2({
               <div className={shellCardClassName}>
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div className="space-y-3">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1 text-xs font-medium text-blue-200">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold text-emerald-100">
                       <Sparkles className="h-3.5 w-3.5" />
                       Fluxo guiado premium
                     </div>
 
                     <div className="space-y-2">
-                      <h2 className="text-3xl font-semibold tracking-tight text-white">
+                      <h2 className="text-[1.7rem] font-semibold tracking-tight text-white sm:text-[1.95rem]">
                         {mode === "fromLead"
                             ? "Formalização de venda"
                             : "Cadastro operacional premium"}
@@ -256,7 +275,7 @@ export function ContratoFormShellV2({
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400">
                       Progresso
                     </div>
                     <div className="mt-1 text-sm font-medium text-slate-100">
@@ -266,7 +285,7 @@ export function ContratoFormShellV2({
                 </div>
 
                 <div className="mt-5 space-y-3">
-                  <Progress value={progress} className="h-2 bg-white/10" />
+                  <Progress value={progress} className="h-1.5 bg-white/10" />
 
                   <ContratoFormStepper
                       steps={steps}
@@ -278,8 +297,8 @@ export function ContratoFormShellV2({
               </div>
 
               {mode === "fromLead" ? (
-                  <Alert className="border-blue-400/20 bg-blue-500/10 text-slate-100">
-                    <AlertTitle className="text-white">Modo de venda nova</AlertTitle>
+                  <Alert className="border-emerald-400/20 bg-emerald-500/10 text-slate-100">
+                    <AlertTitle className="text-white">Fluxo de venda nova</AlertTitle>
                     <AlertDescription className="text-slate-300">
                       A carta nasce como formalização da venda. Estados avançados
                       ficam para evolução posterior.
@@ -307,6 +326,10 @@ export function ContratoFormShellV2({
 
               {step === "financeiro" && (
                   <CotaFinanceiraSection control={form.control} />
+              )}
+
+              {step === "modalidades" && (
+                  <CondicoesOperacionaisSection control={form.control} />
               )}
 
               {step === "fechamento" && (
@@ -374,6 +397,10 @@ export function ContratoFormShellV2({
                             value={watched.prazo ? `${watched.prazo} meses` : "—"}
                         />
                         <ContratoFormSummaryItem
+                            label="Redutor"
+                            value={watched.parcelaReduzida ? formatPercentBR(watched.percentualReducao) : "Sem redutor"}
+                        />
+                        <ContratoFormSummaryItem
                             label="Comissão"
                             value={formatPercentBR(watched.percentualComissao)}
                         />
@@ -437,11 +464,13 @@ export function ContratoFormShellV2({
             }
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs leading-6 text-slate-400">
+            <p className="text-[11px] leading-6 text-slate-400">
               {step === "identificacao" &&
                   "Defina a base da operação com clareza antes de avançar."}
               {step === "financeiro" &&
                   "Complete as condições da carta com foco em conferência rápida."}
+              {step === "modalidades" &&
+                  "Configure as regras operacionais da carta antes do fechamento."}
               {step === "fechamento" &&
                   "Revise os dados finais e conclua o cadastro da carta."}
             </p>
@@ -487,6 +516,7 @@ export function ContratoFormShellV2({
                       type="submit"
                       form={formId}
                       disabled={isPending}
+                      className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
                   >
                     {isPending ? "Salvando..." : "Cadastrar carta"}
                   </Button>

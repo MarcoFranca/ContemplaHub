@@ -21,6 +21,14 @@ export interface ParceiroOption {
     nome: string;
 }
 
+export type LanceFixoOptionFormValue = {
+    id?: string;
+    ordem: number;
+    percentual: number | null;
+    ativo: boolean;
+    observacoes?: string | null;
+};
+
 export type ContratoFormValues = {
     leadId: string;
     dealId?: string | null;
@@ -33,12 +41,21 @@ export type ContratoFormValues = {
     valorCarta: number;
     prazo: number;
     valorParcela?: number | null;
+    valorParcelaSemRedutor?: number | null;
     dataAdesao?: string | null;
     assembleiaDia?: number | null;
     observacoes?: string | null;
 
     numeroContrato?: string | null;
     dataAssinatura?: string | null;
+
+    parcelaReduzida: boolean;
+    percentualReducao?: number | null;
+    autorizacaoGestao: boolean;
+    fgtsPermitido: boolean;
+    embutidoPermitido: boolean;
+    embutidoMaxPercent?: number | null;
+    opcoesLanceFixo: LanceFixoOptionFormValue[];
 
     percentualComissao: number;
     impostoRetidoPct?: number | null;
@@ -48,17 +65,9 @@ export type ContratoFormValues = {
     repassePercentualComissao?: number | null;
     parceiroObservacoes?: string | null;
 
-    contractStatus?:
-        | "pendente_assinatura"
-        | "pendente_pagamento"
-        | "alocado"
-        | "contemplado"
-        | "cancelado"
-        | null;
-
-    cotaSituacao?: "ativa" | "contemplada" | "cancelada" | null;
+    contractStatus?: ContratoStatus | null;
+    cotaSituacao?: CotaSituacao | null;
 };
-
 
 export interface ContratoFormShellV2Props {
     mode: ContratoFormMode;

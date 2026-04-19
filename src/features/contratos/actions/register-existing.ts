@@ -6,6 +6,7 @@ import type { ContratoFormValues } from "../types/contrato-form.types";
 import { getBackendUrl } from "@/lib/backend";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/server";
+import { syncCotaExtraFields } from "./_sync-cota-extra-fields";
 
 export async function registerExistingContratoAction(
     values: ContratoFormValues
@@ -60,19 +61,37 @@ export async function registerExistingContratoAction(
         };
     }
 
+    const normalized = {
+        ...data,
+        contract_id:
+            data?.contract_id ??
+            data?.contrato_id ??
+            data?.id ??
+            null,
+        cota_id:
+            data?.cota_id ??
+            data?.cotaId ??
+            null,
+    };
+
+    await syncCotaExtraFields({
+        cotaId: normalized.cota_id,
+        orgId: profile.orgId,
+        values: {
+            percentualReducao: parsed.data.parcelaReduzida
+                ? parsed.data.percentualReducao ?? null
+                : null,
+            valorParcelaSemRedutor: parsed.data.parcelaReduzida
+                ? parsed.data.valorParcelaSemRedutor ?? null
+                : null,
+            embutidoMaxPercent: parsed.data.embutidoPermitido
+                ? parsed.data.embutidoMaxPercent ?? null
+                : null,
+        },
+    });
+
     return {
         ok: true,
-        data: {
-            ...data,
-            contract_id:
-                data?.contract_id ??
-                data?.contrato_id ??
-                data?.id ??
-                null,
-            cota_id:
-                data?.cota_id ??
-                data?.cotaId ??
-                null,
-        },
+        data: normalized,
     };
 }
