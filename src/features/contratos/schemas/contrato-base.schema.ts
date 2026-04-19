@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const produtoSchema = z.enum(["imobiliario", "auto"]);
+export const taxaAdminAntecipadaFormaPagamentoSchema = z.enum(["avista", "parcelado"]);
 export const contratoStatusSchema = z.enum([
     "pendente_assinatura",
     "pendente_pagamento",
@@ -20,6 +21,14 @@ const optionalNullableNumber = z.preprocess((value) => {
     if (value === "" || value === undefined) return null;
     return value;
 }, z.number().nullable().optional());
+const optionalNullablePercent = z.preprocess((value) => {
+    if (value === "" || value === undefined || value === null) return null;
+    return value;
+}, z.number().min(0).max(100).nullable().optional());
+const optionalNullableInt = z.preprocess((value) => {
+    if (value === "" || value === undefined) return null;
+    return value;
+}, z.number().int().nullable().optional());
 
 const optionalPartnerId = z
     .union([z.string().uuid(), z.literal(""), z.null()])
@@ -48,6 +57,21 @@ export const contratoBaseSchema = z.object({
     valorCarta: z.coerce.number().positive("Informe o valor da carta."),
     prazo: z.coerce.number().int().positive("Informe o prazo."),
     valorParcela: optionalNullableNumber,
+    taxaAdminPercentual: optionalNullablePercent,
+    taxaAdminValorMensal: optionalNullableNumber,
+    fundoReservaPercentual: optionalNullablePercent,
+    fundoReservaValorMensal: optionalNullableNumber,
+    seguroPrestamistaAtivo: z.boolean(),
+    seguroPrestamistaPercentual: optionalNullablePercent,
+    seguroPrestamistaValorMensal: optionalNullableNumber,
+    taxaAdminAntecipadaAtivo: z.boolean(),
+    taxaAdminAntecipadaPercentual: optionalNullablePercent,
+    taxaAdminAntecipadaFormaPagamento: taxaAdminAntecipadaFormaPagamentoSchema
+        .optional()
+        .nullable(),
+    taxaAdminAntecipadaParcelas: optionalNullableInt,
+    taxaAdminAntecipadaValorTotal: optionalNullableNumber,
+    taxaAdminAntecipadaValorParcela: optionalNullableNumber,
     valorParcelaSemRedutor: optionalNullableNumber,
     dataAdesao: optionalNullableString,
     assembleiaDia: z
@@ -59,11 +83,11 @@ export const contratoBaseSchema = z.object({
     dataAssinatura: optionalNullableString,
 
     parcelaReduzida: z.boolean(),
-    percentualReducao: z.coerce.number().min(0).max(100).nullable().optional(),
+    percentualReducao: optionalNullablePercent,
     autorizacaoGestao: z.boolean(),
     fgtsPermitido: z.boolean(),
     embutidoPermitido: z.boolean(),
-    embutidoMaxPercent: z.coerce.number().min(0).max(100).nullable().optional(),
+    embutidoMaxPercent: optionalNullablePercent,
     opcoesLanceFixo: z.array(lanceFixoOptionSchema).max(6),
 
     percentualComissao: z.coerce
@@ -101,6 +125,53 @@ export const contratoBaseSchema = z.object({
             path: ["embutidoMaxPercent"],
             message: "Informe o percentual máximo do embutido.",
         });
+    }
+
+    if (
+        data.seguroPrestamistaAtivo &&
+        data.seguroPrestamistaPercentual == null &&
+        data.seguroPrestamistaValorMensal == null
+    ) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["seguroPrestamistaPercentual"],
+            message: "Informe o percentual e/ou o valor mensal do seguro prestamista.",
+        });
+    }
+
+    if (data.taxaAdminAntecipadaAtivo) {
+        if (!data.taxaAdminAntecipadaFormaPagamento) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["taxaAdminAntecipadaFormaPagamento"],
+                message: "Selecione a forma de pagamento da taxa antecipada.",
+            });
+        }
+
+        if (data.taxaAdminAntecipadaFormaPagamento === "avista") {
+            if (
+                data.taxaAdminAntecipadaParcelas != null &&
+                data.taxaAdminAntecipadaParcelas !== 1
+            ) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["taxaAdminAntecipadaParcelas"],
+                    message: "Para pagamento à vista, a quantidade de parcelas deve ser 1.",
+                });
+            }
+        }
+
+        if (
+            data.taxaAdminAntecipadaFormaPagamento === "parcelado" &&
+            (data.taxaAdminAntecipadaParcelas == null ||
+                data.taxaAdminAntecipadaParcelas <= 1)
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["taxaAdminAntecipadaParcelas"],
+                message: "Para pagamento parcelado, informe mais de 1 parcela.",
+            });
+        }
     }
 
     const ativos = data.opcoesLanceFixo.filter((item) => item.ativo);

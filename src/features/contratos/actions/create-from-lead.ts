@@ -78,6 +78,35 @@ export async function createContratoFromLeadAction(values: ContratoFormValues) {
             embutidoMaxPercent: parsed.data.embutidoPermitido
                 ? parsed.data.embutidoMaxPercent ?? null
                 : null,
+            taxaAdminPercentual: parsed.data.taxaAdminPercentual ?? null,
+            taxaAdminValorMensal: parsed.data.taxaAdminValorMensal ?? null,
+            fundoReservaPercentual: parsed.data.fundoReservaPercentual ?? null,
+            fundoReservaValorMensal: parsed.data.fundoReservaValorMensal ?? null,
+            seguroPrestamistaAtivo: parsed.data.seguroPrestamistaAtivo,
+            seguroPrestamistaPercentual: parsed.data.seguroPrestamistaAtivo
+                ? parsed.data.seguroPrestamistaPercentual ?? null
+                : null,
+            seguroPrestamistaValorMensal: parsed.data.seguroPrestamistaAtivo
+                ? parsed.data.seguroPrestamistaValorMensal ?? null
+                : null,
+            taxaAdminAntecipadaAtivo: parsed.data.taxaAdminAntecipadaAtivo,
+            taxaAdminAntecipadaPercentual: parsed.data.taxaAdminAntecipadaAtivo
+                ? parsed.data.taxaAdminAntecipadaPercentual ?? null
+                : null,
+            taxaAdminAntecipadaFormaPagamento: parsed.data.taxaAdminAntecipadaAtivo
+                ? parsed.data.taxaAdminAntecipadaFormaPagamento ?? null
+                : null,
+            taxaAdminAntecipadaParcelas: parsed.data.taxaAdminAntecipadaAtivo
+                ? parsed.data.taxaAdminAntecipadaFormaPagamento === "avista"
+                    ? 1
+                    : parsed.data.taxaAdminAntecipadaParcelas ?? null
+                : null,
+            taxaAdminAntecipadaValorTotal: parsed.data.taxaAdminAntecipadaAtivo
+                ? parsed.data.taxaAdminAntecipadaValorTotal ?? null
+                : null,
+            taxaAdminAntecipadaValorParcela: parsed.data.taxaAdminAntecipadaAtivo
+                ? parsed.data.taxaAdminAntecipadaValorParcela ?? null
+                : null,
         },
     });
 

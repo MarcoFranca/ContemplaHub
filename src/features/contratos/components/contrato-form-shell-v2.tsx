@@ -6,6 +6,7 @@ import { useForm, type Resolver, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
+  Calculator,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -36,13 +37,19 @@ import { ParceiroSection } from "./sections/parceiro-section";
 import { StatusInicialSection } from "./sections/status-inicial-section";
 import { DocumentoSection } from "./sections/documento-section";
 import { CondicoesOperacionaisSection } from "./sections/condicoes-operacionais-section";
+import { ComponentesFinanceirosSection } from "./sections/componentes-financeiros-section";
 import { useContratoFormSubmit } from "../hooks/use-contrato-form-submit";
 
 import { ContratoFormStepper } from "./form-shell/contrato-form-stepper";
 import { ContratoFormReviewCard } from "./form-shell/contrato-form-review-card";
 import { ContratoFormSummaryItem } from "./form-shell/contrato-form-summary-item";
 
-type StepKey = "identificacao" | "financeiro" | "modalidades" | "fechamento";
+type StepKey =
+  | "identificacao"
+  | "financeiro"
+  | "componentes"
+  | "modalidades"
+  | "fechamento";
 
 function formatMoneyBR(value?: number | null) {
   if (value == null || Number.isNaN(value)) return "—";
@@ -70,23 +77,23 @@ export function ContratoFormShellV2({
   const router = useRouter();
   const [step, setStep] = useState<StepKey>("identificacao");
 
-  const resolver = useMemo<Resolver<ContratoFormValues, any, ContratoFormValues>>(
+  const resolver = useMemo<Resolver<ContratoFormValues, unknown, ContratoFormValues>>(
       () =>
           mode === "fromLead"
               ? (zodResolver(fromLeadSchema) as Resolver<
                   ContratoFormValues,
-                  any,
+                  unknown,
                   ContratoFormValues
               >)
               : (zodResolver(registerExistingSchema) as Resolver<
                   ContratoFormValues,
-                  any,
+                  unknown,
                   ContratoFormValues
               >),
       [mode]
   );
 
-  const form = useForm<ContratoFormValues, any, ContratoFormValues>({
+  const form = useForm<ContratoFormValues, unknown, ContratoFormValues>({
     resolver,
     defaultValues: getContratoDefaultValues({ mode, leadId, dealId }),
   });
@@ -130,6 +137,27 @@ export function ContratoFormShellV2({
         "dataAdesao",
         "assembleiaDia",
         "observacoes",
+      ] as const,
+    },
+    {
+      key: "componentes" as const,
+      title: "Taxas e seguros",
+      description: "Taxa adm., fundo, seguro e antecipação.",
+      icon: Calculator,
+      fields: [
+        "taxaAdminPercentual",
+        "taxaAdminValorMensal",
+        "fundoReservaPercentual",
+        "fundoReservaValorMensal",
+        "seguroPrestamistaAtivo",
+        "seguroPrestamistaPercentual",
+        "seguroPrestamistaValorMensal",
+        "taxaAdminAntecipadaAtivo",
+        "taxaAdminAntecipadaPercentual",
+        "taxaAdminAntecipadaFormaPagamento",
+        "taxaAdminAntecipadaParcelas",
+        "taxaAdminAntecipadaValorTotal",
+        "taxaAdminAntecipadaValorParcela",
       ] as const,
     },
     {
@@ -222,6 +250,13 @@ export function ContratoFormShellV2({
     { label: "Cota", ok: !!watched.numeroCota },
     { label: "Valor da carta", ok: !!watched.valorCarta && watched.valorCarta > 0 },
     { label: "Prazo", ok: !!watched.prazo && watched.prazo > 0 },
+    {
+      label: "Componentes financeiros",
+      ok:
+        !watched.seguroPrestamistaAtivo ||
+        watched.seguroPrestamistaPercentual != null ||
+        watched.seguroPrestamistaValorMensal != null,
+    },
     { label: "Modalidades revisadas", ok: !watched.parcelaReduzida || watched.percentualReducao != null },
   ];
 
@@ -328,6 +363,13 @@ export function ContratoFormShellV2({
                   <CotaFinanceiraSection control={form.control} />
               )}
 
+              {step === "componentes" && (
+                  <ComponentesFinanceirosSection
+                      control={form.control}
+                      setValue={form.setValue}
+                  />
+              )}
+
               {step === "modalidades" && (
                   <CondicoesOperacionaisSection control={form.control} />
               )}
@@ -395,6 +437,32 @@ export function ContratoFormShellV2({
                         <ContratoFormSummaryItem
                             label="Prazo"
                             value={watched.prazo ? `${watched.prazo} meses` : "—"}
+                        />
+                        <ContratoFormSummaryItem
+                            label="Taxa adm. anual"
+                            value={
+                              watched.taxaAdminValorMensal != null
+                                  ? formatMoneyBR(watched.taxaAdminValorMensal)
+                                  : formatPercentBR(watched.taxaAdminPercentual)
+                            }
+                        />
+                        <ContratoFormSummaryItem
+                            label="Fundo reserva"
+                            value={
+                              watched.fundoReservaValorMensal != null
+                                  ? formatMoneyBR(watched.fundoReservaValorMensal)
+                                  : formatPercentBR(watched.fundoReservaPercentual)
+                            }
+                        />
+                        <ContratoFormSummaryItem
+                            label="Seguro"
+                            value={
+                              watched.seguroPrestamistaAtivo
+                                  ? watched.seguroPrestamistaValorMensal != null
+                                      ? formatMoneyBR(watched.seguroPrestamistaValorMensal)
+                                      : formatPercentBR(watched.seguroPrestamistaPercentual)
+                                  : "Inativo"
+                            }
                         />
                         <ContratoFormSummaryItem
                             label="Redutor"
@@ -469,6 +537,8 @@ export function ContratoFormShellV2({
                   "Defina a base da operação com clareza antes de avançar."}
               {step === "financeiro" &&
                   "Complete as condições da carta com foco em conferência rápida."}
+              {step === "componentes" &&
+                  "Configure taxas e seguros com leitura clara, cálculo assistido e consistência operacional."}
               {step === "modalidades" &&
                   "Configure as regras operacionais da carta antes do fechamento."}
               {step === "fechamento" &&

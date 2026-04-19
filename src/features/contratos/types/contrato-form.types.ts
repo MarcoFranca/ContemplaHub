@@ -10,6 +10,7 @@ export type ContratoStatus =
 export type CotaSituacao = "ativa" | "contemplada" | "cancelada";
 
 export type Produto = "imobiliario" | "auto";
+export type TaxaAdminAntecipadaFormaPagamento = "avista" | "parcelado";
 
 export interface AdministradoraOption {
     id: string;
@@ -41,6 +42,19 @@ export type ContratoFormValues = {
     valorCarta: number;
     prazo: number;
     valorParcela?: number | null;
+    taxaAdminPercentual?: number | null;
+    taxaAdminValorMensal?: number | null;
+    fundoReservaPercentual?: number | null;
+    fundoReservaValorMensal?: number | null;
+    seguroPrestamistaAtivo: boolean;
+    seguroPrestamistaPercentual?: number | null;
+    seguroPrestamistaValorMensal?: number | null;
+    taxaAdminAntecipadaAtivo: boolean;
+    taxaAdminAntecipadaPercentual?: number | null;
+    taxaAdminAntecipadaFormaPagamento?: TaxaAdminAntecipadaFormaPagamento | null;
+    taxaAdminAntecipadaParcelas?: number | null;
+    taxaAdminAntecipadaValorTotal?: number | null;
+    taxaAdminAntecipadaValorParcela?: number | null;
     valorParcelaSemRedutor?: number | null;
     dataAdesao?: string | null;
     assembleiaDia?: number | null;

@@ -1,4 +1,11 @@
-import { BadgePercent, HandCoins, Shield, WalletCards } from "lucide-react";
+import {
+  BadgePercent,
+  Calculator,
+  HandCoins,
+  Shield,
+  ShieldCheck,
+  WalletCards,
+} from "lucide-react";
 import type { DeepPartial } from "react-hook-form";
 
 import { ContratoFormSummaryItem } from "./contrato-form-summary-item";
@@ -92,6 +99,16 @@ export function ContratoFormReviewCard({
             label={values.autorizacaoGestao ? "Gestão autorizada" : "Sem gestão autorizada"}
             active={Boolean(values.autorizacaoGestao)}
           />
+          <CapabilityPill
+            icon={<ShieldCheck className="h-3.5 w-3.5" />}
+            label={values.seguroPrestamistaAtivo ? "Seguro prestamista ativo" : "Sem seguro prestamista"}
+            active={Boolean(values.seguroPrestamistaAtivo)}
+          />
+          <CapabilityPill
+            icon={<Calculator className="h-3.5 w-3.5" />}
+            label={values.taxaAdminAntecipadaAtivo ? "Taxa antecipada ativa" : "Sem taxa antecipada"}
+            active={Boolean(values.taxaAdminAntecipadaAtivo)}
+          />
         </div>
       </div>
 
@@ -102,6 +119,42 @@ export function ContratoFormReviewCard({
         <ContratoFormSummaryItem label="Contrato" value={values.numeroContrato || "—"} />
         <ContratoFormSummaryItem label="Valor da carta" value={formatMoneyBR(values.valorCarta)} />
         <ContratoFormSummaryItem label="Prazo" value={values.prazo ? `${values.prazo} meses` : "—"} />
+        <ContratoFormSummaryItem
+          label="Taxa adm. anual"
+          value={
+            values.taxaAdminValorMensal != null
+              ? formatMoneyBR(values.taxaAdminValorMensal)
+              : formatPercentBR(values.taxaAdminPercentual)
+          }
+        />
+        <ContratoFormSummaryItem
+          label="Fundo de reserva"
+          value={
+            values.fundoReservaValorMensal != null
+              ? formatMoneyBR(values.fundoReservaValorMensal)
+              : formatPercentBR(values.fundoReservaPercentual)
+          }
+        />
+        <ContratoFormSummaryItem
+          label="Seguro prestamista"
+          value={
+            values.seguroPrestamistaAtivo
+              ? values.seguroPrestamistaValorMensal != null
+                ? formatMoneyBR(values.seguroPrestamistaValorMensal)
+                : formatPercentBR(values.seguroPrestamistaPercentual)
+              : "Inativo"
+          }
+        />
+        <ContratoFormSummaryItem
+          label="Taxa antecipada"
+          value={
+            values.taxaAdminAntecipadaAtivo
+              ? values.taxaAdminAntecipadaFormaPagamento === "parcelado"
+                ? `${values.taxaAdminAntecipadaParcelas ?? "—"}x de ${formatMoneyBR(values.taxaAdminAntecipadaValorParcela)}`
+                : formatMoneyBR(values.taxaAdminAntecipadaValorTotal)
+              : "Não possui"
+          }
+        />
         <ContratoFormSummaryItem label="Parcela sem redutor" value={values.parcelaReduzida ? formatMoneyBR(values.valorParcelaSemRedutor) : "—"} />
         <ContratoFormSummaryItem label="Lance fixo" value={fixosAtivos.length ? `${fixosAtivos.length} modalidade(s)` : "Não possui"} />
         <ContratoFormSummaryItem label="Comissão da carta" value={formatPercentBR(values.percentualComissao)} />

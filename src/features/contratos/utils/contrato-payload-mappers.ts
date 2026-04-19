@@ -41,6 +41,39 @@ export function mapContratoFormToApi(
         valor_carta: numberToBackendMoneyString(values.valorCarta),
         prazo: values.prazo,
         valor_parcela: numberToBackendMoneyString(values.valorParcela),
+        taxa_admin_percentual: numberToBackendPercentString(values.taxaAdminPercentual),
+        taxa_admin_valor_mensal: numberToBackendMoneyString(values.taxaAdminValorMensal),
+        fundo_reserva_percentual: numberToBackendPercentString(
+            values.fundoReservaPercentual
+        ),
+        fundo_reserva_valor_mensal: numberToBackendMoneyString(
+            values.fundoReservaValorMensal
+        ),
+        seguro_prestamista_ativo: values.seguroPrestamistaAtivo,
+        seguro_prestamista_percentual: values.seguroPrestamistaAtivo
+            ? numberToBackendPercentString(values.seguroPrestamistaPercentual)
+            : null,
+        seguro_prestamista_valor_mensal: values.seguroPrestamistaAtivo
+            ? numberToBackendMoneyString(values.seguroPrestamistaValorMensal)
+            : null,
+        taxa_admin_antecipada_ativo: values.taxaAdminAntecipadaAtivo,
+        taxa_admin_antecipada_percentual: values.taxaAdminAntecipadaAtivo
+            ? numberToBackendPercentString(values.taxaAdminAntecipadaPercentual)
+            : null,
+        taxa_admin_antecipada_forma_pagamento: values.taxaAdminAntecipadaAtivo
+            ? values.taxaAdminAntecipadaFormaPagamento ?? null
+            : null,
+        taxa_admin_antecipada_parcelas: values.taxaAdminAntecipadaAtivo
+            ? values.taxaAdminAntecipadaFormaPagamento === "avista"
+                ? 1
+                : values.taxaAdminAntecipadaParcelas ?? null
+            : null,
+        taxa_admin_antecipada_valor_total: values.taxaAdminAntecipadaAtivo
+            ? numberToBackendMoneyString(values.taxaAdminAntecipadaValorTotal)
+            : null,
+        taxa_admin_antecipada_valor_parcela: values.taxaAdminAntecipadaAtivo
+            ? numberToBackendMoneyString(values.taxaAdminAntecipadaValorParcela)
+            : null,
         data_adesao: emptyToNull(values.dataAdesao),
         assembleia_dia: values.assembleiaDia ?? null,
         observacoes: emptyToNull(values.observacoes),

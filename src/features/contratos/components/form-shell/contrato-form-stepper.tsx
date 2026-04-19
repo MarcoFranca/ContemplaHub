@@ -1,11 +1,11 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StepItem {
     key: string;
     title: string;
     description: string;
-    icon: any;
+    icon: LucideIcon;
 }
 
 interface Props {
@@ -22,7 +22,16 @@ export function ContratoFormStepper({
                                         onChange,
                                     }: Props) {
     return (
-        <div className={cn("grid gap-3", steps.length >= 4 ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-3")}>
+        <div
+            className={cn(
+                "grid gap-3",
+                steps.length >= 5
+                    ? "md:grid-cols-2 xl:grid-cols-5"
+                    : steps.length >= 4
+                      ? "md:grid-cols-2 xl:grid-cols-4"
+                      : "md:grid-cols-3"
+            )}
+        >
             {steps.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = item.key === currentStep;
