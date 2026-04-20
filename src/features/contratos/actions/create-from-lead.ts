@@ -6,6 +6,7 @@ import type { ContratoFormValues } from "../types/contrato-form.types";
 import { getBackendUrl } from "@/lib/backend";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/server";
+import { formatBackendDetail } from "./_format-backend-detail";
 import { syncCotaExtraFields } from "./_sync-cota-extra-fields";
 
 export async function createContratoFromLeadAction(values: ContratoFormValues) {
@@ -48,7 +49,10 @@ export async function createContratoFromLeadAction(values: ContratoFormValues) {
     if (!response.ok) {
         return {
             ok: false,
-            error: data?.detail ?? "Erro ao criar contrato a partir do lead.",
+            error: formatBackendDetail(
+                data?.detail,
+                "Erro ao criar contrato a partir do lead."
+            ),
         };
     }
 

@@ -6,6 +6,7 @@ import type { ContratoFormValues } from "../types/contrato-form.types";
 import { getBackendUrl } from "@/lib/backend";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/server";
+import { formatBackendDetail } from "./_format-backend-detail";
 import { syncCotaExtraFields } from "./_sync-cota-extra-fields";
 
 export async function registerExistingContratoAction(
@@ -52,12 +53,10 @@ export async function registerExistingContratoAction(
     if (!response.ok) {
         return {
             ok: false,
-            error:
-                data?.detail
-                    ? typeof data.detail === "string"
-                        ? data.detail
-                        : JSON.stringify(data.detail)
-                    : "Erro ao registrar contrato já existente.",
+            error: formatBackendDetail(
+                data?.detail,
+                "Erro ao registrar contrato já existente."
+            ),
         };
     }
 

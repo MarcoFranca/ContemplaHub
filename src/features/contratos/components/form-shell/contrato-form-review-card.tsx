@@ -11,6 +11,7 @@ import type { DeepPartial } from "react-hook-form";
 
 import { ContratoFormSummaryItem } from "./contrato-form-summary-item";
 import type { ContratoFormMode, ContratoFormValues } from "../../types/contrato-form.types";
+import { calculateCartaFinancialSnapshot } from "../../utils/financial-calculations";
 
 function formatMoneyBR(value?: number | null) {
   if (value == null || Number.isNaN(value)) return "—";
@@ -67,6 +68,21 @@ export function ContratoFormReviewCard({
   const fixosAtivos = (values.opcoesLanceFixo ?? []).filter(
     (item) => item?.ativo && item.percentual != null,
   );
+  const financialSnapshot = calculateCartaFinancialSnapshot({
+    valorCarta: values.valorCarta ?? null,
+    prazo: values.prazo ?? null,
+    taxaAdminPercentual: values.taxaAdminPercentual ?? null,
+    taxaAdminValorMensal: values.taxaAdminValorMensal ?? null,
+    fundoReservaPercentual: values.fundoReservaPercentual ?? null,
+    fundoReservaValorMensal: values.fundoReservaValorMensal ?? null,
+    seguroPrestamistaAtivo: Boolean(values.seguroPrestamistaAtivo),
+    seguroPrestamistaPercentual: values.seguroPrestamistaPercentual ?? null,
+    seguroPrestamistaValorMensal: values.seguroPrestamistaValorMensal ?? null,
+    taxaAdminAntecipadaValorTotal: values.taxaAdminAntecipadaValorTotal ?? null,
+    parcelaReduzida: Boolean(values.parcelaReduzida),
+    percentualReducao: values.percentualReducao ?? null,
+    valorParcelaSemRedutor: values.valorParcelaSemRedutor ?? null,
+  });
 
   return (
     <div className={className}>
@@ -141,12 +157,16 @@ export function ContratoFormReviewCard({
           value={values.dataAdesao || "—"}
         />
         <ContratoFormSummaryItem
-          label="Taxa adm. anual"
+          label="Taxa administrativa"
           value={
             values.taxaAdminValorMensal != null
               ? formatMoneyBR(values.taxaAdminValorMensal)
               : formatPercentBR(values.taxaAdminPercentual)
           }
+        />
+        <ContratoFormSummaryItem
+          label="Taxa administrativa total"
+          value={formatMoneyBR(financialSnapshot.taxaAdministrativaTotal)}
         />
         <ContratoFormSummaryItem
           label="Fundo de reserva"
@@ -155,6 +175,30 @@ export function ContratoFormReviewCard({
               ? formatMoneyBR(values.fundoReservaValorMensal)
               : formatPercentBR(values.fundoReservaPercentual)
           }
+        />
+        <ContratoFormSummaryItem
+          label="Fundo de reserva total"
+          value={formatMoneyBR(financialSnapshot.fundoReservaTotal)}
+        />
+        <ContratoFormSummaryItem
+          label="Base total da carta"
+          value={formatMoneyBR(financialSnapshot.baseTotalCarta)}
+        />
+        <ContratoFormSummaryItem
+          label="Parcela cheia sem redutor"
+          value={formatMoneyBR(financialSnapshot.parcelaCheiaSemRedutor)}
+        />
+        <ContratoFormSummaryItem
+          label="Parcela com redutor (estimada)"
+          value={
+            values.parcelaReduzida
+              ? formatMoneyBR(financialSnapshot.parcelaComRedutorEstimada)
+              : "—"
+          }
+        />
+        <ContratoFormSummaryItem
+          label="Custo total estimado"
+          value={formatMoneyBR(financialSnapshot.custoTotalEstimado)}
         />
         <ContratoFormSummaryItem
           label="Seguro prestamista"
@@ -167,7 +211,7 @@ export function ContratoFormReviewCard({
           }
         />
         <ContratoFormSummaryItem
-          label="Taxa antecipada"
+          label="Taxa adm. antecipada"
           value={
             values.taxaAdminAntecipadaAtivo
               ? values.taxaAdminAntecipadaFormaPagamento === "parcelado"
@@ -176,7 +220,16 @@ export function ContratoFormReviewCard({
               : "Não possui"
           }
         />
-        <ContratoFormSummaryItem label="Parcela sem redutor" value={values.parcelaReduzida ? formatMoneyBR(values.valorParcelaSemRedutor) : "—"} />
+        <ContratoFormSummaryItem
+          label="Base usada no redutor"
+          value={
+            values.parcelaReduzida
+              ? financialSnapshot.usaParcelaCheiaInformada
+                ? "Parcela cheia informada manualmente"
+                : "Parcela cheia calculada pela carta"
+              : "—"
+          }
+        />
         <ContratoFormSummaryItem label="Lance fixo" value={fixosAtivos.length ? `${fixosAtivos.length} modalidade(s)` : "Não possui"} />
         <ContratoFormSummaryItem label="Comissão da carta" value={formatPercentBR(values.percentualComissao)} />
         <ContratoFormSummaryItem label="Parceiro" value={parceiroNome} />
@@ -210,6 +263,11 @@ export function ContratoFormReviewCard({
           <span className="text-slate-200">{mode === "fromLead" ? "fromLead" : "registerExisting"}</span>, o
           frontend mantém separadas as camadas de contrato e cota para não misturar formalização com operação.
         </p>
+        {(financialSnapshot.parcelaReduzidaPodeVariar || financialSnapshot.prestamistaPodeVariar) ? (
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Valores com redutor e prestamista devem ser lidos como estimados e sujeitos a variação quando a regra exata da administradora ainda não estiver modelada no sistema.
+          </p>
+        ) : null}
       </div>
     </div>
   );

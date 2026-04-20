@@ -228,6 +228,38 @@ export const fromLeadSchema = contratoBaseSchema.superRefine((data, ctx) => {
 
 export const registerExistingSchema = contratoBaseSchema.superRefine(
     (data, ctx) => {
+        if (data.valorParcela == null) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["valorParcela"],
+                message: "Informe o valor da parcela.",
+            });
+        }
+
+        if (!data.dataAdesao) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["dataAdesao"],
+                message: "Informe a data de adesão.",
+            });
+        }
+
+        if (!data.numeroContrato) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["numeroContrato"],
+                message: "Informe o número do contrato.",
+            });
+        }
+
+        if (!data.dataAssinatura) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["dataAssinatura"],
+                message: "Informe a data de assinatura.",
+            });
+        }
+
         if (!data.contractStatus) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,

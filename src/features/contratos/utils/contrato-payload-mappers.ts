@@ -31,7 +31,6 @@ export function mapContratoFormToApi(
 
     const base = {
         lead_id: values.leadId,
-        deal_id: values.dealId ?? null,
 
         administradora_id: values.administradoraId,
         grupo_codigo: values.grupoCodigo,
@@ -40,9 +39,9 @@ export function mapContratoFormToApi(
 
         valor_carta: numberToBackendMoneyString(values.valorCarta),
         prazo: values.prazo,
-        valor_parcela: numberToBackendMoneyString(values.valorParcela),
-        taxa_admin_percentual: numberToBackendPercentString(values.taxaAdminPercentual),
-        taxa_admin_valor_mensal: numberToBackendMoneyString(values.taxaAdminValorMensal),
+        ...(values.valorParcela != null
+            ? { valor_parcela: numberToBackendMoneyString(values.valorParcela) }
+            : {}),
         fundo_reserva_percentual: numberToBackendPercentString(
             values.fundoReservaPercentual
         ),
@@ -75,8 +74,6 @@ export function mapContratoFormToApi(
             ? numberToBackendMoneyString(values.taxaAdminAntecipadaValorParcela)
             : null,
         data_adesao: emptyToNull(values.dataAdesao),
-        assembleia_dia: values.assembleiaDia ?? null,
-        observacoes: emptyToNull(values.observacoes),
 
         numero_contrato: emptyToNull(values.numeroContrato),
         data_assinatura: emptyToNull(values.dataAssinatura),
@@ -100,15 +97,6 @@ export function mapContratoFormToApi(
             values.impostoRetidoPct ?? 10
         ),
         comissao_observacoes: emptyToNull(values.comissaoObservacoes),
-
-        parceiro_id: hasPartner ? values.parceiroId : null,
-        repasse_percentual_comissao:
-            hasPartner && values.repassePercentualComissao != null
-                ? numberToBackendPercentString(values.repassePercentualComissao)
-                : null,
-        parceiro_observacoes: hasPartner
-            ? emptyToNull(values.parceiroObservacoes)
-            : null,
     };
 
     if (mode === "fromLead") {
@@ -117,6 +105,12 @@ export function mapContratoFormToApi(
 
     return {
         ...base,
+        observacoes: emptyToNull(values.observacoes),
+        parceiro_id: hasPartner ? values.parceiroId : null,
+        repasse_percentual_comissao:
+            hasPartner && values.repassePercentualComissao != null
+                ? numberToBackendPercentString(values.repassePercentualComissao)
+                : null,
         contract_status: values.contractStatus,
         cota_situacao: values.cotaSituacao,
     };

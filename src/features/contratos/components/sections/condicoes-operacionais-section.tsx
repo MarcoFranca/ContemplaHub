@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Controller, type Control, useWatch } from "react-hook-form";
+import {
+  Controller,
+  type Control,
+  type UseFormSetValue,
+  useWatch,
+} from "react-hook-form";
 import {
   BadgePercent,
   CheckCircle2,
@@ -22,10 +27,12 @@ import type {
   ContratoFormValues,
   LanceFixoOptionFormValue,
 } from "../../types/contrato-form.types";
+import { calculateCartaFinancialSnapshot } from "../../utils/financial-calculations";
 import { PremiumFormSection } from "../section-base/premium-form-section";
 
 interface Props {
   control: Control<ContratoFormValues>;
+  setValue: UseFormSetValue<ContratoFormValues>;
 }
 
 function parseNumberInput(value: string) {
@@ -215,8 +222,27 @@ function LanceFixoCard({
   );
 }
 
-export function CondicoesOperacionaisSection({ control }: Props) {
+export function CondicoesOperacionaisSection({ control, setValue }: Props) {
   const opcoes = React.useMemo<LanceFixoOptionFormValue[]>(() => [], []);
+  const valorCarta = useWatch({ control, name: "valorCarta" });
+  const prazo = useWatch({ control, name: "prazo" });
+  const taxaAdminPercentual = useWatch({ control, name: "taxaAdminPercentual" });
+  const taxaAdminValorMensal = useWatch({ control, name: "taxaAdminValorMensal" });
+  const fundoReservaPercentual = useWatch({ control, name: "fundoReservaPercentual" });
+  const fundoReservaValorMensal = useWatch({ control, name: "fundoReservaValorMensal" });
+  const seguroPrestamistaAtivo = useWatch({ control, name: "seguroPrestamistaAtivo" });
+  const seguroPrestamistaPercentual = useWatch({
+    control,
+    name: "seguroPrestamistaPercentual",
+  });
+  const seguroPrestamistaValorMensal = useWatch({
+    control,
+    name: "seguroPrestamistaValorMensal",
+  });
+  const taxaAdminAntecipadaValorTotal = useWatch({
+    control,
+    name: "taxaAdminAntecipadaValorTotal",
+  });
   const parcelaReduzida = useWatch({ control, name: "parcelaReduzida" });
   const percentualReducao = useWatch({ control, name: "percentualReducao" });
   const valorParcelaSemRedutor = useWatch({ control, name: "valorParcelaSemRedutor" });
@@ -227,6 +253,21 @@ export function CondicoesOperacionaisSection({ control }: Props) {
   const opcoesLanceFixo = useWatch({ control, name: "opcoesLanceFixo" }) ?? [];
 
   const modalidadesAtivas = opcoesLanceFixo.filter((item) => item.ativo);
+  const financialSnapshot = calculateCartaFinancialSnapshot({
+    valorCarta,
+    prazo,
+    taxaAdminPercentual,
+    taxaAdminValorMensal,
+    fundoReservaPercentual,
+    fundoReservaValorMensal,
+    seguroPrestamistaAtivo,
+    seguroPrestamistaPercentual,
+    seguroPrestamistaValorMensal,
+    taxaAdminAntecipadaValorTotal,
+    parcelaReduzida,
+    percentualReducao,
+    valorParcelaSemRedutor,
+  });
 
   return (
     <PremiumFormSection
@@ -254,8 +295,18 @@ export function CondicoesOperacionaisSection({ control }: Props) {
             <CapabilityCard
               title="Redutor"
               value={parcelaReduzida ? formatPercent(percentualReducao) : "Sem redutor"}
-              helper={parcelaReduzida ? `Parcela sem redutor: ${formatMoney(valorParcelaSemRedutor)}` : "Sem regra temporária de redução até contemplar."}
+              helper={
+                parcelaReduzida
+                  ? `Parcela com redutor (estimada, pode variar): ${formatMoney(financialSnapshot.parcelaComRedutorEstimada)}`
+                  : "Sem regra temporária de redução até contemplar."
+              }
               tone={parcelaReduzida ? "success" : "default"}
+            />
+            <CapabilityCard
+              title="Base total da carta"
+              value={formatMoney(financialSnapshot.baseTotalCarta)}
+              helper="Leitura-base do saldo operacional da carta sem embutir o prestamista nem prometer regra específica da administradora."
+              tone={financialSnapshot.baseTotalCarta != null ? "success" : "default"}
             />
             <CapabilityCard
               title="Embutido"
@@ -268,6 +319,16 @@ export function CondicoesOperacionaisSection({ control }: Props) {
               value={fgtsPermitido ? "Permitido" : "Não utiliza"}
               helper={fgtsPermitido ? "FGTS disponível como apoio operacional da estratégia." : "Estratégia sem apoio de FGTS nesta carta."}
               tone={fgtsPermitido ? "success" : "default"}
+            />
+            <CapabilityCard
+              title="Parcela cheia sem redutor"
+              value={formatMoney(financialSnapshot.parcelaCheiaSemRedutor)}
+              helper={
+                parcelaReduzida
+                  ? `Base usada na estimativa do redutor: ${financialSnapshot.usaParcelaCheiaInformada ? "valor informado manualmente" : "cálculo automático da carta"}`
+                  : "Consulta comercial útil antes de entrar nas regras específicas da administradora."
+              }
+              tone={financialSnapshot.parcelaCheiaSemRedutor != null ? "success" : "default"}
             />
             <CapabilityCard
               title="Lance fixo"
@@ -285,7 +346,7 @@ export function CondicoesOperacionaisSection({ control }: Props) {
           </div>
           <div className="mt-3 space-y-3 text-sm text-slate-200">
             <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5">
-              Se houver redutor, registre o percentual e o valor sem redutor para evitar dúvidas no pós-venda.
+              Se houver redutor, trate a parcela reduzida como estimativa. Seguro, arredondamento e regra da administradora podem alterar o valor final.
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5">
               Embutido e FGTS mudam a estratégia de lance, então precisam aparecer de forma explícita.
@@ -297,6 +358,9 @@ export function CondicoesOperacionaisSection({ control }: Props) {
               {autorizacaoGestao
                 ? "Gestão autorizada já marcada para acompanhamento operacional da carta."
                 : "Marque gestão autorizada quando a operação incluir acompanhamento ativo da equipe."}
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5">
+              Use a parcela cheia calculada como base comercial e só informe manualmente outro valor quando a administradora já tiver regra fechada para a carta.
             </div>
           </div>
         </div>
@@ -388,12 +452,53 @@ export function CondicoesOperacionaisSection({ control }: Props) {
           control={control}
           render={({ field, fieldState }) => (
             <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
-              <Label className="text-slate-200">Valor da parcela sem redutor</Label>
-              <p className="mt-1 text-xs leading-5 text-slate-400">
-                Mostra o valor cheio da parcela após o período reduzido.
-              </p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Label className="text-slate-200">Parcela cheia sem redutor (R$)</Label>
+                  <p className="mt-1 text-xs leading-5 text-slate-400">
+                    Use o valor confirmado pela administradora. Se ele ainda não estiver fechado, use a base calculada como referência comercial.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!parcelaReduzida || financialSnapshot.parcelaCheiaSemRedutor == null}
+                  onClick={() =>
+                    setValue(
+                      "valorParcelaSemRedutor",
+                      financialSnapshot.parcelaCheiaSemRedutor,
+                      { shouldDirty: true },
+                    )
+                  }
+                  className="border-emerald-400/20 text-emerald-100 hover:bg-emerald-400/10"
+                >
+                  Usar valor-base
+                </Button>
+              </div>
               <div className={["mt-3", !parcelaReduzida ? "pointer-events-none opacity-50" : ""].join(" ")}>
                 <MoneyField value={field.value} onChange={field.onChange} />
+              </div>
+              <div className="mt-3 space-y-2 rounded-2xl border border-emerald-400/12 bg-emerald-400/[0.05] px-3 py-3 text-xs leading-5 text-slate-300">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-slate-300">Base total da carta</span>
+                  <span className="font-medium text-white">{formatMoney(financialSnapshot.baseTotalCarta)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-slate-300">Parcela cheia calculada</span>
+                  <span className="font-medium text-white">{formatMoney(financialSnapshot.parcelaCheiaSemRedutor)}</span>
+                </div>
+                {parcelaReduzida ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-300">Parcela com redutor (estimada, pode variar)</span>
+                    <span className="font-medium text-emerald-100">{formatMoney(financialSnapshot.parcelaComRedutorEstimada)}</span>
+                  </div>
+                ) : null}
+                {seguroPrestamistaAtivo ? (
+                  <p className="text-[11px] text-slate-400">
+                    Valor estimado, sujeito a variação: o seguro prestamista pode alterar a parcela efetiva conforme a regra da administradora.
+                  </p>
+                ) : null}
               </div>
               {fieldState.error ? <p className="mt-2 text-sm text-red-400">{fieldState.error.message}</p> : null}
             </div>

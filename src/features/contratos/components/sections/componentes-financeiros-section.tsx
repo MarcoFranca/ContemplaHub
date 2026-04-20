@@ -31,6 +31,7 @@ import {
 
 import { MoneyField } from "../../fields/money-field";
 import type { ContratoFormValues } from "../../types/contrato-form.types";
+import { calculateCartaFinancialSnapshot } from "../../utils/financial-calculations";
 import { PremiumFormSection } from "../section-base/premium-form-section";
 
 interface Props {
@@ -204,6 +205,7 @@ function PercentInputCard({
 
 export function ComponentesFinanceirosSection({ control, setValue }: Props) {
   const valorCarta = useWatch({ control, name: "valorCarta" });
+  const prazo = useWatch({ control, name: "prazo" });
   const taxaAdminPercentual = useWatch({ control, name: "taxaAdminPercentual" });
   const taxaAdminValorMensal = useWatch({ control, name: "taxaAdminValorMensal" });
   const fundoReservaPercentual = useWatch({ control, name: "fundoReservaPercentual" });
@@ -332,6 +334,22 @@ export function ComponentesFinanceirosSection({ control, setValue }: Props) {
         )}`
       : formatMoney(taxaAdminAntecipadaValorTotal);
 
+  const financialSnapshot = calculateCartaFinancialSnapshot({
+    valorCarta,
+    prazo,
+    taxaAdminPercentual,
+    taxaAdminValorMensal,
+    fundoReservaPercentual,
+    fundoReservaValorMensal,
+    seguroPrestamistaAtivo,
+    seguroPrestamistaPercentual,
+    seguroPrestamistaValorMensal,
+    taxaAdminAntecipadaValorTotal,
+    parcelaReduzida: false,
+    percentualReducao: null,
+    valorParcelaSemRedutor: null,
+  });
+
   return (
     <PremiumFormSection
       title="Taxas e seguros"
@@ -356,10 +374,16 @@ export function ComponentesFinanceirosSection({ control, setValue }: Props) {
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <MetricCard
-              title="Taxa adm. anual"
+              title="Taxa administrativa"
               value={taxaAnualResumo}
-              helper="Use o percentual anual da administradora ou, se preferir, mantenha o valor mensal para leitura operacional."
+              helper="Mostre a taxa principal da operação em percentual total ou, se a leitura vier distribuída, em valor mensal."
               tone={taxaAdminPercentual != null || taxaAdminValorMensal != null ? "success" : "default"}
+            />
+            <MetricCard
+              title="Base total da carta"
+              value={formatMoney(financialSnapshot.baseTotalCarta)}
+              helper="Base financeira da carta: valor do crédito + taxa administrativa total + fundo de reserva."
+              tone={financialSnapshot.baseTotalCarta != null ? "success" : "default"}
             />
             <MetricCard
               title="Fundo de reserva"
@@ -368,13 +392,29 @@ export function ComponentesFinanceirosSection({ control, setValue }: Props) {
               tone={fundoReservaPercentual != null || fundoReservaValorMensal != null ? "success" : "default"}
             />
             <MetricCard
+              title="Parcela cheia sem redutor"
+              value={formatMoney(financialSnapshot.parcelaCheiaSemRedutor)}
+              helper="Valor-base calculado pela divisão da base total da carta pelo prazo informado."
+              tone={financialSnapshot.parcelaCheiaSemRedutor != null ? "success" : "default"}
+            />
+            <MetricCard
+              title="Custo total estimado"
+              value={formatMoney(financialSnapshot.custoTotalEstimado)}
+              helper="Leitura aproximada com base no valor da carta e nos componentes financeiros preenchidos."
+              tone={financialSnapshot.custoTotalEstimado != null ? "success" : "default"}
+            />
+            <MetricCard
               title="Seguro prestamista"
               value={seguroResumo}
-              helper={seguroPrestamistaAtivo ? "Seguro ativo na configuração operacional da cota." : "Sem cobrança adicional de seguro prestamista."}
+              helper={
+                seguroPrestamistaAtivo
+                  ? "Quando a regra exata da administradora não estiver modelada, trate esse valor como leitura informada/estimada."
+                  : "Sem cobrança adicional de seguro prestamista."
+              }
               tone={seguroPrestamistaAtivo ? "success" : "default"}
             />
             <MetricCard
-              title="Taxa antecipada"
+              title="Taxa adm. antecipada"
               value={taxaAntecipadaResumo}
               helper={taxaAdminAntecipadaAtivo ? "Leitura pronta para explicar condição à vista ou parcelada." : "Sem taxa administrativa antecipada configurada."}
               tone={taxaAdminAntecipadaAtivo ? "success" : "default"}
@@ -389,7 +429,10 @@ export function ComponentesFinanceirosSection({ control, setValue }: Props) {
           </div>
           <div className="mt-3 space-y-3 text-sm text-slate-200">
             <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5">
-              Use percentual quando a administradora trabalha com regra contratual; use valor mensal quando a cobrança vier fechada.
+              Use percentual para a taxa administrativa total da operação; use valor mensal quando a leitura precisar refletir a distribuição mensal da cobrança.
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5">
+              A base total da carta e a parcela cheia sem redutor ajudam a explicar a operação sem prometer o valor final reduzido.
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5">
               Seguro e taxa antecipada só aparecem em detalhe quando ativados, preservando leitura limpa para o time.
@@ -407,8 +450,8 @@ export function ComponentesFinanceirosSection({ control, setValue }: Props) {
           control={control}
           render={({ field, fieldState }) => (
             <PercentInputCard
-              label="Taxa administrativa anual (%)"
-              helper="Preencha com a taxa anual contratada pela administradora."
+              label="Taxa administrativa total (%)"
+              helper="Preencha com a taxa principal da operação sobre o valor da carta."
               value={field.value}
               onChange={field.onChange}
               error={fieldState.error?.message}
@@ -421,9 +464,9 @@ export function ComponentesFinanceirosSection({ control, setValue }: Props) {
           control={control}
           render={({ field, fieldState }) => (
             <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
-              <Label className="text-slate-200">Valor mensal da taxa adm. (R$)</Label>
+              <Label className="text-slate-200">Distribuição mensal da taxa adm. (R$)</Label>
               <p className="mt-1 text-xs leading-5 text-slate-400">
-                Use quando você quiser registrar a leitura mensal efetiva dessa taxa na operação.
+                Use quando quiser registrar como a taxa administrativa aparece mensalmente na operação.
               </p>
               <div className="mt-3">
                 <MoneyField value={field.value} onChange={field.onChange} />

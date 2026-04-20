@@ -30,6 +30,7 @@ import type {
   ContratoFormValues,
 } from "../types/contrato-form.types";
 import { getContratoDefaultValues } from "../utils/contrato-default-values";
+import { calculateCartaFinancialSnapshot } from "../utils/financial-calculations";
 import { ContratoFormReviewCard } from "./form-shell/contrato-form-review-card";
 import { ContratoFormSummaryItem } from "./form-shell/contrato-form-summary-item";
 import { ContratoFormStepper } from "./form-shell/contrato-form-stepper";
@@ -107,6 +108,8 @@ export function ContratoFormShellV2({
 
   const parceiroNome =
     parceiros.find((p) => p.id === watched.parceiroId)?.nome ?? "Sem parceiro";
+
+  const financialSnapshot = calculateCartaFinancialSnapshot(watched);
 
   const baseSteps = [
     {
@@ -378,7 +381,10 @@ export function ContratoFormShellV2({
                   control={form.control}
                   setValue={form.setValue}
                 />
-                <CondicoesOperacionaisSection control={form.control} />
+                <CondicoesOperacionaisSection
+                  control={form.control}
+                  setValue={form.setValue}
+                />
               </div>
             )}
 
@@ -465,7 +471,7 @@ export function ContratoFormShellV2({
                       value={watched.assembleiaDia ? `Dia ${watched.assembleiaDia}` : "—"}
                     />
                     <ContratoFormSummaryItem
-                      label="Taxa adm. anual"
+                      label="Taxa administrativa"
                       value={
                         watched.taxaAdminValorMensal != null
                           ? formatMoneyBR(watched.taxaAdminValorMensal)
@@ -473,7 +479,11 @@ export function ContratoFormShellV2({
                       }
                     />
                     <ContratoFormSummaryItem
-                      label="Fundo reserva"
+                      label="Taxa administrativa total"
+                      value={formatMoneyBR(financialSnapshot.taxaAdministrativaTotal)}
+                    />
+                    <ContratoFormSummaryItem
+                      label="Fundo de reserva"
                       value={
                         watched.fundoReservaValorMensal != null
                           ? formatMoneyBR(watched.fundoReservaValorMensal)
@@ -481,7 +491,31 @@ export function ContratoFormShellV2({
                       }
                     />
                     <ContratoFormSummaryItem
-                      label="Seguro"
+                      label="Fundo de reserva total"
+                      value={formatMoneyBR(financialSnapshot.fundoReservaTotal)}
+                    />
+                    <ContratoFormSummaryItem
+                      label="Base total da carta"
+                      value={formatMoneyBR(financialSnapshot.baseTotalCarta)}
+                    />
+                    <ContratoFormSummaryItem
+                      label="Parcela cheia sem redutor"
+                      value={formatMoneyBR(financialSnapshot.parcelaCheiaSemRedutor)}
+                    />
+                    <ContratoFormSummaryItem
+                      label="Parcela com redutor (estimada)"
+                      value={
+                        watched.parcelaReduzida
+                          ? formatMoneyBR(financialSnapshot.parcelaComRedutorEstimada)
+                          : "—"
+                      }
+                    />
+                    <ContratoFormSummaryItem
+                      label="Custo total estimado"
+                      value={formatMoneyBR(financialSnapshot.custoTotalEstimado)}
+                    />
+                    <ContratoFormSummaryItem
+                      label="Seguro prestamista"
                       value={
                         watched.seguroPrestamistaAtivo
                           ? watched.seguroPrestamistaValorMensal != null
@@ -501,6 +535,18 @@ export function ContratoFormShellV2({
                     <ContratoFormSummaryItem
                       label="Parceiro"
                       value={parceiroNome}
+                    />
+                    <ContratoFormSummaryItem
+                      label="Taxa adm. antecipada"
+                      value={
+                        watched.taxaAdminAntecipadaAtivo
+                          ? watched.taxaAdminAntecipadaFormaPagamento === "parcelado"
+                            ? `${watched.taxaAdminAntecipadaParcelas ?? "—"}x de ${formatMoneyBR(
+                                watched.taxaAdminAntecipadaValorParcela,
+                              )}`
+                            : formatMoneyBR(watched.taxaAdminAntecipadaValorTotal)
+                          : "Não configurada"
+                      }
                     />
                     <ContratoFormSummaryItem
                       label="Repasse"

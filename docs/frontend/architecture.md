@@ -183,6 +183,7 @@ O padrão mais maduro está em `src/features/contratos`:
 - defaults em `utils/contrato-default-values.ts`
 - mapper para payload do backend em `utils/contrato-payload-mappers.ts`
 - hook de submit em `hooks/use-contrato-form-submit.ts`
+- upload de PDF em `components/contrato-pdf-upload-card.tsx`, agora dentro do domínio de contratos
 
 Esse conjunto é a referência atual mais próxima do padrão desejado no `AGENTS.md`.
 
@@ -286,3 +287,23 @@ Regra de leitura:
 - o papel definitivo de `src/features/leads/*` versus `src/app/app/leads/*` como fronteira arquitetural
 - se o módulo de `lances` deve ser documentado futuramente como feature separada ou permanecer como subdomínio operacional de `cotas`
 - se os arquivos duplicados em `form-shell/ section-base` são legado morto ou ainda fazem parte do build
+
+## Terminologia financeira
+
+Na feature de contratos/cotas, a leitura financeira do formulário deve seguir estas regras:
+
+- `Taxa administrativa` ou `Taxa administrativa total` para a taxa principal da operação sobre o valor da carta
+- `Fundo de reserva` como componente separado
+- `Base total da carta` como leitura financeira formada por valor da carta + taxa administrativa total + fundo de reserva
+- `Parcela cheia sem redutor` como valor-base calculado sobre a base total da carta
+- `Parcela com redutor (estimada)` apenas como aproximação comercial quando houver redutor
+- `Taxa adm. antecipada` apenas quando houver cobrança antecipada
+- `Custo total estimado da carta` como leitura aproximada a partir dos componentes preenchidos
+
+Evitar:
+
+- `Taxa adm. anual`, porque isso induz uma semântica incorreta para o domínio atual
+
+Limitação importante:
+
+- quando houver seguro prestamista, redutor, regra específica da administradora ou arredondamentos próprios da operação, o frontend não deve vender a parcela reduzida como cálculo exato; nesses casos a leitura permanece como estimativa segura.

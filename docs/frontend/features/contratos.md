@@ -46,6 +46,10 @@ Responsabilidades observadas:
 - `status-inicial-section`
 - `documento-section`
 
+Observação estrutural:
+
+- o upload de documento do contrato agora vive dentro da própria feature, sem depender de componente localizado em `lances`
+
 ### Pontos de entrada
 
 - `src/features/contratos/components/create-contrato-sheet.tsx`
@@ -80,6 +84,7 @@ Responsabilidades observadas:
 - serialização monetária em string brasileira
 - serialização percentual com quatro casas
 - remoção de payload derivado quando flag correspondente estiver desligada
+- separação entre payload principal do endpoint de contrato e sincronização complementar de campos extras da cota
 
 ## Fluxo principal do usuário
 
@@ -107,6 +112,11 @@ Leitura correta do domínio:
 - `/contracts/{contractId}/document/signed-url`
 - sincronização complementar de campos da cota após criação
 
+Observação de contrato com o backend:
+
+- o POST principal envia apenas os campos aceitos pelo schema atual do backend;
+- campos extras de operação da cota, como `assembleiaDia`, `taxaAdminPercentual` e `taxaAdminValorMensal`, continuam a ser sincronizados depois por `syncCotaExtraFields`.
+
 ## Regras importantes observadas no frontend
 
 - nova venda não deve nascer com status inicial avançado
@@ -116,6 +126,29 @@ Leitura correta do domínio:
 - parceiro e repasse são dependentes entre si
 - campos condicionais precisam limpar ou ignorar payload derivado
 - opções ativas de lance fixo não podem repetir ordem nem percentual
+
+## Terminologia financeira da feature
+
+- usar `Taxa administrativa` ou `Taxa administrativa total` para a taxa principal da operação
+- usar `Fundo de reserva` como componente separado
+- usar `Base total da carta` para a base financeira formada por valor da carta + taxa administrativa total + fundo de reserva
+- usar `Parcela cheia sem redutor` como valor-base de consulta comercial
+- usar `Parcela com redutor (estimada)` quando a redução depender de variáveis não totalmente modeladas
+- usar `Taxa adm. antecipada` quando houver cobrança antecipada
+- usar `Custo total estimado` como leitura resumida da operação
+
+Evitar:
+
+- `Taxa adm. anual`
+
+Regra de cálculo hoje centralizada em `src/features/contratos/utils/financial-calculations.ts`:
+
+- totais de taxa administrativa e fundo de reserva derivam preferencialmente do percentual sobre `valorCarta`
+- na falta do percentual, o frontend usa a leitura mensal multiplicada por `prazo`
+- `Base total da carta` não inclui automaticamente prestamista nem taxa antecipada
+- `Parcela cheia sem redutor` deriva de `baseTotalCarta / prazo`
+- `Parcela com redutor` é tratada como estimativa, podendo usar a parcela cheia informada manualmente quando o corretor já tiver um valor confirmado pela administradora
+- `Seguro prestamista` pode aparecer como valor informado ou estimado, mas não como regra exata da administradora quando o modelo atual não reproduz toda a composição
 
 ## Contrato != cota
 
