@@ -24,6 +24,9 @@ interface CreateContratoSheetProps {
     parceiros?: ParceiroOption[];
     trigger: React.ReactNode;
     leadName?: string | null;
+    onSuccess?: (params: { contractId: string | null; cotaId: string | null }) => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
 export function CreateContratoSheet({
@@ -34,12 +37,23 @@ export function CreateContratoSheet({
                                         parceiros = [],
                                         trigger,
                                         leadName,
+                                        onSuccess,
+                                        open: controlledOpen,
+                                        onOpenChange,
                                     }: CreateContratoSheetProps) {
-    const [open, setOpen] = React.useState(false);
+    const [internalOpen, setInternalOpen] = React.useState(false);
+    const open = controlledOpen ?? internalOpen;
+
+    function handleOpenChange(nextOpen: boolean) {
+        onOpenChange?.(nextOpen);
+        if (controlledOpen === undefined) {
+            setInternalOpen(nextOpen);
+        }
+    }
 
     return (
-        <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>{trigger}</SheetTrigger>
+        <Sheet open={open} onOpenChange={handleOpenChange}>
+            {controlledOpen === undefined ? <SheetTrigger asChild>{trigger}</SheetTrigger> : null}
 
             <SheetContent
                 side="right"
@@ -89,7 +103,10 @@ export function CreateContratoSheet({
                             administradoras={administradoras}
                             parceiros={parceiros}
                             insideSheet
-                            onSuccess={() => setOpen(false)}
+                            onSuccess={(params) => {
+                                handleOpenChange(false);
+                                onSuccess?.(params);
+                            }}
                         />
                     </div>
                 </div>

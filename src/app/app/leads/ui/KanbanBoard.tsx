@@ -13,7 +13,7 @@ import type {
     LeadCard,
     KanbanMetrics,
 } from "@/app/app/leads/types";
-import { ContractSheet } from "@/app/app/leads/ui/ContractSheet";
+import { CreateContratoSheet } from "@/features/contratos/components/create-contrato-sheet";
 
 type OptimisticAction = { id: string; from: Stage; to: Stage };
 export type AdminOption = { id: string; nome: string };
@@ -132,24 +132,24 @@ export default function KanbanBoard({
         speedRef.current = 0;
     }
 
-    function loop() {
-        const el = containerRef.current;
-        if (!el || !draggingRef.current) {
-            rafRef.current = null;
-            return;
-        }
-
-        const speed = speedRef.current;
-        if (speed !== 0) {
-            const max = el.scrollWidth - el.clientWidth;
-            const next = Math.min(max, Math.max(0, el.scrollLeft + speed));
-            el.scrollLeft = next;
-        }
-
-        rafRef.current = requestAnimationFrame(loop);
-    }
-
     React.useEffect(() => {
+        function loop() {
+            const el = containerRef.current;
+            if (!el || !draggingRef.current) {
+                rafRef.current = null;
+                return;
+            }
+
+            const speed = speedRef.current;
+            if (speed !== 0) {
+                const max = el.scrollWidth - el.clientWidth;
+                const next = Math.min(max, Math.max(0, el.scrollLeft + speed));
+                el.scrollLeft = next;
+            }
+
+            rafRef.current = requestAnimationFrame(loop);
+        }
+
         function handleDragOver(e: DragEvent) {
             if (!draggingRef.current) return;
 
@@ -250,7 +250,8 @@ export default function KanbanBoard({
             </div>
 
             {contractLead && (
-                <ContractSheet
+                <CreateContratoSheet
+                    mode="fromLead"
                     open={!!contractLead}
                     onOpenChange={(v) => {
                         if (!v) closeContractDrawer();
@@ -258,6 +259,7 @@ export default function KanbanBoard({
                     leadId={contractLead.id}
                     leadName={contractLead.nome}
                     administradoras={contractOptions.administradoras}
+                    trigger={null}
                     onSuccess={async () => {
                         toast.success(
                             <span>
@@ -266,6 +268,7 @@ export default function KanbanBoard({
                             </span>
                         );
                         await fireConfetti();
+                        closeContractDrawer();
                     }}
                 />
             )}

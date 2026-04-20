@@ -13,6 +13,13 @@ Responsabilidades observadas:
 - cadastrar nova carta para cliente existente
 - reabrir negociação a partir da carteira
 
+## Posição no fluxo macro
+
+- carteira é pós-venda operacional;
+- ela normalmente passa a existir depois da formalização;
+- ela não substitui o lead, o contrato nem a cota;
+- ela é outra dimensão operacional do sistema.
+
 ## Principais pontos de código
 
 ### Rotas
@@ -53,6 +60,16 @@ Responsabilidades observadas:
 5. Pode selecionar um cliente e abrir o fluxo de cadastro de carta.
 6. Em alguns casos, pode reativar o cliente para o fluxo de leads.
 
+## Carteira como domínio próprio
+
+Carteira não deve ser lida só como efeito colateral do contrato.
+
+No sistema atual, ela é um domínio próprio porque:
+
+- organiza acompanhamento pós-venda;
+- consolida leitura por cliente e por carta;
+- preserva relacionamento contínuo mesmo quando o cliente volta ao funil.
+
 ## Integrações com backend
 
 - `/carteira/clientes`
@@ -65,6 +82,21 @@ Responsabilidades observadas:
 - carteira é um dos pontos mais híbridos da aplicação: página server-side, actions locais e reuso de feature de contratos
 - a visão por carta depende de composições derivadas de cotas, contratos e últimos lances
 - a carteira não implementa seu próprio form de carta; ela orquestra o form de contratos
+
+## Camada de estado da carteira
+
+Status de carteira é uma camada diferente de:
+
+- status do contrato
+- situação da cota
+
+Valor confirmado no código:
+
+- `ativo`
+
+Outros estados completos:
+
+- `pendente de confirmação`
 
 ## Pendentes de confirmação
 

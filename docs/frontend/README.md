@@ -38,6 +38,14 @@ O frontend está organizado em formato híbrido:
 - `src/components/` concentra componentes compartilhados, shell da aplicação, blocos de marketing, auth, sistema e wrappers do shadcn/ui.
 - `src/lib/` concentra autenticação, clientes Supabase, helpers de backend, máscaras e utilitários.
 
+## Leitura correta do domínio
+
+- `lead` é a unidade comercial de entrada
+- `contrato` nasce na formalização/fechamento
+- `cota` é o ativo operacional do consórcio
+- `assembleia`, `lance` e `contemplação` pertencem à operação da cota
+- `carteira` representa o pós-venda operacional em dimensão própria
+
 ## Observações importantes
 
 - A organização desejada pelo `AGENTS.md` do frontend é orientada a feature/domínio, mas a implementação atual ainda distribui parte relevante da lógica em `src/app/app`.

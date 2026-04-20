@@ -2,8 +2,8 @@
 
 import { FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ContratoPdfUploadCard } from "@/app/app/lances/components/carta-sheet/ContratoPdfUploadCard";
 import { PremiumFormSection } from "../section-base/premium-form-section";
+import { ContratoPdfUploadCard } from "../contrato-pdf-upload-card";
 
 interface Props {
   contractId?: string | null;

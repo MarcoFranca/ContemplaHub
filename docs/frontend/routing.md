@@ -74,6 +74,13 @@ Outras rotas de auth:
 
 ## Área autenticada principal
 
+## Leitura macro por domínio
+
+- `/app/leads` concentra a camada comercial
+- `/app/leads/[leadId]/contrato/novo` e fluxos equivalentes concentram a formalização
+- `/app/lances` concentra a operação da cota
+- `/app/carteira` concentra o pós-venda operacional
+
 ### Entrada principal
 
 - `/app`:
@@ -101,6 +108,7 @@ Observação:
 
 - `/app/carteira` é simultaneamente listagem de clientes e de cartas, alternando entre visões por query string
 - o cadastro de carta é disparado por `CreateCarteiraCartaSheet`, que reutiliza a feature de contratos
+- a rota representa o pós-venda operacional, não apenas uma consequência visual do contrato
 
 ### Contratos
 
@@ -111,6 +119,7 @@ Observação:
 - não há listagem dedicada de contratos em `/app/contratos`
 - a rota atual é um detalhe de contrato com foco em comissão, resumo financeiro e cota associada
 - `pendente de confirmação`: se haverá uma listagem própria de contratos no futuro
+- a rota não substitui a operação de assembleia/lance/contemplação, que hoje vive no domínio de cotas/lances
 
 ### Cotas / lances
 
@@ -121,6 +130,7 @@ Observação:
 
 - embora o domínio pedido seja `cotas`, o ponto de entrada operacional atual está nomeado como `lances`
 - a leitura de cota também reaparece em carteira e contrato
+- assembleia, lance e contemplação pertencem a essa camada operacional
 
 ### Comissões
 

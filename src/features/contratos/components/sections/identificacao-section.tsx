@@ -2,10 +2,9 @@
 
 import type { ReactNode } from "react";
 import { Controller, type Control } from "react-hook-form";
-import { Building2, FileBadge2, FolderKanban, Hash, Signature } from "lucide-react";
+import { Building2, FolderKanban, Hash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DateField } from "../../fields/date-field";
 import { AdministradoraSelectField } from "../../fields/administradora-select-field";
 import type { AdministradoraOption, ContratoFormValues } from "../../types/contrato-form.types";
 import { PremiumFormSection } from "../section-base/premium-form-section";
@@ -79,37 +78,7 @@ export function IdentificacaoSection({ control, administradoras }: Props) {
           </div>
         )}
       />
-
-      <Controller
-        name="numeroContrato"
-        control={control}
-        render={({ field, fieldState }) => (
-          <div className="space-y-2">
-            <FieldLabel icon={<FileBadge2 className="h-3.5 w-3.5" />}>Número do contrato</FieldLabel>
-            <Input
-              value={field.value ?? ""}
-              onChange={field.onChange}
-              placeholder="Ex.: CTR-2026-001"
-              className="h-11 rounded-2xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500 focus-visible:border-emerald-400/35 focus-visible:ring-emerald-400/15"
-            />
-            {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
-          </div>
-        )}
-      />
-
-      <Controller
-        name="dataAssinatura"
-        control={control}
-        render={({ field, fieldState }) => (
-          <div className="space-y-2">
-            <FieldLabel icon={<Signature className="h-3.5 w-3.5" />}>Data de assinatura</FieldLabel>
-            <DateField value={field.value} onChange={field.onChange} />
-            {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}
-          </div>
-        )}
-      />
-
-      <div className="rounded-2xl border border-emerald-400/12 bg-emerald-400/[0.05] px-4 py-3">
+      <div className="rounded-2xl border border-emerald-400/12 bg-emerald-400/[0.05] px-4 py-3 md:col-span-2">
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-100/80">Leitura do corretor</div>
         <p className="mt-1.5 text-sm leading-6 text-slate-300">
           Aqui fica a base da carta. Quanto mais clara essa etapa, mais rápido o restante do fluxo anda.

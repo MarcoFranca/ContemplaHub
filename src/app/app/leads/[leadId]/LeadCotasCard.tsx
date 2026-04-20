@@ -29,7 +29,7 @@ import {
 
 import { updateContractStatus } from "@/app/app/leads/actions";
 import type { ContractStatus } from "@/app/app/leads/types";
-import { ContractSheet } from "@/app/app/leads/ui/ContractSheet";
+import { CreateContratoSheet } from "@/features/contratos/components/create-contrato-sheet";
 
 type AdminOption = {
     id: string;
@@ -93,7 +93,6 @@ export function LeadCotasCard({
     administradoras: AdminOption[];
 }) {
     const router = useRouter();
-    const [openSheet, setOpenSheet] = React.useState(false);
 
     const contratoByCota = React.useMemo(() => {
         const map = new Map<string, ContratoRow>();
@@ -161,14 +160,24 @@ export function LeadCotasCard({
                         </p>
                     </div>
 
-                    <Button
-                        size="sm"
-                        onClick={() => setOpenSheet(true)}
-                        className="gap-2 bg-emerald-600 text-white shadow-sm hover:bg-emerald-500"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Nova carta
-                    </Button>
+                    <CreateContratoSheet
+                        mode="fromLead"
+                        leadId={leadId}
+                        leadName={leadName}
+                        administradoras={administradoras}
+                        trigger={
+                            <Button
+                                size="sm"
+                                className="gap-2 bg-emerald-600 text-white shadow-sm hover:bg-emerald-500"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Nova carta
+                            </Button>
+                        }
+                        onSuccess={() => {
+                            router.refresh();
+                        }}
+                    />
                 </CardHeader>
 
                 <CardContent className="space-y-3">
@@ -189,14 +198,24 @@ export function LeadCotasCard({
                                         </p>
                                     </div>
 
-                                    <Button
-                                        size="sm"
-                                        onClick={() => setOpenSheet(true)}
-                                        className="gap-2 bg-emerald-600 text-white hover:bg-emerald-500"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        Cadastrar primeira carta
-                                    </Button>
+                                    <CreateContratoSheet
+                                        mode="fromLead"
+                                        leadId={leadId}
+                                        leadName={leadName}
+                                        administradoras={administradoras}
+                                        trigger={
+                                            <Button
+                                                size="sm"
+                                                className="gap-2 bg-emerald-600 text-white hover:bg-emerald-500"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                                Cadastrar primeira carta
+                                            </Button>
+                                        }
+                                        onSuccess={() => {
+                                            router.refresh();
+                                        }}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -372,17 +391,6 @@ export function LeadCotasCard({
                     )}
                 </CardContent>
             </Card>
-
-            <ContractSheet
-                open={openSheet}
-                onOpenChange={setOpenSheet}
-                leadId={leadId}
-                leadName={leadName}
-                administradoras={administradoras}
-                onSuccess={() => {
-                    router.refresh();
-                }}
-            />
         </>
     );
 }

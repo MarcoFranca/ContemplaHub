@@ -11,6 +11,13 @@ No frontend atual, o domínio de cotas aparece distribuído entre:
 
 Por isso, `cotas` não existe hoje como pasta de feature dedicada em `src/features`, mas existe claramente como conceito de negócio.
 
+## Posição no fluxo macro
+
+- a cota é o ativo operacional do consórcio;
+- assembleia, lance e contemplação pertencem a essa camada;
+- contrato formaliza a operação, mas não substitui a cota;
+- carteira passa a consumir a cota em visão de pós-venda.
+
 ## Principais pontos de código
 
 ### Rotas
@@ -28,6 +35,7 @@ Por isso, `cotas` não existe hoje como pasta de feature dedicada em `src/featur
 - `src/app/app/lances/components/actions/update-carta-modalidades.ts`
 - `src/app/app/lances/components/schemas/carta-operacao.schema.ts`
 - `src/app/app/lances/components/schemas/carta-modalidades.schema.ts`
+- `src/features/contratos/utils/contrato-payload-mappers.ts` no momento de entrada da cota em `fromLead` e `registerExisting`
 
 ### Componentes
 
@@ -49,6 +57,14 @@ Por isso, `cotas` não existe hoje como pasta de feature dedicada em `src/featur
 - editar regras operacionais da carta
 - ligar a cota ao financeiro de comissão quando aplicável
 
+## Contrato != cota
+
+Leitura correta:
+
+- contrato é formalização;
+- cota é operação;
+- contemplação ocorre na cota, não no contrato.
+
 ## Fluxo principal do usuário
 
 1. O operador abre `/app/lances`.
@@ -57,11 +73,25 @@ Por isso, `cotas` não existe hoje como pasta de feature dedicada em `src/featur
 4. Analisa painel executivo, assembleia, histórico, contemplação e checklists.
 5. Atualiza modalidades ou operação quando necessário.
 
+## Camada de estado da cota
+
+A situação da cota é própria e separada de outras camadas:
+
+- `ativa`
+- `contemplada`
+- `cancelada`
+
+Ela não deve ser confundida com:
+
+- `contratos.status`
+- `carteira_clientes.status`
+
 ## Integrações com backend
 
 - BFF `/api/lances/cartas/[cotaId]`
 - actions de `carta-actions`
 - dados de cota também são consumidos de forma derivada em carteira e contratos
+- no cadastro inicial, a cota entra pelo mesmo shell de contratos, mas com separação explícita entre formalização do contrato e situação da cota
 
 ## Observações arquiteturais
 

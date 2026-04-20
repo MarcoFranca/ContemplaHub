@@ -1,6 +1,7 @@
 import {
   BadgePercent,
   Calculator,
+  FileBadge2,
   HandCoins,
   Shield,
   ShieldCheck,
@@ -9,7 +10,7 @@ import {
 import type { DeepPartial } from "react-hook-form";
 
 import { ContratoFormSummaryItem } from "./contrato-form-summary-item";
-import type { ContratoFormValues } from "../../types/contrato-form.types";
+import type { ContratoFormMode, ContratoFormValues } from "../../types/contrato-form.types";
 
 function formatMoneyBR(value?: number | null) {
   if (value == null || Number.isNaN(value)) return "—";
@@ -25,6 +26,7 @@ function formatPercentBR(value?: number | null, suffix = "%") {
 }
 
 interface Props {
+  mode: ContratoFormMode;
   values: DeepPartial<ContratoFormValues>;
   administradoraNome: string;
   parceiroNome: string;
@@ -56,6 +58,7 @@ function CapabilityPill({
 }
 
 export function ContratoFormReviewCard({
+  mode,
   values,
   administradoraNome,
   parceiroNome,
@@ -113,15 +116,29 @@ export function ContratoFormReviewCard({
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <ContratoFormSummaryItem
+          label="Modo do fluxo"
+          value={mode === "fromLead" ? "Nova venda (fromLead)" : "Cadastro existente (registerExisting)"}
+        />
         <ContratoFormSummaryItem label="Administradora" value={administradoraNome} />
         <ContratoFormSummaryItem label="Grupo" value={values.grupoCodigo || "—"} />
         <ContratoFormSummaryItem label="Cota" value={values.numeroCota || "—"} />
+        <ContratoFormSummaryItem label="Produto" value={values.produto || "—"} />
         <ContratoFormSummaryItem label="Contrato" value={values.numeroContrato || "—"} />
+        <ContratoFormSummaryItem
+          label="Assinatura"
+          value={values.dataAssinatura || "—"}
+        />
         <ContratoFormSummaryItem label="Valor da carta" value={formatMoneyBR(values.valorCarta)} />
+        <ContratoFormSummaryItem label="Valor da parcela" value={formatMoneyBR(values.valorParcela)} />
         <ContratoFormSummaryItem label="Prazo" value={values.prazo ? `${values.prazo} meses` : "—"} />
         <ContratoFormSummaryItem
           label="Assembleia"
           value={values.assembleiaDia ? `Dia ${values.assembleiaDia}` : "—"}
+        />
+        <ContratoFormSummaryItem
+          label="Data de adesão"
+          value={values.dataAdesao || "—"}
         />
         <ContratoFormSummaryItem
           label="Taxa adm. anual"
@@ -164,6 +181,35 @@ export function ContratoFormReviewCard({
         <ContratoFormSummaryItem label="Comissão da carta" value={formatPercentBR(values.percentualComissao)} />
         <ContratoFormSummaryItem label="Parceiro" value={parceiroNome} />
         <ContratoFormSummaryItem label="Repasse parceiro" value={values.parceiroId ? formatPercentBR(values.repassePercentualComissao, "% da comissão") : "Sem parceiro"} />
+        {mode === "registerExisting" ? (
+          <>
+            <ContratoFormSummaryItem
+              label="Status inicial do contrato"
+              value={values.contractStatus || "—"}
+            />
+            <ContratoFormSummaryItem
+              label="Situação inicial da cota"
+              value={values.cotaSituacao || "—"}
+            />
+          </>
+        ) : (
+          <>
+            <ContratoFormSummaryItem label="Status inicial do contrato" value="Fluxo comercial padrão" />
+            <ContratoFormSummaryItem label="Situação inicial da cota" value="Ativa" />
+          </>
+        )}
+      </div>
+
+      <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-white">
+          <FileBadge2 className="h-4 w-4 text-emerald-300" />
+          Leitura final antes de salvar
+        </div>
+        <p className="mt-2 text-sm leading-6 text-slate-400">
+          Revise carta, contrato, modo atual e estados iniciais antes de concluir. No modo{" "}
+          <span className="text-slate-200">{mode === "fromLead" ? "fromLead" : "registerExisting"}</span>, o
+          frontend mantém separadas as camadas de contrato e cota para não misturar formalização com operação.
+        </p>
       </div>
     </div>
   );

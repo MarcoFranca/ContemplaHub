@@ -5,6 +5,9 @@
 O formulário de cadastro de carta é implementado principalmente por:
 
 - `src/features/contratos/components/contrato-form-shell-v2.tsx`
+- `src/features/contratos/components/create-contrato-sheet.tsx`
+- `src/features/contratos/components/sections/formalizacao-section.tsx`
+- `src/features/contratos/components/contrato-pdf-upload-card.tsx`
 - `src/features/contratos/schemas/contrato-base.schema.ts`
 - `src/features/contratos/utils/contrato-payload-mappers.ts`
 - `src/features/contratos/hooks/use-contrato-form-submit.ts`
@@ -22,17 +25,17 @@ O shell é multi-etapas:
 
 1. `Identificação`
 2. `Carta / cota`
-3. `Taxas e seguros`
-4. `Modalidades`
-5. `Fechamento`
+3. `Formalização`
+4. `Estado inicial` apenas no modo `registerExisting`
+5. `Revisão final`
 
 Seções relevantes:
 
-- administradora, grupo, número da cota, número do contrato
-- produto, valor da carta, prazo, valor da parcela, data de adesão, assembleia
-- taxa administrativa, fundo de reserva, seguro prestamista, taxa antecipada
-- redutor, FGTS, embutido, autorização de gestão, opções de lance fixo
-- comissão, imposto retido, parceiro, repasse, status inicial e documento
+- identificação: administradora, grupo, número da cota
+- carta / cota: produto, valor da carta, prazo, valor da parcela, data de adesão, assembleia, taxas e modalidades
+- formalização: número do contrato, data de assinatura, comissão, parceiro e repasse
+- estado inicial: `contractStatus` e `cotaSituacao` apenas em `registerExisting`
+- revisão final: modo atual, resumo da carta, resumo do contrato e documento/PDF quando já existir `contractId`
 
 ## Validação
 
@@ -81,6 +84,8 @@ Observações:
 - valores monetários são serializados como string formatada
 - percentuais são serializados com quatro casas
 - payload derivado é limpo quando a flag correspondente está desligada
+- `fromLead` não envia `contract_status` nem `cota_situacao`
+- `registerExisting` envia `contract_status` e `cota_situacao` de forma separada
 
 ## Fluxo de persistência
 
@@ -97,6 +102,7 @@ Observações:
 - persistência parcial caso o contrato principal salve e a sincronização complementar falhe
 - erro de entendimento entre `status do contrato` e `situação da cota`
 - reuso indevido do modo `registerExisting` para venda nova
+- existência de sheets legados fora da feature de contratos pode gerar regressão se voltarem a ser usados sem alinhamento
 
 ## Pendentes de confirmação
 

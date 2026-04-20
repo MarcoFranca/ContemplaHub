@@ -62,9 +62,86 @@ A arquitetura atual é híbrida:
 
 Exemplos:
 
-- `contratos` usa `src/features/contratos/*` como núcleo de formulário e integra páginas em `src/app/app`, `src/app/partner` e `src/app/app/carteira`
+- `contratos` usa `src/features/contratos/*` como núcleo de formulário e integra páginas em `src/app/app`, `src/app/partner`, `src/app/app/carteira` e pontos de entrada de lead/kanban
 - `leads` mistura actions em `src/app/app/leads/actions*.ts`, UI em `src/app/app/leads/ui/*` e componentes auxiliares em `src/features/leads/*`
 - `carteira`, `comissões`, `parceiros` e `lances` vivem principalmente dentro de `src/app/app/*`
+
+## Fluxo macro do produto
+
+O frontend já expõe um fluxo de domínio em camadas.
+
+### 1. Pré-venda comercial
+
+- `lead` é a unidade do funil;
+- diagnóstico e proposta pertencem a esse contexto.
+
+### 2. Formalização
+
+- o `contrato` nasce na formalização/fechamento;
+- ele formaliza a operação, mas não substitui a cota.
+
+### 3. Operação da cota
+
+- a `cota` é o ativo operacional do consórcio;
+- assembleia, lance e contemplação pertencem a esse domínio;
+- Hoje a entrada visual principal dessa camada é `/app/lances`,
+  porém o domínio pertence a `cotas`.
+
+### 4. Pós-venda operacional
+
+- `carteira` é a camada de pós-venda;
+- ela organiza cliente, cartas e contratos para acompanhamento contínuo.
+
+## Contrato e cota
+
+- contrato != cota
+- o contrato formaliza a operação
+- a cota é o ativo operacional do consórcio
+- assembleia, lance e contemplação pertencem à cota
+- se o contrato refletir marcos operacionais, isso deve ser lido como efeito derivado, não como origem do evento
+
+## Modos de criação de contrato
+
+O frontend possui dois fluxos distintos para criação/cadastro de contrato, refletidos em `ContratoFormMode` e usados por `useContratoFormSubmit`.
+
+### 1. Nova venda (fromLead)
+
+Origem:
+- lead vindo do funil
+
+Comportamento:
+- contrato nasce como fluxo comercial de formalização
+- usa `createContratoFromLeadAction`
+- não permite definir estados avançados de contrato
+- não permite iniciar a cota em situação avançada
+- é aberto a partir de lead/kanban pela mesma shell reutilizável da feature
+
+Uso:
+- venda nova
+- operação comercial padrão
+
+### 2. Cadastro operacional (registerExisting)
+
+Origem:
+- cliente já ativo na carteira
+
+Comportamento:
+- usa `registerExistingContratoAction`
+- permite definir status inicial do contrato
+- permite definir situação inicial da cota
+- representa contrato/carta já existentes fora do fluxo comercial novo
+- é aberto a partir da carteira pela mesma shell reutilizável da feature
+
+Uso:
+- importação de carteira
+- cadastro manual
+- clientes antigos
+
+Regra crítica:
+
+- esses fluxos não devem ser misturados
+- `fromLead` pertence à formalização de nova venda
+- `registerExisting` pertence ao cadastro operacional de carteira/base existente
 
 ## Padrões arquiteturais observados
 
@@ -119,6 +196,7 @@ Exemplos:
 - `PartnerShell`
 - `DashboardShell`
 - `ContratoFormShellV2`
+- `CreateContratoSheet`
 
 Função:
 
@@ -131,6 +209,7 @@ Exemplos:
 
 - `IdentificacaoSection`
 - `CotaFinanceiraSection`
+- `FormalizacaoSection`
 - `CondicoesOperacionaisSection`
 - `ParceiroSection`
 
@@ -138,6 +217,7 @@ Função:
 
 - encapsular trechos coesos de um fluxo
 - reduzir acoplamento visual de páginas grandes
+- manter a separação entre dados da cota, formalização do contrato e estados iniciais
 
 ### Componentes de ação contextual
 
@@ -146,6 +226,7 @@ Exemplos:
 - `CreateLeadSheet`
 - `CreateCarteiraClienteSheet`
 - `CreateCarteiraCartaSheet`
+- `CreateContratoSheet`
 - `RepasseDialog`
 - `LancamentoStatusDialog`
 
@@ -163,6 +244,35 @@ Função:
 - chamadas ao backend incluem `X-Org-Id`
 - fluxos que exigem autorização explícita usam `Authorization: Bearer <access_token>`
 - service role aparece apenas em código server-side
+
+## Camadas de estado do sistema
+
+O frontend já lida com pelo menos três camadas de estado distintas.
+
+### Status do contrato
+
+- `pendente_assinatura`
+- `pendente_pagamento`
+- `alocado`
+- `contemplado`
+- `cancelado`
+
+### Situação da cota
+
+- `ativa`
+- `contemplada`
+- `cancelada`
+
+### Status da carteira
+
+- `ativo` observado no código
+- demais estados ficam `pendente de confirmação`
+
+Regra de leitura:
+
+- não misturar status de contrato com situação de cota;
+- não usar status da carteira para inferir estado de contrato ou da cota.
+- não usar status do contrato para inferir assembleia, lance ou contemplação.
 
 ## Inconsistências e dívida técnica observadas
 
