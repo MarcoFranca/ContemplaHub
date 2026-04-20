@@ -1,20 +1,22 @@
 import type { ContratoFormValues } from "../types/contrato-form.types";
 
-type FinancialInputs = Pick<
-  ContratoFormValues,
-  | "valorCarta"
-  | "prazo"
-  | "taxaAdminPercentual"
-  | "taxaAdminValorMensal"
-  | "fundoReservaPercentual"
-  | "fundoReservaValorMensal"
-  | "seguroPrestamistaAtivo"
-  | "seguroPrestamistaPercentual"
-  | "seguroPrestamistaValorMensal"
-  | "taxaAdminAntecipadaValorTotal"
-  | "parcelaReduzida"
-  | "percentualReducao"
-  | "valorParcelaSemRedutor"
+type FinancialInputs = Partial<
+    Pick<
+        ContratoFormValues,
+        | "valorCarta"
+        | "prazo"
+        | "taxaAdminPercentual"
+        | "taxaAdminValorMensal"
+        | "fundoReservaPercentual"
+        | "fundoReservaValorMensal"
+        | "seguroPrestamistaAtivo"
+        | "seguroPrestamistaPercentual"
+        | "seguroPrestamistaValorMensal"
+        | "taxaAdminAntecipadaValorTotal"
+        | "parcelaReduzida"
+        | "percentualReducao"
+        | "valorParcelaSemRedutor"
+    >
 >;
 
 function isValidNumber(value?: number | null): value is number {
