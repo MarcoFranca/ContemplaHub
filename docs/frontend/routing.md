@@ -1,0 +1,200 @@
+# Rotas e navegação
+
+## Visão geral
+
+O App Router está organizado em quatro zonas principais:
+
+- público e marketing
+- autenticação
+- aplicação autenticada principal em `/app`
+- portal do parceiro em `/partner`
+
+## Layouts relevantes
+
+### `src/app/layout.tsx`
+
+Layout raiz para todo o projeto.
+
+Responsabilidades:
+
+- fontes `Geist` e `Geist Mono`
+- `ThemeProvider`
+- `SonnerProvider`
+- `GlobalNetTracker`
+- `GlobalPending`
+- metadados globais e OG image
+
+### `src/app/app/layout.tsx`
+
+Layout da área autenticada principal.
+
+Responsabilidades:
+
+- validar usuário autenticado
+- redirecionar parceiro para `/partner`
+- validar vínculo com organização
+- aplicar `AppShell`
+- aplicar fundo visual premium com `SectionFX`
+
+### `src/app/partner/layout.tsx`
+
+Layout do portal do parceiro.
+
+Responsabilidades:
+
+- validar sessão
+- garantir acesso de parceiro via `getCurrentPartnerAccess()`
+- aplicar `PartnerShell`
+
+## Rotas públicas e de marketing
+
+- `/`:
+  landing principal com `Hero`, `Benefits`, `SimulatorCTA`, `WhyAutentika`, `FounderSection`, `Testimonials`, `GuideCTA` e `DiagnosticSection`
+- `/guia-consorcio`:
+  conteúdo de marketing em grupo `(marketing)`
+- `/guia-consorcio/obrigado`
+- `/guia-consorcio/print`
+- `/propostas/[publicHash]`:
+  proposta pública compartilhável
+- `/cadastro/[token]`:
+  cadastro PF por token
+
+## Rotas de autenticação
+
+Grupo `(auth)`:
+
+- `/login`
+- `/register`
+- `/forgot-password`
+- `/reset-password`
+
+Outras rotas de auth:
+
+- `/auth/callback`
+
+## Área autenticada principal
+
+### Entrada principal
+
+- `/app`:
+  dashboard operacional
+
+### Leads
+
+- `/app/leads`
+- `/app/leads/[leadId]`
+- `/app/leads/[leadId]/propostas/nova`
+- `/app/leads/[leadId]/propostas/[propostaId]`
+- `/app/leads/[leadId]/contrato/novo`
+
+Observação:
+
+- a tela `/app/leads` é a porta principal do funil comercial
+- várias interações são feitas por sheets e dialogs reutilizáveis, então a página funciona mais como contexto operacional do que como única dona da feature
+
+### Carteira
+
+- `/app/carteira`
+- `/app/carteira/[leadId]/contratos/novo`
+
+Observação:
+
+- `/app/carteira` é simultaneamente listagem de clientes e de cartas, alternando entre visões por query string
+- o cadastro de carta é disparado por `CreateCarteiraCartaSheet`, que reutiliza a feature de contratos
+
+### Contratos
+
+- `/app/contratos/[contratoId]`
+
+Observação:
+
+- não há listagem dedicada de contratos em `/app/contratos`
+- a rota atual é um detalhe de contrato com foco em comissão, resumo financeiro e cota associada
+- `pendente de confirmação`: se haverá uma listagem própria de contratos no futuro
+
+### Cotas / lances
+
+- `/app/lances`
+- `/app/lances/[cotaId]`
+
+Observação:
+
+- embora o domínio pedido seja `cotas`, o ponto de entrada operacional atual está nomeado como `lances`
+- a leitura de cota também reaparece em carteira e contrato
+
+### Comissões
+
+- `/app/comissoes`
+
+### Parceiros
+
+- `/app/parceiros`
+
+### Administração complementar
+
+- `/app/usuarios`
+- `/app/organizacao`
+- `/app/landing-pages`
+- `/app/landing-pages/[id]`
+
+## Portal do parceiro
+
+- `/partner`:
+  redireciona para `/partner/contracts`
+- `/partner/contracts`
+- `/partner/contracts/[contractId]`
+- `/partner/commissions`
+- `/partner/me`
+
+## BFFs e endpoints internos do App Router
+
+Principais rotas em `src/app/api`:
+
+- `/api/session`
+- `/api/auth/resolve-destination`
+- `/api/lead`
+- `/api/leads`
+- `/api/leads/create`
+- `/api/lead-propostas/lead/[leadId]`
+- `/api/propostas/[hash]`
+- `/api/propostas/[hash]/accept`
+- `/api/propostas-internal/[propostaId]`
+- `/api/contracts/[contractId]/document`
+- `/api/contracts/[contractId]/document/signed-url`
+- `/api/partner/contracts/[contractId]/document`
+- `/api/cadastro/[token]/pf`
+- `/api/lances/cartas/[cotaId]`
+- `/api/lp/[slugOrHash]/config`
+
+## Relação entre rotas e features
+
+### Rotas que são contexto de entrada para feature reutilizável
+
+- `/app/carteira`:
+  abre `CreateCarteiraCartaSheet`, que delega o fluxo real para `ContratoFormShellV2`
+- `/app/leads/[leadId]/contrato/novo`:
+  usa a mesma base da feature de contratos
+- `/app/leads`:
+  coordena funil, diagnóstico, criação de lead e criação de contrato via componentes reusáveis
+
+### Rotas que concentram a feature no próprio diretório
+
+- `/app/comissoes`
+- `/app/parceiros`
+- `/app/lances`
+
+## Query params relevantes
+
+- `/app/leads`:
+  `ativos=1`, `perdidos=1`
+- `/app/carteira`:
+  `view`, `mode`, `q`, `produto`, `status_carteira`, `all`, `sort`
+- `/app/comissoes`:
+  `parceiro_id`, `status`, `repasse_status`, `competencia_de`, `competencia_ate`
+- `/app/lances`:
+  `competencia`, `status_cota`, `administradora_id`, `produto`, `q`, `somente_autorizadas`
+
+## Pendentes de confirmação
+
+- a nomenclatura definitiva do domínio `cotas` versus `lances`
+- se a rota `/app/contratos/[contratoId]` deve evoluir para um módulo completo de contratos

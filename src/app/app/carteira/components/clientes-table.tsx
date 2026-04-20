@@ -210,7 +210,7 @@ export function ClientesTable({
                                                 topCartas.map((c, cartaIndex) => (
                                                     <div
                                                         key={c.cota_id || `${clienteId}-mini-carta-${cartaIndex}`}
-                                                        className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2"
+                                                        className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3"
                                                     >
                                                         <div className="flex items-center justify-between gap-3">
                                                             <div className="min-w-0">
@@ -218,7 +218,14 @@ export function ClientesTable({
                                                                     Cota {c.numero_cota ?? "—"}
                                                                 </div>
                                                                 <div className="truncate text-xs text-muted-foreground">
-                                                                    Grupo {c.grupo_codigo ?? "—"} · {c.administradora ?? "—"}
+                                                                    {c.administradora ?? "—"} · Grupo {c.grupo_codigo ?? "—"}
+                                                                </div>
+                                                                <div className="mt-1 truncate text-xs text-muted-foreground">
+                                                                    {c.prazo ? `${c.prazo} meses` : "Prazo —"}
+                                                                    {c.assembleia_dia ? ` • dia ${c.assembleia_dia}` : ""}
+                                                                    {c.valor_parcela != null
+                                                                        ? ` • parcela ${fmtCurrency(c.valor_parcela)}`
+                                                                        : ""}
                                                                 </div>
                                                             </div>
 
@@ -227,6 +234,23 @@ export function ClientesTable({
                                                                     {fmtCurrency(c.valor_carta)}
                                                                 </div>
                                                             </div>
+                                                        </div>
+
+                                                        <div className="mt-2 flex flex-wrap gap-2">
+                                                            {c.situacao ? (
+                                                                <Badge variant="outline" className="capitalize">
+                                                                    {c.situacao}
+                                                                </Badge>
+                                                            ) : null}
+                                                            {c.parcela_reduzida ? (
+                                                                <Badge variant="secondary">redutor</Badge>
+                                                            ) : null}
+                                                            {c.fgts_permitido ? (
+                                                                <Badge variant="secondary">FGTS</Badge>
+                                                            ) : null}
+                                                            {c.embutido_permitido ? (
+                                                                <Badge variant="secondary">embutido</Badge>
+                                                            ) : null}
                                                         </div>
                                                     </div>
                                                 ))

@@ -33,6 +33,30 @@ type PageProps = {
     searchParams?: Promise<SearchParams>;
 };
 
+function serializePageError(error: unknown) {
+    if (error instanceof Error) {
+        return {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+        };
+    }
+
+    if (typeof error === "object" && error !== null) {
+        return error;
+    }
+
+    return { message: String(error) };
+}
+
+function logPageInfo(event: string, payload: unknown) {
+    console.info(`${event} ${JSON.stringify(payload)}`);
+}
+
+function logPageError(event: string, payload: unknown) {
+    console.error(`${event} ${JSON.stringify(payload)}`);
+}
+
 function first(sp: SearchParams, k: string): string | undefined {
     const v = sp[k];
     return Array.isArray(v) ? v[0] : v;
@@ -81,7 +105,6 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
 
     const cookieStore = await cookies();
     const savedView = cookieStore.get("carteira_view")?.value;
-    const savedMode = cookieStore.get("carteira_clientes_mode")?.value;
 
     const sp: SearchParams = (await searchParams) ?? {};
 
@@ -99,15 +122,25 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
             ? "lista"
             : first(sp, "mode") === "cards"
                 ? "cards"
-                : savedMode === "lista"
-                    ? "lista"
-                    : "cards";
+                : "cards";
 
     const includeAll = first(sp, "all") === "1";
     const q = first(sp, "q") ?? "";
     const produto = first(sp, "produto") ?? "";
     const statusCarteira = first(sp, "status_carteira") ?? "";
     const sort = parseSort(first(sp, "sort"));
+    const logContext = {
+        orgId: me.orgId,
+        view,
+        mode,
+        filters: {
+            includeAll,
+            q: q || null,
+            produto: produto || null,
+            statusCarteira: statusCarteira || null,
+            sort,
+        },
+    };
 
     let err: string | null = null;
 
@@ -117,6 +150,7 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
     let parceiros: { id: string; nome: string }[] = [];
 
     try {
+        logPageInfo("[carteira-page] load:start", logContext);
         const clientesBasePromise = listCarteiraClientes({
             include_all: true,
             produto: null,
@@ -143,6 +177,12 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
             clientesData = clientesView;
             administradoras = formOptions.administradoras;
             parceiros = formOptions.parceiros;
+            logPageInfo("[carteira-page] load:clientes", {
+                ...logContext,
+                clientes: clientesView.total,
+                administradoras: administradoras.length,
+                parceiros: parceiros.length,
+            });
         } else {
             const [clientesBase, cartasView, formOptions] = await Promise.all([
                 clientesBasePromise,
@@ -159,8 +199,19 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
             cartasData = cartasView;
             administradoras = formOptions.administradoras;
             parceiros = formOptions.parceiros;
+            logPageInfo("[carteira-page] load:cartas", {
+                ...logContext,
+                clientes: clientesBase.total,
+                cartas: cartasView.total,
+                administradoras: administradoras.length,
+                parceiros: parceiros.length,
+            });
         }
     } catch (e: unknown) {
+        logPageError("[carteira-page] load:error", {
+            ...logContext,
+            error: serializePageError(e),
+        });
         err = e instanceof Error ? e.message : "Erro ao carregar carteira.";
     }
 
@@ -257,6 +308,7 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                                     <ClientesViewModeToggle
                                         current={mode}
                                         baseHref={clientesHref}
+                                        explicitMode={Boolean(first(sp, "mode"))}
                                     />
                                 )}
                             </div>

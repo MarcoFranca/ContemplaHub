@@ -120,6 +120,10 @@ export function ContratoFormReviewCard({
         <ContratoFormSummaryItem label="Valor da carta" value={formatMoneyBR(values.valorCarta)} />
         <ContratoFormSummaryItem label="Prazo" value={values.prazo ? `${values.prazo} meses` : "—"} />
         <ContratoFormSummaryItem
+          label="Assembleia"
+          value={values.assembleiaDia ? `Dia ${values.assembleiaDia}` : "—"}
+        />
+        <ContratoFormSummaryItem
           label="Taxa adm. anual"
           value={
             values.taxaAdminValorMensal != null

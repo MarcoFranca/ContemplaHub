@@ -78,6 +78,7 @@ export async function registerExistingContratoAction(
         cotaId: normalized.cota_id,
         orgId: profile.orgId,
         values: {
+            assembleiaDia: parsed.data.assembleiaDia ?? null,
             percentualReducao: parsed.data.parcelaReduzida
                 ? parsed.data.percentualReducao ?? null
                 : null,

@@ -439,6 +439,10 @@ export function ContratoFormShellV2({
                             value={watched.prazo ? `${watched.prazo} meses` : "—"}
                         />
                         <ContratoFormSummaryItem
+                            label="Assembleia"
+                            value={watched.assembleiaDia ? `Dia ${watched.assembleiaDia}` : "—"}
+                        />
+                        <ContratoFormSummaryItem
                             label="Taxa adm. anual"
                             value={
                               watched.taxaAdminValorMensal != null

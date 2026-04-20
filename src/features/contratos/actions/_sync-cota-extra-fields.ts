@@ -4,6 +4,7 @@ interface Input {
     cotaId: string | null | undefined;
     orgId: string;
     values: {
+        assembleiaDia?: number | null;
         percentualReducao?: number | null;
         valorParcelaSemRedutor?: number | null;
         embutidoMaxPercent?: number | null;
@@ -29,6 +30,7 @@ export async function syncCotaExtraFields({ cotaId, orgId, values }: Input) {
     const supabase = await supabaseServer();
 
     const payload = {
+        assembleia_dia: values.assembleiaDia ?? null,
         percentual_reducao: values.percentualReducao ?? null,
         valor_parcela_sem_redutor: values.valorParcelaSemRedutor ?? null,
         embutido_max_percent: values.embutidoMaxPercent ?? null,

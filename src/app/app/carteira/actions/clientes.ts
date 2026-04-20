@@ -60,6 +60,7 @@ export async function listCarteiraClientes(
         leadsMap,
         cotasByLead,
         latestContratoByCota,
+        latestLanceByCota,
         administradorasMap,
     } = await loadCarteiraUniverse(filters);
 
@@ -68,14 +69,31 @@ export async function listCarteiraClientes(
 
         const cartas = (cotasByLead.get(row.lead_id) ?? []).map((cota) => {
             const contrato = latestContratoByCota.get(cota.id) ?? null;
+            const ultimoLance = latestLanceByCota.get(cota.id) ?? null;
             return {
                 cota_id: cota.id,
                 numero_cota: cota.numero_cota,
                 grupo_codigo: cota.grupo_codigo,
                 produto: cota.produto,
                 valor_carta: asNumber(cota.valor_carta),
+                valor_parcela: asNumber(cota.valor_parcela),
+                prazo: cota.prazo ?? null,
+                assembleia_dia: cota.assembleia_dia ?? null,
+                situacao: cota.situacao ?? null,
+                fgts_permitido: cota.fgts_permitido ?? null,
+                embutido_permitido: cota.embutido_permitido ?? null,
+                embutido_max_percent: asNumber(cota.embutido_max_percent),
+                parcela_reduzida: cota.parcela_reduzida ?? null,
                 administradora: cota.administradora_id
                     ? administradorasMap.get(cota.administradora_id)?.nome ?? null
+                    : null,
+                ultimo_lance: ultimoLance
+                    ? {
+                          data: ultimoLance.assembleia_data ?? null,
+                          tipo: ultimoLance.tipo ?? null,
+                          percentual: asNumber(ultimoLance.percentual),
+                          valor: asNumber(ultimoLance.valor),
+                      }
                     : null,
                 status_contrato: contrato?.status ?? null,
             };

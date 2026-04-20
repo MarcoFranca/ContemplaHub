@@ -21,6 +21,16 @@ export type LeadRow = {
     etapa: string | null;
 };
 
+export type UltimoLanceRow = {
+    id: string;
+    cota_id: string | null;
+    tipo: string | null;
+    percentual: number | null;
+    valor: number | null;
+    assembleia_data: string | null;
+    created_at?: string | null;
+};
+
 export type CarteiraRow = {
     id: string;
     org_id: string;
@@ -42,6 +52,13 @@ export type CotaRow = {
     valor_carta: number | null;
     valor_parcela: number | null;
     prazo: number | null;
+    assembleia_dia: number | null;
+    situacao: string | null;
+    fgts_permitido: boolean | null;
+    embutido_permitido: boolean | null;
+    embutido_max_percent: number | null;
+    parcela_reduzida: boolean | null;
+    data_ultimo_lance: string | null;
     autorizacao_gestao: boolean | null;
     created_at?: string | null;
 };
@@ -70,7 +87,22 @@ export type CarteiraClienteCartaResumo = {
     grupo_codigo: string | null;
     produto: string | null;
     valor_carta: number | null;
+    valor_parcela: number | null;
+    prazo: number | null;
+    assembleia_dia: number | null;
+    situacao: string | null;
+    fgts_permitido: boolean | null;
+    embutido_permitido: boolean | null;
+    embutido_max_percent: number | null;
+    parcela_reduzida: boolean | null;
     administradora: string | null;
+    parceiro_nome?: string | null;
+    ultimo_lance?: {
+        data: string | null;
+        tipo: string | null;
+        percentual: number | null;
+        valor: number | null;
+    } | null;
     status_contrato: string | null;
 };
 
@@ -118,8 +150,22 @@ export type CarteiraCartaItem = {
         valor_carta: number | null;
         valor_parcela: number | null;
         prazo: number | null;
+        assembleia_dia: number | null;
+        situacao: string | null;
+        fgts_permitido: boolean | null;
+        embutido_permitido: boolean | null;
+        embutido_max_percent: number | null;
+        parcela_reduzida: boolean | null;
+        data_ultimo_lance: string | null;
         administradora: string | null;
         autorizacao_gestao: boolean | null;
+        parceiro_nome?: string | null;
+        ultimo_lance?: {
+            data: string | null;
+            tipo: string | null;
+            percentual: number | null;
+            valor: number | null;
+        } | null;
     };
     contrato: {
         contrato_id: string | null;
@@ -147,5 +193,6 @@ export type CarteiraUniverse = {
     leadsMap: Map<string, LeadRow>;
     cotasByLead: Map<string, CotaRow[]>;
     latestContratoByCota: Map<string, ContratoRow>;
+    latestLanceByCota: Map<string, UltimoLanceRow>;
     administradorasMap: Map<string, AdministradoraRow>;
 };

@@ -1,6 +1,4 @@
-import Link from "next/link";
 import {
-    ArrowRight,
     CalendarDays,
     FileText,
     Mail,
@@ -190,21 +188,47 @@ export function ClientesCards({
                                     {cartasPreview.map((c, index) => (
                                         <div
                                             key={c.cota_id || `${clienteId}-carta-${index}`}
-                                            className="flex items-center justify-between rounded-xl border border-white/10 bg-black/10 px-3 py-2.5"
+                                            className="rounded-xl border border-white/10 bg-black/10 px-3 py-3"
                                         >
-                                            <div className="min-w-0">
-                                                <div className="truncate text-sm font-medium">
-                                                    Cota {c.numero_cota ?? "—"}
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <div className="truncate text-sm font-medium">
+                                                        Cota {c.numero_cota ?? "—"}
+                                                    </div>
+                                                    <div className="truncate text-xs text-muted-foreground">
+                                                        {c.administradora ?? "—"} · Grupo {c.grupo_codigo ?? "—"}
+                                                    </div>
+                                                    <div className="mt-1 truncate text-xs text-muted-foreground">
+                                                        {c.prazo ? `${c.prazo} meses` : "Prazo —"}
+                                                        {c.assembleia_dia ? ` • dia ${c.assembleia_dia}` : ""}
+                                                        {c.valor_parcela != null
+                                                            ? ` • parcela ${fmtCurrency(c.valor_parcela)}`
+                                                            : ""}
+                                                    </div>
                                                 </div>
-                                                <div className="truncate text-xs text-muted-foreground">
-                                                    Grupo {c.grupo_codigo ?? "—"} · {c.administradora ?? "—"}
+
+                                                <div className="shrink-0 text-right">
+                                                    <div className="text-sm font-medium">
+                                                        {fmtCurrency(c.valor_carta)}
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="shrink-0 text-right">
-                                                <div className="text-sm font-medium">
-                                                    {fmtCurrency(c.valor_carta)}
-                                                </div>
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                {c.situacao ? (
+                                                    <Badge variant="outline" className="capitalize">
+                                                        {c.situacao}
+                                                    </Badge>
+                                                ) : null}
+                                                {c.parcela_reduzida ? (
+                                                    <Badge variant="secondary">redutor</Badge>
+                                                ) : null}
+                                                {c.fgts_permitido ? (
+                                                    <Badge variant="secondary">FGTS</Badge>
+                                                ) : null}
+                                                {c.embutido_permitido ? (
+                                                    <Badge variant="secondary">embutido</Badge>
+                                                ) : null}
                                             </div>
                                         </div>
                                     ))}

@@ -69,6 +69,7 @@ export async function createContratoFromLeadAction(values: ContratoFormValues) {
         cotaId: normalized.cota_id,
         orgId: profile.orgId,
         values: {
+            assembleiaDia: parsed.data.assembleiaDia ?? null,
             percentualReducao: parsed.data.parcelaReduzida
                 ? parsed.data.percentualReducao ?? null
                 : null,

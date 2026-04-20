@@ -8,15 +8,45 @@ import { cn } from "@/lib/utils";
 type Props = {
     current: "cards" | "lista";
     baseHref: string;
+    explicitMode?: boolean;
 };
 
-export function ClientesViewModeToggle({ current, baseHref }: Props) {
+const STORAGE_KEY = "carteira:view-mode";
+
+export function ClientesViewModeToggle({
+    current,
+    baseHref,
+    explicitMode = false,
+}: Props) {
     const router = useRouter();
     const [isPending, startTransition] = React.useTransition();
     const [target, setTarget] = React.useState<"cards" | "lista" | null>(null);
+    const hasInitializedRef = React.useRef(false);
+
+    React.useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        if (!hasInitializedRef.current) {
+            hasInitializedRef.current = true;
+
+            const saved = window.localStorage.getItem(STORAGE_KEY);
+            if (!explicitMode && (saved === "cards" || saved === "lista") && saved !== current) {
+                setTarget(saved);
+                startTransition(() => {
+                    router.replace(`${baseHref}&mode=${saved}`);
+                });
+                return;
+            }
+        }
+
+        window.localStorage.setItem(STORAGE_KEY, current);
+    }, [baseHref, current, explicitMode, router]);
 
     function go(next: "cards" | "lista") {
         setTarget(next);
+        if (typeof window !== "undefined") {
+            window.localStorage.setItem(STORAGE_KEY, next);
+        }
 
         startTransition(() => {
             router.push(`${baseHref}&mode=${next}`);
