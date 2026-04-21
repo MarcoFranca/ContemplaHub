@@ -69,8 +69,8 @@ export function ContratoFormReviewCard({
     (item) => item?.ativo && item.percentual != null,
   );
   const financialSnapshot = calculateCartaFinancialSnapshot({
-    valorCarta: values.valorCarta ?? null,
-    prazo: values.prazo ?? null,
+    valorCarta: values.valorCarta,
+    prazo: values.prazo,
     taxaAdminPercentual: values.taxaAdminPercentual ?? null,
     taxaAdminValorMensal: values.taxaAdminValorMensal ?? null,
     fundoReservaPercentual: values.fundoReservaPercentual ?? null,
