@@ -130,6 +130,39 @@ Uso:
 - `/api/lances/cartas/[cotaId]`
 - `/api/lp/[slugOrHash]/config`
 
+## Autenticação e callback OAuth
+
+### Callback server-side
+
+- `/auth/callback` é tratado por route handler em `src/app/auth/callback/route.ts`
+- o handler recebe `code` ou `token_hash`
+- a troca por sessão acontece no servidor com cliente Supabase SSR compatível com cookies
+- o redirecionamento final só acontece depois que os cookies da sessão são preparados para `supabaseServer()`
+
+### Por que isso importa
+
+- `/app` e `/partner` dependem de leitura server-side da sessão
+- um callback resolvido só no client pode autenticar o browser, mas ainda falhar para layouts protegidos que rodam no servidor
+- por isso a resolução de destino do usuário não deve depender exclusivamente de sessão client
+
+### Resolução de destino
+
+- `resolveUserDestination()` usa a sessão SSR atual
+- `resolveUserDestinationFromUserId()` resolve o destino logo após o callback
+- o destino final é:
+  - `/app` para usuário interno
+  - `/partner` para parceiro ativo
+  - `/login?msg=...` quando não há acesso válido
+
+### Convenção de URLs
+
+- `src/lib/auth/auth-urls.ts` centraliza `getConfiguredSiteUrl()` e `getAuthCallbackUrl()`
+- no client, a callback usa a origem atual do navegador
+- em server actions, a callback usa a origem do request quando disponível
+- preferir `NEXT_PUBLIC_SITE_URL` apenas como fallback configurado
+- usar `NEXT_PUBLIC_APP_URL` apenas como fallback de compatibilidade
+- convites, magic link, reset password, sign up com confirmação e OAuth devem compartilhar a mesma callback URL
+
 ## Contratos consumidos do backend
 
 ## Padrões de autenticação

@@ -1,33 +1,42 @@
 "use client";
 import { supabaseBrowser } from "@/lib/supabase/client";
-const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
+import { getAuthCallbackUrl } from "@/lib/auth/auth-urls";
+
+const redirectTo = getAuthCallbackUrl();
+type OAuthProvider = "google" | "github" | "facebook" | "apple";
+type SignInWithOAuthParams = Parameters<
+    ReturnType<typeof supabaseBrowser>["auth"]["signInWithOAuth"]
+>[0];
 
 export async function sendMagicLinkClient(email: string) {
     const supabase = supabaseBrowser();
     const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` },
+        options: { emailRedirectTo: getAuthCallbackUrl() },
     });
     if (error) throw error;
 }
 
-export async function signInWithProvider(provider: "google"|"github"|"facebook"|"apple") {
+export async function signInWithProvider(provider: OAuthProvider) {
     const supabase = supabaseBrowser();
-    const base: any = {
+    const options: NonNullable<SignInWithOAuthParams["options"]> = {
+        redirectTo,
+    };
+    const base: SignInWithOAuthParams = {
         provider,
-        options: { redirectTo },
+        options,
     };
 
     // escopos úteis
     if (provider === "google") {
-        base.options.queryParams = { prompt: "consent", access_type: "offline" }; // refresh_token
-        base.options.scopes = "openid email profile";
+        options.queryParams = { prompt: "consent", access_type: "offline" }; // refresh_token
+        options.scopes = "openid email profile";
     }
     if (provider === "facebook") {
-        base.options.scopes = "email,public_profile";
+        options.scopes = "email,public_profile";
     }
     if (provider === "apple") {
-        base.options.scopes = "name email";
+        options.scopes = "name email";
     }
 
     await supabase.auth.signInWithOAuth(base);
@@ -36,7 +45,7 @@ export async function signInWithProvider(provider: "google"|"github"|"facebook"|
 export async function sendRecoveryEmailClient(email: string) {
     const supabase = supabaseBrowser();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        redirectTo: getAuthCallbackUrl(),
     });
     if (error) throw error;
 }
@@ -46,7 +55,7 @@ export async function signInWithGoogleClient() {
     await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-            redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+            redirectTo: getAuthCallbackUrl(),
             queryParams: { prompt: "consent", access_type: "offline" },
         },
     });
@@ -56,6 +65,6 @@ export async function signInWithGithubClient() {
     const supabase = supabaseBrowser();
     await supabase.auth.signInWithOAuth({
         provider: "github",
-        options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` },
+        options: { redirectTo: getAuthCallbackUrl() },
     });
 }

@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/server";
 import {redirect} from "next/navigation";
+import { getServerAuthCallbackUrl } from "@/lib/auth/auth-urls.server";
 
 function srv() {
     return createClient(
@@ -122,13 +123,14 @@ export async function createUser(form: { email: string; nome: string; role: stri
 
     const s = srv();
     const admin = s.auth.admin;
+    const redirectTo = await getServerAuthCallbackUrl();
 
     // 1) tenta ENVIAR CONVITE (cria o user se não existir e dispara e-mail)
     let uid: string | undefined;
     const { error: inviteErr, data: inviteData } = await admin.inviteUserByEmail(form.email, {
         // importante: a URL tem que bater com a configurada como "Site URL" no Supabase
         // e a sua rota de callback precisa resolver a sessão.
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        redirectTo,
     });
 
     if (!inviteErr) {
@@ -141,7 +143,7 @@ export async function createUser(form: { email: string; nome: string; role: stri
         if (found) {
             uid = found.id;
             // opcional: se quiser, gere um link de convite manual:
-            // const { data: linkData } = await admin.generateLink({ type: 'invite', email: form.email, options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` }});
+            // const { data: linkData } = await admin.generateLink({ type: 'invite', email: form.email, options: { redirectTo }});
             // ... e envie esse link via Postmark pela sua própria rotina de e-mail.
         } else {
             // fallback: tentar criar sem enviar e-mail (não dispara convite)
@@ -248,7 +250,7 @@ export async function resendInvite(email: string) {
 
     const admin = srv().auth.admin;
     const { error } = await admin.inviteUserByEmail(email, {
-        // redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+        // redirectTo: getAuthCallbackUrl()
     });
     if (error) throw error;
 

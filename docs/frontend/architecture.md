@@ -246,6 +246,32 @@ Função:
 - fluxos que exigem autorização explícita usam `Authorization: Bearer <access_token>`
 - service role aparece apenas em código server-side
 
+## Autenticação SSR com Supabase
+
+O fluxo de autenticação precisa permanecer coerente com o App Router e com a leitura de sessão server-side.
+
+### Regra principal
+
+- a sessão que protege `/app` e `/partner` é lida no servidor via `supabaseServer()`
+- por isso, o callback OAuth não deve concluir a troca do `code` apenas no browser
+- o callback em `src/app/auth/callback/route.ts` finaliza a troca no servidor e grava cookies compatíveis com SSR antes do redirecionamento final
+
+### Destino após autenticação
+
+- a resolução de destino usa `resolveUserDestination()` e `resolveUserDestinationFromUserId()`
+- usuário interno com `profile.org_id` vai para `/app`
+- usuário parceiro com acesso ativo em `partner_users` vai para `/partner`
+- sem vínculo válido, o fluxo volta para `/login?msg=...`
+
+### Convenção de URLs de auth
+
+- `src/lib/auth/auth-urls.ts` centraliza a URL base do app
+- no client, a callback deve preferir a origem real do navegador
+- em server actions, a callback deve preferir a origem do request atual
+- a convenção preferida de fallback é `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_APP_URL` fica como fallback de compatibilidade
+- OAuth, magic link, reset password, reenvio de confirmação e convites devem reutilizar `getAuthCallbackUrl()`
+
 ## Camadas de estado do sistema
 
 O frontend já lida com pelo menos três camadas de estado distintas.

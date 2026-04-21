@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
+import { getServerAuthCallbackUrl } from "@/lib/auth/auth-urls.server";
 import { resolveUserDestination } from "@/lib/auth/resolve-user-destination";
 
 const passSchema = z.object({
@@ -51,11 +52,12 @@ export async function signUpWithPasswordAction(formData: FormData) {
     }
 
     const supabase = await supabaseServer();
+    const emailRedirectTo = await getServerAuthCallbackUrl();
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+            emailRedirectTo,
             data: { name },
         },
     });
@@ -84,11 +86,12 @@ export async function resendConfirmationAction(formData: FormData) {
     if (!email) return { ok: false, message: "Informe o e-mail." };
 
     const supabase = await supabaseServer();
+    const emailRedirectTo = await getServerAuthCallbackUrl();
     const { error } = await supabase.auth.resend({
         type: "signup",
         email,
         options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+            emailRedirectTo,
         },
     });
 

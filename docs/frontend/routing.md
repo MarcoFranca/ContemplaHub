@@ -72,6 +72,11 @@ Outras rotas de auth:
 
 - `/auth/callback`
 
+Observação:
+
+- `/auth/callback` é um route handler server-side, não uma página client
+- ele conclui OAuth, magic link, recovery e confirmação de conta usando cookies compatíveis com `supabaseServer()`
+
 ## Área autenticada principal
 
 ## Leitura macro por domínio
@@ -175,6 +180,11 @@ Principais rotas em `src/app/api`:
 - `/api/cadastro/[token]/pf`
 - `/api/lances/cartas/[cotaId]`
 - `/api/lp/[slugOrHash]/config`
+
+Observação:
+
+- `/api/auth/resolve-destination` segue existindo como endpoint interno de resolução
+- o callback principal de autenticação, porém, já resolve sessão e destino diretamente no servidor em `/auth/callback`
 
 ## Relação entre rotas e features
 

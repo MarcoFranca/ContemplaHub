@@ -1,6 +1,7 @@
 // ex.: src/components/auth/Providers.tsx
 "use client";
 import { Button } from "@/components/ui/button";
+import { getAuthCallbackUrl } from "@/lib/auth/auth-urls";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 export function OAuthButtons() {
@@ -12,7 +13,7 @@ export function OAuthButtons() {
                 onClick={() => supabase.auth.signInWithOAuth({
                     provider: "google",
                     options: {
-                        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+                        redirectTo: getAuthCallbackUrl(),
                         queryParams: { prompt: "consent", access_type: "offline" },
                     },
                 })}
@@ -23,7 +24,7 @@ export function OAuthButtons() {
                 variant="secondary"
                 onClick={() => supabase.auth.signInWithOAuth({
                     provider: "github",
-                    options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` },
+                    options: { redirectTo: getAuthCallbackUrl() },
                 })}
             >
                 Entrar com GitHub
