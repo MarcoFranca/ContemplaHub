@@ -80,6 +80,15 @@ Principais ações:
 - checar possibilidade de exclusão
 - excluir
 
+### Meta Lead Ads
+
+Principais ações:
+
+- listar integrações Meta da org
+- criar integração
+- editar integração
+- listar eventos recebidos por integração
+
 ## BFFs em `app/api`
 
 ## Quando aparecem
@@ -164,6 +173,23 @@ Uso:
 - convites, magic link, reset password, sign up com confirmação e OAuth devem compartilhar a mesma callback URL
 
 ## Contratos consumidos do backend
+
+## Integração Meta Lead Ads
+
+O frontend administrativo de Meta usa Server Actions para falar com o backend autenticado.
+
+Rotas consumidas:
+
+- `GET /meta/integrations`
+- `POST /meta/integrations`
+- `PATCH /meta/integrations/{id}`
+- `GET /meta/integrations/{id}/events`
+
+Cuidados:
+
+- `Authorization` é enviado apenas server-side;
+- `access_token` e `verify_token` são enviados ao backend sem reexposição posterior no browser;
+- a resolução do tenant continua do lado do backend.
 
 ## Padrões de autenticação
 

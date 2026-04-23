@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-    Home, Trello, Users, Building2, Globe2, LogOut,
-    PanelLeftClose, PanelLeftOpen, Briefcase, Target, Handshake, CircleDollarSign
+    Home, Trello, Users, Building2, Globe2,
+    PanelLeftClose, PanelLeftOpen, Briefcase, Target, Handshake, CircleDollarSign, Facebook
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 
@@ -16,6 +16,7 @@ const links = [
     { href: "/app/lances", icon: Target, label: "Lances" },
     { href: "/app/parceiros", icon: Handshake, label: "Parceiros" },
     { href: "/app/comissoes", icon: CircleDollarSign, label: "Comissões" },
+    { href: "/app/meta-integracoes", icon: Facebook, label: "Meta Ads" },
     { href: "/app/usuarios", icon: Users, label: "Usuários" },
     { href: "/app/organizacao", icon: Building2, label: "Organização" },
     { href: "/app/landing-pages", icon: Globe2, label: "Landing Pages" },

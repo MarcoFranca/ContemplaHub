@@ -23,15 +23,18 @@ export function SiteHeader() {
             >
                 <Link href="/" className="flex items-center gap-2">
                     <Image
-                        src="/icone.png"
+                        src="/incone_WLG.png"
                         alt="Autentika Corretora"
                         width={32}
                         height={32}
                         className="h-8 w-8"
                     />
-                    <span className={cn("font-semibold tracking-tight text-foreground", "dark:text-white")}>
-            Autentika Corretora
-          </span>
+                    <Image
+                        src="/icone_horizontal.png"
+                        alt="Autentika Corretora"
+                        width={80}
+                        height={12}
+                    />
                 </Link>
 
                 <div className={cn("hidden md:flex items-center gap-6 text-sm text-muted-foreground", "dark:text-slate-300")}>

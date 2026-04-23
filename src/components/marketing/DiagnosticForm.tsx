@@ -303,7 +303,7 @@ export function DiagnosticForm() {
                             />
                             <span>
                 Autorizo o contato da Autentika via WhatsApp e e-mail. Li e aceito a{" "}
-                                <a href="/privacidade" className="underline">Política de Privacidade</a>. Não há promessa de contemplação; trabalhamos
+                                <a href="/politica-de-privacidade" className="underline">Política de Privacidade</a>. Não há promessa de contemplação; trabalhamos
                 com estimativas responsáveis.
               </span>
                         </label>

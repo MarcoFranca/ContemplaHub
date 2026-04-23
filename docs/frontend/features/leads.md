@@ -60,8 +60,9 @@ Não há um schema Zod único do domínio de leads concentrado como em contratos
 1. O operador entra em `/app/leads`.
 2. Visualiza o kanban por estágio.
 3. Cria lead via `CreateLeadSheet` ou abre um lead existente.
-4. No detalhe do lead, consulta interesse, cotas, propostas e diagnóstico.
-5. A partir do lead, pode iniciar proposta ou formalização de contrato.
+4. Leads capturados por Meta Lead Ads entram na mesma feature já em `etapa = novo`, mas a configuração dessa captura vive em `/app/meta-integracoes`.
+5. No detalhe do lead, consulta interesse, cotas, propostas e diagnóstico.
+6. A partir do lead, pode iniciar proposta ou formalização de contrato.
 
 ## Integrações com backend
 
@@ -70,6 +71,7 @@ Não há um schema Zod único do domínio de leads concentrado como em contratos
 - `/contracts/from-lead`
 - tabelas Supabase como `leads`, `lead_interesses`, `cotas`, `contratos` e `administradoras`
 - BFFs de proposta e proposta pública
+- ingestões externas como Meta Lead Ads passam pelo backend e aterrissam na mesma tabela `leads`
 
 ## Observações arquiteturais
 

@@ -34,7 +34,6 @@ export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
     const [err, setErr] = useState<string | null>(null);
     const [consented, setConsented] = useState(false);
 
-    const [loading, setLoading] = useState(false);
     const [tipo, setTipo] = useState<ProdutoTipo>("imobiliario");
     const [prazo, setPrazo] = useState<string>("180");
     const [prazoOutro, setPrazoOutro] = useState<string>("");
@@ -272,7 +271,7 @@ export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
                 <Checkbox id="consentimento" checked={consented} onCheckedChange={(v)=>setConsented(Boolean(v))}/>
                 <span>
           Autorizo o contato via WhatsApp e e-mail. Li e aceito a{" "}
-                    <a href="/privacidade" className="underline">Política de Privacidade</a>.
+                    <a href="/politica-de-privacidade" className="underline">Política de Privacidade</a>.
         </span>
             </label>
 

@@ -20,7 +20,7 @@ Responsável por:
 - grupos de rota de marketing e auth
 - área autenticada principal em `src/app/app`
 - portal de parceiros em `src/app/partner`
-- páginas públicas como home, propostas públicas e cadastro por token
+- páginas públicas como home, propostas públicas, cadastro por token e páginas institucionais legais
 - BFFs em `src/app/api`
 
 ### `src/features`
@@ -38,6 +38,7 @@ Responsável por composição compartilhada:
 - `app`: shell autenticado, sidebar, header e elementos comuns da experiência interna
 - `ui`: wrappers shadcn/ui
 - `marketing`: landing e blocos públicos
+- `legal`: shell institucional reutilizável para páginas públicas legais
 - `form`: inputs especializados
 - `system`: componentes globais de estado de rede e pending
 - `auth`, `partner`, `lead`, `commun`, `theme`
@@ -65,6 +66,7 @@ Exemplos:
 - `contratos` usa `src/features/contratos/*` como núcleo de formulário e integra páginas em `src/app/app`, `src/app/partner`, `src/app/app/carteira` e pontos de entrada de lead/kanban
 - `leads` mistura actions em `src/app/app/leads/actions*.ts`, UI em `src/app/app/leads/ui/*` e componentes auxiliares em `src/features/leads/*`
 - `carteira`, `comissões`, `parceiros` e `lances` vivem principalmente dentro de `src/app/app/*`
+- `meta-integracoes` vive em `src/app/app/meta-integracoes`, com schema e tipos próprios em `src/features/meta-integracoes/*`
 
 ## Fluxo macro do produto
 
@@ -230,12 +232,24 @@ Exemplos:
 - `CreateContratoSheet`
 - `RepasseDialog`
 - `LancamentoStatusDialog`
+- `MetaIntegrationFormDialog`
 
 Função:
 
 - abrir sheets/dialogs
 - enviar ação
 - atualizar rota ou estado após persistência
+
+### Área administrativa de integrações
+
+O frontend possui uma área administrativa dedicada para Meta Lead Ads em `/app/meta-integracoes`.
+
+Padrão atual:
+
+- páginas server-side carregam integrações e eventos por org;
+- formulário client-side usa Zod e Server Actions;
+- tokens nunca são reidratados para o browser depois de persistidos;
+- inspeção operacional dos eventos fica separada da feature comercial de leads.
 
 ## Padrões de segurança
 

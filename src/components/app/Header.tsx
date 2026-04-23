@@ -14,12 +14,15 @@ export function Header({
     collapsed: boolean;
     onToggle: () => void;
 }) {
+    void collapsed;
+    void onToggle;
     const path = usePathname();
     const title = (() => {
         if (path.startsWith("/app/leads")) return "Leads";
         if (path.startsWith("/app/carteira")) return "Carteira";
         if (path.startsWith("/app/lances")) return "Lances";
         if (path.startsWith("/app/comissoes")) return "Comissões";
+        if (path.startsWith("/app/meta-integracoes")) return "Meta Ads";
         if (path.startsWith("/app/contratos")) return "Contratos";
         if (path.startsWith("/app/usuarios")) return "Usuários";
         if (path.startsWith("/app/organizacao")) return "Organização";

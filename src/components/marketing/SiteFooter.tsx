@@ -26,7 +26,7 @@ type Props = {
 
 export function SiteFooter({
                                waPhone = process.env.NEXT_PUBLIC_WA_PHONE ?? "5511999999999",
-                               email = "contato@autentikaseguros.com.br",
+                               email = "contato@autentikadigital.com",
                                cnpj,
                                linkedinUrl,
                                siteUrl = "https://autentika.example.com",
@@ -78,7 +78,7 @@ export function SiteFooter({
                     <div>
                         <div className="flex items-center gap-2">
                             <Image
-                                src="/icone.png"
+                                src="/incone_WLG.png"
                                 alt="Autentika Corretora"
                                 width={32}
                                 height={32}
@@ -178,10 +178,14 @@ export function SiteFooter({
 
                         <ul className="mt-2 space-y-1 text-xs text-muted-foreground/80">
                             <li>
-                                <Link href="/privacidade" className="underline underline-offset-2">
+                                <Link href="/politica-de-privacidade" className="underline underline-offset-2">
                                     Política de Privacidade
                                 </Link>{" "}
-                                e registro de consentimento.
+                                e{" "}
+                                <Link href="/exclusao-de-dados" className="underline underline-offset-2">
+                                    exclusão de dados
+                                </Link>
+                                .
                             </li>
                             <li>Administradoras autorizadas pelo Banco Central (BACEN).</li>
                             <li>Sem promessas de “contemplação garantida”. Estimativas são projeções.</li>

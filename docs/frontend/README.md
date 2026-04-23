@@ -21,6 +21,7 @@ Ela documenta:
 - [Design system e UI](./design-system.md)
 - [Dados e integrações](./data-fetching-and-actions.md)
 - [Feature Leads](./features/leads.md)
+- [Feature Meta Integrações](./features/meta-integracoes.md)
 - [Feature Carteira](./features/carteira.md)
 - [Feature Contratos](./features/contratos.md)
 - [Feature Cotas](./features/cotas.md)
@@ -60,4 +61,5 @@ O frontend está organizado em formato híbrido:
 - shell autenticado `/app`
 - portal `/partner`
 - domínios operacionais de leads, carteira, contratos, cotas, comissões e parceiros
+- integrações administrativas de captura, como Meta Lead Ads
 - formulários críticos de cadastro operacional

@@ -50,6 +50,10 @@ Responsabilidades:
 
 - `/`:
   landing principal com `Hero`, `Benefits`, `SimulatorCTA`, `WhyAutentika`, `FounderSection`, `Testimonials`, `GuideCTA` e `DiagnosticSection`
+- `/politica-de-privacidade`:
+  página pública institucional para compliance e cadastro de app na Meta
+- `/exclusao-de-dados`:
+  página pública institucional com instruções para solicitação de exclusão/correção de dados
 - `/guia-consorcio`:
   conteúdo de marketing em grupo `(marketing)`
 - `/guia-consorcio/obrigado`
@@ -58,6 +62,10 @@ Responsabilidades:
   proposta pública compartilhável
 - `/cadastro/[token]`:
   cadastro PF por token
+
+Observação:
+
+- `/privacidade` existe como redirecionamento de compatibilidade para `/politica-de-privacidade`
 
 ## Rotas de autenticação
 
@@ -144,6 +152,16 @@ Observação:
 ### Parceiros
 
 - `/app/parceiros`
+
+### Meta integrações
+
+- `/app/meta-integracoes`
+- `/app/meta-integracoes/[integrationId]`
+
+Observação:
+
+- esta área é administrativa e orientada a configuração por organização;
+- o detalhe por `integrationId` existe para inspeção de `meta_webhook_events`.
 
 ### Administração complementar
 
