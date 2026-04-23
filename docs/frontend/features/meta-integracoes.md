@@ -40,18 +40,18 @@ Responsabilidades observadas:
 ## Fluxo principal do usuário
 
 1. O gestor abre `/app/meta-integracoes`.
-2. Escolhe entre `Modo manual` e `Conectar Meta`.
-3. No modo manual, cria ou edita a integração informando `page_id`, `form_id`, `source_label`, token e responsável padrão.
-4. No modo assistido, clica em `Conectar Meta`, sai para o consentimento OAuth e volta para a mesma tela.
-5. O frontend carrega as páginas autorizadas da sessão temporária mantida no backend.
-6. O usuário seleciona a página, escolhe o formulário, define nome interno e responsável padrão e finaliza a integração.
-5. Usa os botões operacionais para testar conexão, inscrever página e verificar a assinatura.
-6. Acompanha `webhook_configured`, `access_token_configured`, `page_subscribed`, `last_webhook_at`, `last_success_at` e `last_error_*`.
-7. Abre a tela de eventos da integração para inspecionar payloads recebidos, erros de processamento e formulários retornados pela Graph API.
+2. O fluxo assistido aparece como caminho principal da tela.
+3. O usuário clica em `Conectar Meta`, sai para o consentimento OAuth e volta para a mesma tela.
+4. O frontend carrega as páginas autorizadas da sessão temporária mantida no backend.
+5. O usuário seleciona a página, escolhe o formulário, define nome interno e responsável padrão e finaliza a integração.
+6. A configuração manual fica recolhida em `Configuração avançada` como fallback técnico/admin.
+7. Usa os botões operacionais para testar conexão, inscrever página e verificar a assinatura.
+8. Acompanha `webhook_configured`, `access_token_configured`, `page_subscribed`, `last_webhook_at`, `last_success_at` e `last_error_*`.
+9. Abre a tela de eventos da integração para inspecionar payloads recebidos, erros de processamento e formulários retornados pela Graph API.
 
 ## Estrutura atual da feature
 
-- a página `src/app/app/meta-integracoes/page.tsx` centraliza a troca entre modo manual e modo assistido;
+- a página `src/app/app/meta-integracoes/page.tsx` trata o OAuth como caminho principal e move o manual para uma área recolhida de `Configuração avançada`;
 - `MetaIntegrationFormDialog` continua sendo o fallback/admin para cadastro manual;
 - `MetaOAuthAssistant` concentra o stepper simples, a conexão OAuth, a seleção de página/formulário e a confirmação final;
 - `MetaIntegrationOperations` concentra badges e ações operacionais reutilizadas na listagem e no detalhe.

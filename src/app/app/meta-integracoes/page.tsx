@@ -4,16 +4,23 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import {
   Activity,
+  ChevronDown,
   CheckCircle2,
   Facebook,
+  LockKeyhole,
   Plus,
   Siren,
   Unplug,
 } from "lucide-react";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -58,8 +65,7 @@ export default async function MetaIntegracoesPage({
 }) {
   const profile = await getCurrentProfile();
   const sp = (await searchParams) ?? {};
-  const requestedTab =
-    typeof sp.tab === "string" && sp.tab === "oauth" ? "oauth" : "manual";
+  const openAdvancedConfig = typeof sp.tab === "string" && sp.tab === "manual";
   const oauthConnected = sp.oauth_connected === "1";
   const oauthError =
     typeof sp.oauth_error === "string" ? decodeURIComponent(sp.oauth_error) : null;
@@ -103,7 +109,7 @@ export default async function MetaIntegracoesPage({
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Manual para admins e homologação. Assistido para conexão real com a Meta.
+          Fluxo assistido como caminho principal. Configuração manual só como fallback avançado.
         </div>
       </div>
 
@@ -149,46 +155,61 @@ export default async function MetaIntegracoesPage({
         </Card>
       </div>
 
-      <Tabs defaultValue={requestedTab} className="space-y-4">
-        <TabsList className="bg-white/[0.04]">
-          <TabsTrigger value="manual">Modo manual</TabsTrigger>
-          <TabsTrigger value="oauth">Conectar Meta</TabsTrigger>
-        </TabsList>
+      <MetaOAuthAssistant
+        ownerOptions={ownerOptions}
+        oauthConnected={oauthConnected}
+        oauthError={oauthError}
+      />
 
-        <TabsContent value="manual">
-          <Card className="border-white/10 bg-white/[0.03]">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-4">
-                <span>Cadastro manual</span>
+      <Card className="border-white/10 bg-white/[0.03]">
+        <CardHeader className="space-y-3">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-slate-300">
+            <LockKeyhole className="h-3.5 w-3.5" />
+            Configuração avançada
+          </div>
+          <div className="space-y-1">
+            <CardTitle>Fallback manual</CardTitle>
+            <p className="max-w-3xl text-sm text-muted-foreground">
+              Use este modo apenas quando precisar preencher `page_id`,
+              `form_id`, `verify_token` e `access_token` manualmente para
+              homologação, contingência operacional ou suporte técnico.
+            </p>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Accordion
+            type="single"
+            collapsible
+            defaultValue={openAdvancedConfig ? "manual" : undefined}
+            className="rounded-2xl border border-white/10 bg-black/10 px-4"
+          >
+            <AccordionItem value="manual" className="border-none">
+              <AccordionTrigger className="py-4 text-sm font-medium text-white hover:no-underline">
+                <span className="inline-flex items-center gap-2">
+                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                  Abrir formulário manual
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pb-4">
+                <p className="text-sm text-muted-foreground">
+                  O fluxo assistido continua sendo o padrão. Este formulário
+                  fica preservado como fallback/admin e não altera o restante
+                  da integração OAuth.
+                </p>
                 <MetaIntegrationFormDialog
                   ownerOptions={ownerOptions}
                   trigger={
                     <Button className="gap-2">
                       <Plus className="h-4 w-4" />
-                      Nova integração
+                      Nova integração manual
                     </Button>
                   }
                 />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="max-w-3xl text-sm text-muted-foreground">
-                Use este modo quando precisar informar `page_id`, `form_id`,
-                `verify_token` e `access_token` manualmente. Ele continua
-                disponível para fallback operacional, admins e homologação.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="oauth">
-          <MetaOAuthAssistant
-            ownerOptions={ownerOptions}
-            oauthConnected={oauthConnected}
-            oauthError={oauthError}
-          />
-        </TabsContent>
-      </Tabs>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
 
       <Card className="border-white/10 bg-white/[0.03]">
         <CardHeader>

@@ -161,6 +161,8 @@ Observação:
 Observação:
 
 - esta área é administrativa e orientada a configuração por organização;
+- a tela principal prioriza o fluxo assistido de `Conectar Meta`;
+- o cadastro manual fica recolhido em `Configuração avançada` como fallback técnico/admin;
 - o detalhe por `integrationId` existe para inspeção de `meta_webhook_events`.
 
 ### Administração complementar
