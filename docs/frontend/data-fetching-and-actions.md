@@ -87,6 +87,14 @@ Principais ações:
 - listar integrações Meta da org
 - criar integração
 - editar integração
+- iniciar OAuth assistido
+- listar páginas autorizadas da sessão OAuth atual
+- listar formulários da página selecionada
+- finalizar integração a partir do OAuth
+- testar conexão com a Graph API
+- inscrever página no app
+- verificar status de inscrição
+- listar formulários disponíveis da integração
 - listar eventos recebidos por integração
 
 ## BFFs em `app/api`
@@ -183,12 +191,23 @@ Rotas consumidas:
 - `GET /meta/integrations`
 - `POST /meta/integrations`
 - `PATCH /meta/integrations/{id}`
+- `GET /meta/oauth/start`
+- `GET /meta/pages`
+- `GET /meta/pages/{page_id}/forms`
+- `POST /meta/integrations/from-oauth`
+- `POST /meta/integrations/{id}/test-connection`
+- `POST /meta/integrations/{id}/subscribe-page`
+- `GET /meta/integrations/{id}/subscription-status`
+- `GET /meta/integrations/{id}/forms`
 - `GET /meta/integrations/{id}/events`
 
 Cuidados:
 
 - `Authorization` é enviado apenas server-side;
 - `access_token` e `verify_token` são enviados ao backend sem reexposição posterior no browser;
+- os status operacionais de conexão e inscrição são lidos da response sanitizada da integração, nunca do token;
+- o fluxo assistido via OAuth mantém a sessão temporária no backend e só devolve páginas/formulários já sanitizados;
+- o callback OAuth da Meta continua concentrado no backend, e o frontend só consome o resultado após o redirect de volta para `/app/meta-integracoes`;
 - a resolução do tenant continua do lado do backend.
 
 ## Padrões de autenticação

@@ -13,6 +13,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -24,6 +25,8 @@ import {
 import { getCurrentProfile } from "@/lib/auth/server";
 import { listUsers } from "@/app/app/usuarios/actions";
 import { MetaIntegrationFormDialog } from "@/features/meta-integracoes/components/meta-integration-form-dialog";
+import { MetaIntegrationOperations } from "@/features/meta-integracoes/components/meta-integration-operations";
+import { MetaOAuthAssistant } from "@/features/meta-integracoes/components/meta-oauth-assistant";
 import type { MetaOwnerOption } from "@/features/meta-integracoes/types";
 import {
   listMetaIntegrationsAction,
@@ -48,8 +51,18 @@ function StatusBadge({ active }: { active: boolean }) {
   );
 }
 
-export default async function MetaIntegracoesPage() {
+export default async function MetaIntegracoesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const profile = await getCurrentProfile();
+  const sp = (await searchParams) ?? {};
+  const requestedTab =
+    typeof sp.tab === "string" && sp.tab === "oauth" ? "oauth" : "manual";
+  const oauthConnected = sp.oauth_connected === "1";
+  const oauthError =
+    typeof sp.oauth_error === "string" ? decodeURIComponent(sp.oauth_error) : null;
 
   if (!profile?.orgId) {
     return <main className="p-6">Vincule-se a uma organização.</main>;
@@ -89,15 +102,9 @@ export default async function MetaIntegracoesPage() {
           </p>
         </div>
 
-        <MetaIntegrationFormDialog
-          ownerOptions={ownerOptions}
-          trigger={
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nova integração
-            </Button>
-          }
-        />
+        <div className="text-xs text-muted-foreground">
+          Manual para admins e homologação. Assistido para conexão real com a Meta.
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
@@ -142,6 +149,47 @@ export default async function MetaIntegracoesPage() {
         </Card>
       </div>
 
+      <Tabs defaultValue={requestedTab} className="space-y-4">
+        <TabsList className="bg-white/[0.04]">
+          <TabsTrigger value="manual">Modo manual</TabsTrigger>
+          <TabsTrigger value="oauth">Conectar Meta</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="manual">
+          <Card className="border-white/10 bg-white/[0.03]">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between gap-4">
+                <span>Cadastro manual</span>
+                <MetaIntegrationFormDialog
+                  ownerOptions={ownerOptions}
+                  trigger={
+                    <Button className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Nova integração
+                    </Button>
+                  }
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="max-w-3xl text-sm text-muted-foreground">
+                Use este modo quando precisar informar `page_id`, `form_id`,
+                `verify_token` e `access_token` manualmente. Ele continua
+                disponível para fallback operacional, admins e homologação.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="oauth">
+          <MetaOAuthAssistant
+            ownerOptions={ownerOptions}
+            oauthConnected={oauthConnected}
+            oauthError={oauthError}
+          />
+        </TabsContent>
+      </Tabs>
+
       <Card className="border-white/10 bg-white/[0.03]">
         <CardHeader>
           <CardTitle>Integrações da organização</CardTitle>
@@ -151,7 +199,7 @@ export default async function MetaIntegracoesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Integração</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Status operacional</TableHead>
                 <TableHead>Página</TableHead>
                 <TableHead>Formulário</TableHead>
                 <TableHead>Source label</TableHead>
@@ -177,7 +225,10 @@ export default async function MetaIntegracoesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <StatusBadge active={integration.ativo} />
+                      <div className="space-y-3">
+                        <StatusBadge active={integration.ativo} />
+                        <MetaIntegrationOperations integration={integration} compact />
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div>{integration.page_name ?? "Página sem nome"}</div>

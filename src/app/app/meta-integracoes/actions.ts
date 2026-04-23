@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 
 import { getBackendAuthContext } from "@/lib/backend-auth";
 import type {
+  MetaConnectionTest,
   MetaIntegration,
+  MetaPage,
+  MetaPageForm,
+  MetaSubscriptionStatus,
   MetaWebhookEvent,
 } from "@/features/meta-integracoes/types";
 
@@ -100,4 +104,173 @@ export async function listMetaIntegrationEventsAction(
     res,
     "Erro ao listar eventos da integração Meta",
   );
+}
+
+export async function subscribeMetaIntegrationPageAction(
+  integrationId: string,
+): Promise<MetaSubscriptionStatus> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const res = await fetch(`${backendUrl}${BASE}/${integrationId}/subscribe-page`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await getJsonOrThrow<MetaSubscriptionStatus>(
+    res,
+    "Erro ao inscrever página da Meta",
+  );
+  revalidatePath("/app/meta-integracoes");
+  revalidatePath(`/app/meta-integracoes/${integrationId}`);
+  return data;
+}
+
+export async function getMetaIntegrationSubscriptionStatusAction(
+  integrationId: string,
+): Promise<MetaSubscriptionStatus> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const res = await fetch(
+    `${backendUrl}${BASE}/${integrationId}/subscription-status`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    },
+  );
+
+  const data = await getJsonOrThrow<MetaSubscriptionStatus>(
+    res,
+    "Erro ao verificar assinatura da página",
+  );
+  revalidatePath("/app/meta-integracoes");
+  revalidatePath(`/app/meta-integracoes/${integrationId}`);
+  return data;
+}
+
+export async function listMetaIntegrationFormsAction(
+  integrationId: string,
+): Promise<MetaPageForm[]> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const res = await fetch(`${backendUrl}${BASE}/${integrationId}/forms`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  return getJsonOrThrow<MetaPageForm[]>(res, "Erro ao listar formulários da Meta");
+}
+
+export async function testMetaIntegrationConnectionAction(
+  integrationId: string,
+): Promise<MetaConnectionTest> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const res = await fetch(`${backendUrl}${BASE}/${integrationId}/test-connection`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await getJsonOrThrow<MetaConnectionTest>(
+    res,
+    "Erro ao testar conexão com a Meta",
+  );
+  revalidatePath("/app/meta-integracoes");
+  revalidatePath(`/app/meta-integracoes/${integrationId}`);
+  return data;
+}
+
+export async function getMetaOAuthStartUrlAction(): Promise<string> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const res = await fetch(`${backendUrl}/meta/oauth/start`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  const data = await getJsonOrThrow<{ auth_url: string }>(
+    res,
+    "Erro ao iniciar conexão OAuth da Meta",
+  );
+  return data.auth_url;
+}
+
+export async function listMetaOAuthPagesAction(): Promise<MetaPage[]> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const res = await fetch(`${backendUrl}/meta/pages`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  return getJsonOrThrow<MetaPage[]>(res, "Erro ao listar páginas autorizadas da Meta");
+}
+
+export async function listMetaOAuthPageFormsAction(
+  pageId: string,
+): Promise<MetaPageForm[]> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const res = await fetch(`${backendUrl}/meta/pages/${pageId}/forms`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  return getJsonOrThrow<MetaPageForm[]>(
+    res,
+    "Erro ao listar formulários autorizados da Meta",
+  );
+}
+
+export async function finalizeMetaOAuthIntegrationAction(payload: {
+  nome: string;
+  source_label: string;
+  page_id: string;
+  form_id?: string | null;
+  default_owner_id?: string | null;
+  ativo?: boolean;
+}): Promise<MetaIntegration> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const res = await fetch(`${backendUrl}${BASE}/from-oauth`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await getJsonOrThrow<MetaIntegration>(
+    res,
+    "Erro ao finalizar integração Meta via OAuth",
+  );
+  revalidatePath("/app/meta-integracoes");
+  revalidatePath(`/app/meta-integracoes/${data.id}`);
+  return data;
 }

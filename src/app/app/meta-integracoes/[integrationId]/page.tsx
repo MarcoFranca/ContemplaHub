@@ -6,6 +6,7 @@ import { ArrowLeft, ReceiptText } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -16,7 +17,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCurrentProfile } from "@/lib/auth/server";
+import { MetaIntegrationOperations } from "@/features/meta-integracoes/components/meta-integration-operations";
 import {
+  listMetaIntegrationFormsAction,
   listMetaIntegrationEventsAction,
   listMetaIntegrationsAction,
 } from "../actions";
@@ -46,9 +49,18 @@ export default async function MetaIntegrationEventsPage({
     );
   }
 
-  const [integrations, events] = await Promise.all([
+  const [integrations, events, formsResult] = await Promise.all([
     listMetaIntegrationsAction(),
     listMetaIntegrationEventsAction(integrationId),
+    listMetaIntegrationFormsAction(integrationId)
+      .then((forms) => ({ forms, error: null }))
+      .catch((error: unknown) => ({
+        forms: [],
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro ao carregar formulários da página.",
+      })),
   ]);
 
   const integration = integrations.find((item) => item.id === integrationId);
@@ -79,6 +91,45 @@ export default async function MetaIntegrationEventsPage({
           <div>Último webhook: {formatDateTime(integration.last_webhook_at)}</div>
         </div>
       </div>
+
+      <Card className="border-white/10 bg-white/[0.03]">
+        <CardHeader>
+          <CardTitle>Operação da integração</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MetaIntegrationOperations integration={integration} />
+        </CardContent>
+      </Card>
+
+      <Card className="border-white/10 bg-white/[0.03]">
+        <CardHeader>
+          <CardTitle>Formulários da página</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {formsResult.error ? (
+            <p className="text-sm text-amber-300">{formsResult.error}</p>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            {formsResult.forms.map((form) => (
+              <Badge
+                key={form.id}
+                variant="outline"
+                className="rounded-full border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-slate-200"
+              >
+                {form.name ?? "Formulário sem nome"} · {form.id}
+                {form.status ? ` · ${form.status}` : ""}
+              </Badge>
+            ))}
+          </div>
+
+          {formsResult.forms.length === 0 && !formsResult.error ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhum formulário retornado pela Graph API para esta página.
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <Card className="border-white/10 bg-white/[0.03]">
         <CardHeader>
