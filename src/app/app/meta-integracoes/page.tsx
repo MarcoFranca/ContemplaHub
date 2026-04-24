@@ -89,10 +89,26 @@ export default async function MetaIntegracoesPage({
     );
   }
 
-  const [integrations, usersResult] = await Promise.all([
-    listMetaIntegrationsAction(),
-    listUsers({ page: 1, pageSize: 200, withOwner: false }),
-  ]);
+  let integrations = [] as Awaited<ReturnType<typeof listMetaIntegrationsAction>>;
+  let usersResult:
+    | Awaited<ReturnType<typeof listUsers>>
+    | { rows: Array<{ user_id: string; nome: string | null; email?: string | null }>; total: number } = {
+      rows: [],
+      total: 0,
+    };
+  let pageError: string | null = null;
+
+  try {
+    [integrations, usersResult] = await Promise.all([
+      listMetaIntegrationsAction(),
+      listUsers({ page: 1, pageSize: 200, withOwner: false }),
+    ]);
+  } catch (error) {
+    pageError =
+      error instanceof Error
+        ? error.message
+        : "Erro ao carregar configurações de Meta Integrações.";
+  }
 
   const ownerOptions: MetaOwnerOption[] = usersResult.rows.map((row) => ({
     id: row.user_id,
@@ -167,6 +183,17 @@ export default async function MetaIntegracoesPage({
         oauthSuccess={oauthSuccess}
         oauthError={oauthError}
       />
+
+      {pageError ? (
+        <Card className="border-amber-500/20 bg-amber-500/10">
+          <CardHeader>
+            <CardTitle className="text-amber-100">Falha ao carregar a tela</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-amber-100/90">
+            {pageError}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="border-white/10 bg-white/[0.03]">
         <CardHeader className="space-y-3">

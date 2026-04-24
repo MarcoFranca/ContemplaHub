@@ -49,22 +49,51 @@ export default async function MetaIntegrationEventsPage({
     );
   }
 
-  const [integrations, events, formsResult] = await Promise.all([
-    listMetaIntegrationsAction(),
-    listMetaIntegrationEventsAction(integrationId),
-    listMetaIntegrationFormsAction(integrationId)
-      .then((forms) => ({ forms, error: null }))
-      .catch((error: unknown) => ({
-        forms: [],
-        error:
-          error instanceof Error
-            ? error.message
-            : "Erro ao carregar formulários da página.",
-      })),
-  ]);
+  let integrations = [] as Awaited<ReturnType<typeof listMetaIntegrationsAction>>;
+  let events = [] as Awaited<ReturnType<typeof listMetaIntegrationEventsAction>>;
+  let formsResult: {
+    forms: Awaited<ReturnType<typeof listMetaIntegrationFormsAction>>;
+    error: string | null;
+  } = { forms: [], error: null };
+  let pageError: string | null = null;
+
+  try {
+    [integrations, events, formsResult] = await Promise.all([
+      listMetaIntegrationsAction(),
+      listMetaIntegrationEventsAction(integrationId),
+      listMetaIntegrationFormsAction(integrationId)
+        .then((forms) => ({ forms, error: null }))
+        .catch((error: unknown) => ({
+          forms: [],
+          error:
+            error instanceof Error
+              ? error.message
+              : "Erro ao carregar formulários da página.",
+        })),
+    ]);
+  } catch (error) {
+    pageError =
+      error instanceof Error
+        ? error.message
+        : "Erro ao carregar os dados da integração Meta.";
+  }
 
   const integration = integrations.find((item) => item.id === integrationId);
-  if (!integration) notFound();
+  if (!integration && !pageError) notFound();
+  if (!integration) {
+    return (
+      <main className="p-6">
+        <Card className="border-amber-500/20 bg-amber-500/10">
+          <CardHeader>
+            <CardTitle className="text-amber-100">Falha ao carregar a integração</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-amber-100/90">
+            {pageError ?? "A integração Meta não pôde ser carregada."}
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <div className="h-full overflow-y-auto p-6 space-y-6">
@@ -106,6 +135,9 @@ export default async function MetaIntegrationEventsPage({
           <CardTitle>Formulários da página</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {pageError ? (
+            <p className="text-sm text-amber-300">{pageError}</p>
+          ) : null}
           {formsResult.error ? (
             <p className="text-sm text-amber-300">{formsResult.error}</p>
           ) : null}

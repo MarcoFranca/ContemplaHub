@@ -211,6 +211,7 @@ Cuidados:
 - depois do callback com `success=true` ou `meta_connected=1`, o client faz `router.refresh()` para reexecutar `GET /meta/integrations` no Server Component;
 - em seguida, o assistente chama `GET /meta/pages` para preencher a seleção de páginas autorizadas;
 - `POST /meta/integrations/from-oauth` só acontece depois que o usuário escolhe página/formulário e confirma a integração;
+- quando uma action server-side falha na renderização inicial, a página mostra fallback visual com a mensagem da falha em vez de explodir com o erro genérico de Server Components do Next.js;
 - a resolução do tenant continua do lado do backend.
 
 ## Padrões de autenticação
