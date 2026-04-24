@@ -42,18 +42,19 @@ Responsabilidades observadas:
 1. O gestor abre `/app/meta-integracoes`.
 2. O fluxo assistido aparece como caminho principal da tela.
 3. O usuário clica em `Conectar Meta`, sai para o consentimento OAuth e volta para a mesma tela.
-4. O frontend carrega as páginas autorizadas da sessão temporária mantida no backend.
-5. O usuário seleciona a página, escolhe o formulário, define nome interno e responsável padrão e finaliza a integração.
-6. A configuração manual fica recolhida em `Configuração avançada` como fallback técnico/admin.
-7. Usa os botões operacionais para testar conexão, inscrever página e verificar a assinatura.
-8. Acompanha `webhook_configured`, `access_token_configured`, `page_subscribed`, `last_webhook_at`, `last_success_at` e `last_error_*`.
-9. Abre a tela de eventos da integração para inspecionar payloads recebidos, erros de processamento e formulários retornados pela Graph API.
+4. Ao voltar do callback, o frontend faz refresh da rota e recarrega `GET /meta/integrations`.
+5. O frontend carrega as páginas autorizadas persistidas temporariamente pelo backend para o usuário atual.
+6. O usuário seleciona a página, escolhe o formulário, define nome interno e responsável padrão e finaliza a integração.
+7. A configuração manual fica recolhida em `Configuração avançada` como fallback técnico/admin.
+8. Usa os botões operacionais para testar conexão, inscrever página e verificar a assinatura.
+9. Acompanha `webhook_configured`, `access_token_configured`, `page_subscribed`, `last_webhook_at`, `last_success_at` e `last_error_*`.
+10. Abre a tela de eventos da integração para inspecionar payloads recebidos, erros de processamento e formulários retornados pela Graph API.
 
 ## Estrutura atual da feature
 
 - a página `src/app/app/meta-integracoes/page.tsx` trata o OAuth como caminho principal e move o manual para uma área recolhida de `Configuração avançada`;
 - `MetaIntegrationFormDialog` continua sendo o fallback/admin para cadastro manual;
-- `MetaOAuthAssistant` concentra o stepper simples, a conexão OAuth, a seleção de página/formulário e a confirmação final;
+- `MetaOAuthAssistant` concentra o stepper simples, a conexão OAuth, o refresh pós-callback, a seleção de página/formulário e a confirmação final;
 - `MetaIntegrationOperations` concentra badges e ações operacionais reutilizadas na listagem e no detalhe.
 
 ## Integrações com backend

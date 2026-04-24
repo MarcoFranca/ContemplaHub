@@ -208,6 +208,7 @@ Cuidados:
 - os status operacionais de conexão e inscrição são lidos da response sanitizada da integração, nunca do token;
 - o fluxo assistido via OAuth mantém a sessão temporária no backend e só devolve páginas/formulários já sanitizados;
 - o callback OAuth da Meta continua concentrado no backend, e o frontend só consome o resultado após o redirect de volta para `/app/meta-integracoes`;
+- depois do callback com `success=true`, o client faz `router.refresh()` para reexecutar `GET /meta/integrations` no Server Component;
 - a resolução do tenant continua do lado do backend.
 
 ## Padrões de autenticação

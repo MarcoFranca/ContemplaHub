@@ -66,9 +66,15 @@ export default async function MetaIntegracoesPage({
   const profile = await getCurrentProfile();
   const sp = (await searchParams) ?? {};
   const openAdvancedConfig = typeof sp.tab === "string" && sp.tab === "manual";
-  const oauthConnected = sp.oauth_connected === "1";
+  const oauthSuccess =
+    sp.oauth_connected === "1" ||
+    sp.success === "true";
   const oauthError =
-    typeof sp.oauth_error === "string" ? decodeURIComponent(sp.oauth_error) : null;
+    typeof sp.error === "string"
+      ? decodeURIComponent(sp.error)
+      : typeof sp.oauth_error === "string"
+        ? decodeURIComponent(sp.oauth_error)
+        : null;
 
   if (!profile?.orgId) {
     return <main className="p-6">Vincule-se a uma organização.</main>;
@@ -157,7 +163,7 @@ export default async function MetaIntegracoesPage({
 
       <MetaOAuthAssistant
         ownerOptions={ownerOptions}
-        oauthConnected={oauthConnected}
+        oauthSuccess={oauthSuccess}
         oauthError={oauthError}
       />
 

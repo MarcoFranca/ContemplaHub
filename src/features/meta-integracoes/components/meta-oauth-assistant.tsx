@@ -43,13 +43,13 @@ import type {
 
 type Props = {
   ownerOptions: MetaOwnerOption[];
-  oauthConnected?: boolean;
+  oauthSuccess?: boolean;
   oauthError?: string | null;
 };
 
 export function MetaOAuthAssistant({
   ownerOptions,
-  oauthConnected = false,
+  oauthSuccess = false,
   oauthError,
 }: Props) {
   const router = useRouter();
@@ -123,10 +123,12 @@ export function MetaOAuthAssistant({
   }, [oauthError]);
 
   useEffect(() => {
-    if (oauthConnected) {
+    if (oauthSuccess) {
+      router.refresh();
+      toast.success("Conta Meta conectada. Selecione a página e o formulário.");
       loadPages();
     }
-  }, [oauthConnected, loadPages]);
+  }, [loadPages, oauthSuccess, router]);
 
   return (
     <Card className="border-white/10 bg-white/[0.03]">
