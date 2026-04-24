@@ -67,6 +67,7 @@ export default async function MetaIntegracoesPage({
   const sp = (await searchParams) ?? {};
   const openAdvancedConfig = typeof sp.tab === "string" && sp.tab === "manual";
   const oauthSuccess =
+    sp.meta_connected === "1" ||
     sp.oauth_connected === "1" ||
     sp.success === "true";
   const oauthError =

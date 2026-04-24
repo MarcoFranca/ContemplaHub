@@ -56,6 +56,7 @@ export function MetaOAuthAssistant({
   const [isPending, startTransition] = useTransition();
   const [pages, setPages] = useState<MetaPage[]>([]);
   const [forms, setForms] = useState<MetaPageForm[]>([]);
+  const [pagesError, setPagesError] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string>("");
   const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [defaultOwnerId, setDefaultOwnerId] = useState<string>("__none__");
@@ -72,6 +73,7 @@ export function MetaOAuthAssistant({
   const loadForms = useCallback((pageId: string, pageName?: string | null) => {
     startTransition(async () => {
       try {
+        setPagesError(null);
         const nextForms = await listMetaOAuthPageFormsAction(pageId);
         setForms(nextForms);
         setSelectedFormId(nextForms[0]?.id ?? "");
@@ -93,6 +95,7 @@ export function MetaOAuthAssistant({
   const loadPages = useCallback(() => {
     startTransition(async () => {
       try {
+        setPagesError(null);
         const nextPages = await listMetaOAuthPagesAction();
         setPages(nextPages);
         const firstPageId = nextPages[0]?.id ?? "";
@@ -102,11 +105,22 @@ export function MetaOAuthAssistant({
         } else {
           setForms([]);
           setSelectedFormId("");
+          setPagesError(
+            "Nenhuma página autorizada foi encontrada para esta conta Meta. Revise as permissões concedidas e confirme se o usuário possui páginas acessíveis.",
+          );
+          toast.error(
+            "Nenhuma página autorizada foi encontrada para esta conta Meta.",
+          );
         }
       } catch (error) {
         setPages([]);
         setForms([]);
         setSelectedFormId("");
+        setPagesError(
+          error instanceof Error
+            ? error.message
+            : "Erro ao carregar páginas autorizadas da Meta.",
+        );
         toast.error(
           error instanceof Error
             ? error.message
@@ -199,6 +213,12 @@ export function MetaOAuthAssistant({
             Atualizar páginas autorizadas
           </Button>
         </div>
+
+        {pagesError ? (
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+            {pagesError}
+          </div>
+        ) : null}
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="grid gap-2">

@@ -41,9 +41,9 @@ Responsabilidades observadas:
 
 1. O gestor abre `/app/meta-integracoes`.
 2. O fluxo assistido aparece como caminho principal da tela.
-3. O usuário clica em `Conectar Meta`, sai para o consentimento OAuth e volta para a mesma tela.
+3. O usuário clica em `Conectar Meta`, sai para o consentimento OAuth e volta para a mesma tela com `success=true`, `meta_connected=1` ou `error=...`.
 4. Ao voltar do callback, o frontend faz refresh da rota e recarrega `GET /meta/integrations`.
-5. O frontend carrega as páginas autorizadas persistidas temporariamente pelo backend para o usuário atual.
+5. Em seguida, o assistente chama `GET /meta/pages` para carregar as páginas autorizadas persistidas temporariamente pelo backend para o usuário atual.
 6. O usuário seleciona a página, escolhe o formulário, define nome interno e responsável padrão e finaliza a integração.
 7. A configuração manual fica recolhida em `Configuração avançada` como fallback técnico/admin.
 8. Usa os botões operacionais para testar conexão, inscrever página e verificar a assinatura.
@@ -81,4 +81,7 @@ Responsabilidades observadas:
 - o formulário usa Zod no client com envio por Server Actions;
 - um painel client-side da própria feature concentra badges operacionais e botões de ação para evitar duplicação entre listagem e detalhe;
 - `access_token` e `verify_token` nunca voltam para o client depois da persistência;
+- `GET /meta/integrations` não é a fonte primária das páginas autorizadas logo após o callback; essa função fica com `GET /meta/pages`;
+- `POST /meta/integrations/from-oauth` só roda depois da seleção explícita de página/formulário e do clique em salvar;
+- quando `GET /meta/pages` volta vazio, a UI mostra erro claro orientando revisar permissões e acesso a páginas na conta Meta;
 - o frontend trata Meta Lead Ads como domínio administrativo e não como lugar da lógica de ingestão do lead.
