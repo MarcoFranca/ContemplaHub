@@ -76,6 +76,7 @@ Responsabilidades observadas:
 
 - a UI usa Server Components para carregar listagem e eventos;
 - as páginas server-side do domínio tratam falhas de actions com fallback visual, para evitar a mensagem genérica de erro de renderização em produção do Next.js;
+- `MetaIntegrationOperations` consome Server Actions operacionais com retorno estruturado `{ ok, data | error }`, então falhas de token/permissão da Meta aparecem como erro funcional no toast em vez de quebrar a renderização;
 - a escolha entre fluxo manual e assistido fica concentrada em tabs na própria página;
 - o fluxo assistido usa uma sessão OAuth temporária mantida no backend, sem expor token à camada client;
 - o frontend nunca recebe o `access_token` bruto; ele só recebe páginas, formulários e status já sanitizados;

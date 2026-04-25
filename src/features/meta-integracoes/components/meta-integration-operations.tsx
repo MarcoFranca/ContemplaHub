@@ -72,10 +72,17 @@ export function MetaIntegrationOperations({
         ? "warn"
         : "unknown";
 
-  const runAction = (fn: () => Promise<unknown>, successMessage: string) => {
+  const runAction = (
+    fn: () => Promise<{ ok: boolean; error?: string }>,
+    successMessage: string,
+  ) => {
     startTransition(async () => {
       try {
-        await fn();
+        const result = await fn();
+        if (!result.ok) {
+          toast.error(result.error || "Erro na operação da integração Meta.");
+          return;
+        }
         toast.success(successMessage);
         router.refresh();
       } catch (error) {

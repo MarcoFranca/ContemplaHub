@@ -14,6 +14,10 @@ import type {
 
 const BASE = "/meta/integrations";
 
+export type MetaOperationResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
+
 async function getJsonOrThrow<T>(
   res: Response,
   fallbackMessage: string,
@@ -108,50 +112,70 @@ export async function listMetaIntegrationEventsAction(
 
 export async function subscribeMetaIntegrationPageAction(
   integrationId: string,
-): Promise<MetaSubscriptionStatus> {
-  const { backendUrl, token } = await getBackendAuthContext();
+): Promise<MetaOperationResult<MetaSubscriptionStatus>> {
+  try {
+    const { backendUrl, token } = await getBackendAuthContext();
 
-  const res = await fetch(`${backendUrl}${BASE}/${integrationId}/subscribe-page`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  const data = await getJsonOrThrow<MetaSubscriptionStatus>(
-    res,
-    "Erro ao inscrever página da Meta",
-  );
-  revalidatePath("/app/meta-integracoes");
-  revalidatePath(`/app/meta-integracoes/${integrationId}`);
-  return data;
-}
-
-export async function getMetaIntegrationSubscriptionStatusAction(
-  integrationId: string,
-): Promise<MetaSubscriptionStatus> {
-  const { backendUrl, token } = await getBackendAuthContext();
-
-  const res = await fetch(
-    `${backendUrl}${BASE}/${integrationId}/subscription-status`,
-    {
-      method: "GET",
+    const res = await fetch(`${backendUrl}${BASE}/${integrationId}/subscribe-page`, {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      cache: "no-store",
-    },
-  );
+    });
 
-  const data = await getJsonOrThrow<MetaSubscriptionStatus>(
-    res,
-    "Erro ao verificar assinatura da página",
-  );
-  revalidatePath("/app/meta-integracoes");
-  revalidatePath(`/app/meta-integracoes/${integrationId}`);
-  return data;
+    const data = await getJsonOrThrow<MetaSubscriptionStatus>(
+      res,
+      "Erro ao inscrever página da Meta",
+    );
+    revalidatePath("/app/meta-integracoes");
+    revalidatePath(`/app/meta-integracoes/${integrationId}`);
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao inscrever página da Meta",
+    };
+  }
+}
+
+export async function getMetaIntegrationSubscriptionStatusAction(
+  integrationId: string,
+): Promise<MetaOperationResult<MetaSubscriptionStatus>> {
+  try {
+    const { backendUrl, token } = await getBackendAuthContext();
+
+    const res = await fetch(
+      `${backendUrl}${BASE}/${integrationId}/subscription-status`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      },
+    );
+
+    const data = await getJsonOrThrow<MetaSubscriptionStatus>(
+      res,
+      "Erro ao verificar assinatura da página",
+    );
+    revalidatePath("/app/meta-integracoes");
+    revalidatePath(`/app/meta-integracoes/${integrationId}`);
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao verificar assinatura da página",
+    };
+  }
 }
 
 export async function listMetaIntegrationFormsAction(
@@ -173,24 +197,34 @@ export async function listMetaIntegrationFormsAction(
 
 export async function testMetaIntegrationConnectionAction(
   integrationId: string,
-): Promise<MetaConnectionTest> {
-  const { backendUrl, token } = await getBackendAuthContext();
+): Promise<MetaOperationResult<MetaConnectionTest>> {
+  try {
+    const { backendUrl, token } = await getBackendAuthContext();
 
-  const res = await fetch(`${backendUrl}${BASE}/${integrationId}/test-connection`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
+    const res = await fetch(`${backendUrl}${BASE}/${integrationId}/test-connection`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-  const data = await getJsonOrThrow<MetaConnectionTest>(
-    res,
-    "Erro ao testar conexão com a Meta",
-  );
-  revalidatePath("/app/meta-integracoes");
-  revalidatePath(`/app/meta-integracoes/${integrationId}`);
-  return data;
+    const data = await getJsonOrThrow<MetaConnectionTest>(
+      res,
+      "Erro ao testar conexão com a Meta",
+    );
+    revalidatePath("/app/meta-integracoes");
+    revalidatePath(`/app/meta-integracoes/${integrationId}`);
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao testar conexão com a Meta",
+    };
+  }
 }
 
 export async function getMetaOAuthStartUrlAction(): Promise<string> {
