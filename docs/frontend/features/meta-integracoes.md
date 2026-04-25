@@ -55,7 +55,7 @@ Responsabilidades observadas:
 - a página `src/app/app/meta-integracoes/page.tsx` trata o OAuth como caminho principal e move o manual para uma área recolhida de `Configuração avançada`;
 - `MetaIntegrationFormDialog` continua sendo o fallback/admin para cadastro manual;
 - `MetaOAuthAssistant` concentra o stepper simples, a conexão OAuth, o refresh pós-callback, a seleção de página/formulário e a confirmação final;
-- `MetaIntegrationOperations` concentra badges e ações operacionais reutilizadas na listagem e no detalhe.
+- `MetaIntegrationOperations` concentra badges e ações operacionais reutilizadas na listagem e no detalhe, incluindo ativar/desativar a integração importada pelo OAuth.
 
 ## Integrações com backend
 
@@ -71,6 +71,7 @@ Responsabilidades observadas:
 - `GET /meta/integrations/{id}/subscription-status`
 - `GET /meta/integrations/{id}/forms`
 - `GET /meta/integrations/{id}/events`
+- `PATCH /meta/integrations/{id}` também é usado pelo painel operacional para ativar ou desativar integrações importadas.
 
 ## Observações arquiteturais
 

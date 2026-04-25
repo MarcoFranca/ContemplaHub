@@ -2,11 +2,19 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Link2, RadioTower, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  Link2,
+  Power,
+  RadioTower,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
   getMetaIntegrationSubscriptionStatusAction,
+  setMetaIntegrationActiveAction,
   subscribeMetaIntegrationPageAction,
   testMetaIntegrationConnectionAction,
 } from "@/app/app/meta-integracoes/actions";
@@ -169,6 +177,30 @@ export function MetaIntegrationOperations({
       ) : null}
 
       <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant={integration.ativo ? "outline" : "default"}
+          size="sm"
+          disabled={isPending}
+          className={cn(
+            "gap-2",
+            integration.ativo
+              ? "border-white/10"
+              : "bg-emerald-500 text-black hover:bg-emerald-400",
+          )}
+          onClick={() =>
+            runAction(
+              () => setMetaIntegrationActiveAction(integration.id, !integration.ativo),
+              integration.ativo
+                ? "Integração Meta desativada."
+                : "Integração Meta ativada.",
+            )
+          }
+        >
+          <Power className="h-4 w-4" />
+          {integration.ativo ? "Desativar" : "Ativar integração"}
+        </Button>
+
         <Button
           type="button"
           variant="outline"

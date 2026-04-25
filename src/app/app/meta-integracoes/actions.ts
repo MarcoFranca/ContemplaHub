@@ -90,6 +90,42 @@ export async function updateMetaIntegrationAction(
   revalidatePath(`/app/meta-integracoes/${integrationId}`);
 }
 
+export async function setMetaIntegrationActiveAction(
+  integrationId: string,
+  ativo: boolean,
+): Promise<MetaOperationResult<MetaIntegration>> {
+  try {
+    const { backendUrl, token } = await getBackendAuthContext();
+
+    const res = await fetch(`${backendUrl}${BASE}/${integrationId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ativo }),
+    });
+
+    const data = await getJsonOrThrow<MetaIntegration>(
+      res,
+      ativo ? "Erro ao ativar integração Meta" : "Erro ao desativar integração Meta",
+    );
+    revalidatePath("/app/meta-integracoes");
+    revalidatePath(`/app/meta-integracoes/${integrationId}`);
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : ativo
+            ? "Erro ao ativar integração Meta"
+            : "Erro ao desativar integração Meta",
+    };
+  }
+}
+
 export async function listMetaIntegrationEventsAction(
   integrationId: string,
 ): Promise<MetaWebhookEvent[]> {

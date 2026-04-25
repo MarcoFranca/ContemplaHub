@@ -200,6 +200,7 @@ Rotas consumidas:
 - `GET /meta/integrations/{id}/subscription-status`
 - `GET /meta/integrations/{id}/forms`
 - `GET /meta/integrations/{id}/events`
+- `PATCH /meta/integrations/{id}` também é usado para ativar/desativar uma integração diretamente no painel operacional;
 
 Cuidados:
 
@@ -212,6 +213,7 @@ Cuidados:
 - em seguida, o assistente chama `GET /meta/pages` para preencher a seleção de páginas autorizadas;
 - `POST /meta/integrations/from-oauth` só acontece depois que o usuário escolhe página/formulário e confirma a integração;
 - as ações operacionais (`test-connection`, `subscribe-page`, `subscription-status`) devolvem um resultado estruturado `{ ok, data | error }` para evitar que uma falha operacional da Meta apareça como erro genérico de Server Components em produção;
+- a ativação operacional usa a mesma abordagem estruturada para permitir que páginas importadas via OAuth sejam habilitadas sem abrir o formulário manual;
 - quando uma action server-side falha na renderização inicial, a página mostra fallback visual com a mensagem da falha em vez de explodir com o erro genérico de Server Components do Next.js;
 - a resolução do tenant continua do lado do backend.
 
