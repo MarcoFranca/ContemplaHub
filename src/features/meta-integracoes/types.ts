@@ -71,6 +71,15 @@ export type MetaConnectionTest = {
   raw: Record<string, unknown>;
 };
 
+export type MetaDeleteIntegrationResult = {
+  ok: boolean;
+  integration_id: string;
+  page_id: string;
+  unsubscribed: boolean;
+  deleted_at: string;
+  detail?: string | null;
+};
+
 export type MetaPageForm = {
   id: string;
   name?: string | null;

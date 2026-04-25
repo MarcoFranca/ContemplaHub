@@ -9,15 +9,28 @@ import {
   RadioTower,
   RefreshCw,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  deleteMetaIntegrationAction,
   getMetaIntegrationSubscriptionStatusAction,
   setMetaIntegrationActiveAction,
   subscribeMetaIntegrationPageAction,
   testMetaIntegrationConnectionAction,
 } from "@/app/app/meta-integracoes/actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { MetaIntegration } from "@/features/meta-integracoes/types";
@@ -250,6 +263,57 @@ export function MetaIntegrationOperations({
           <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
           Verificar assinatura
         </Button>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={isPending}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Remover página
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="border border-red-500/40 bg-slate-950">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-red-300">
+                Remover integração Meta?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm text-slate-300">
+                A página <strong>{integration.page_name ?? integration.page_id}</strong> será
+                removida do ContemplaHub. O sistema tenta desinscrever o app da Meta antes de
+                apagar o vínculo local, mas a remoção local continua mesmo se a Meta devolver
+                aviso de desinscrição.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isPending}
+                className="bg-red-600 text-white hover:bg-red-500"
+                onClick={() =>
+                  runAction(async () => {
+                    const result = await deleteMetaIntegrationAction(integration.id);
+                    if (result.ok && result.data.detail) {
+                      toast.warning(
+                        "Integração removida, mas a Meta retornou um aviso ao desinscrever a página.",
+                        {
+                          description: result.data.detail,
+                        },
+                      );
+                    }
+                    return result;
+                  }, "Integração Meta removida.")
+                }
+              >
+                Remover definitivamente
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

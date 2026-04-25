@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getBackendAuthContext } from "@/lib/backend-auth";
 import type {
   MetaConnectionTest,
+  MetaDeleteIntegrationResult,
   MetaIntegration,
   MetaPage,
   MetaPageForm,
@@ -122,6 +123,38 @@ export async function setMetaIntegrationActiveAction(
           : ativo
             ? "Erro ao ativar integração Meta"
             : "Erro ao desativar integração Meta",
+    };
+  }
+}
+
+export async function deleteMetaIntegrationAction(
+  integrationId: string,
+): Promise<MetaOperationResult<MetaDeleteIntegrationResult>> {
+  try {
+    const { backendUrl, token } = await getBackendAuthContext();
+
+    const res = await fetch(`${backendUrl}${BASE}/${integrationId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await getJsonOrThrow<MetaDeleteIntegrationResult>(
+      res,
+      "Erro ao remover integração Meta",
+    );
+    revalidatePath("/app/meta-integracoes");
+    revalidatePath(`/app/meta-integracoes/${integrationId}`);
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao remover integração Meta",
     };
   }
 }

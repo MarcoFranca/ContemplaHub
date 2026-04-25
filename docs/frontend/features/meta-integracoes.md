@@ -15,6 +15,7 @@ Responsabilidades observadas:
 - acompanhar status operacional da integração;
 - testar conexão com a Graph API;
 - inscrever a página no app e verificar a assinatura;
+- remover a página/integracao com confirmação e tentativa de desinscrição;
 - consultar formulários disponíveis da página;
 - inspecionar eventos recebidos pelo webhook.
 
@@ -47,15 +48,16 @@ Responsabilidades observadas:
 6. O usuário seleciona a página, escolhe o formulário, define nome interno e responsável padrão e finaliza a integração.
 7. A configuração manual fica recolhida em `Configuração avançada` como fallback técnico/admin.
 8. Usa os botões operacionais para testar conexão, inscrever página e verificar a assinatura.
-9. Acompanha `webhook_configured`, `access_token_configured`, `page_subscribed`, `last_webhook_at`, `last_success_at` e `last_error_*`.
-10. Abre a tela de eventos da integração para inspecionar payloads recebidos, erros de processamento e formulários retornados pela Graph API.
+9. Quando quiser encerrar a integração, usa `Remover página` e confirma a exclusão.
+10. Acompanha `webhook_configured`, `access_token_configured`, `page_subscribed`, `last_webhook_at`, `last_success_at` e `last_error_*`.
+11. Abre a tela de eventos da integração para inspecionar payloads recebidos, erros de processamento e formulários retornados pela Graph API.
 
 ## Estrutura atual da feature
 
 - a página `src/app/app/meta-integracoes/page.tsx` trata o OAuth como caminho principal e move o manual para uma área recolhida de `Configuração avançada`;
 - `MetaIntegrationFormDialog` continua sendo o fallback/admin para cadastro manual;
 - `MetaOAuthAssistant` concentra o stepper simples, a conexão OAuth, o refresh pós-callback, a seleção de página/formulário e a confirmação final;
-- `MetaIntegrationOperations` concentra badges e ações operacionais reutilizadas na listagem e no detalhe, incluindo ativar/desativar a integração importada pelo OAuth.
+- `MetaIntegrationOperations` concentra badges e ações operacionais reutilizadas na listagem e no detalhe, incluindo ativar/desativar a integração importada pelo OAuth e remover a página com confirmação.
 
 ## Integrações com backend
 
@@ -68,6 +70,7 @@ Responsabilidades observadas:
 - `POST /meta/integrations/from-oauth`
 - `POST /meta/integrations/{id}/test-connection`
 - `POST /meta/integrations/{id}/subscribe-page`
+- `DELETE /meta/integrations/{id}`
 - `GET /meta/integrations/{id}/subscription-status`
 - `GET /meta/integrations/{id}/forms`
 - `GET /meta/integrations/{id}/events`
