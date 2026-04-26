@@ -212,8 +212,10 @@ Cuidados:
 - depois do callback com `success=true` ou `meta_connected=1`, o client faz `router.refresh()` para reexecutar `GET /meta/integrations` no Server Component;
 - em seguida, o assistente chama `GET /meta/pages` para preencher a seleção de páginas autorizadas;
 - `POST /meta/integrations/from-oauth` só acontece depois que o usuário escolhe página/formulário e confirma a integração;
+- a página principal resume a saúde da operação com cards de status e usa a listagem simplificada como leitura gerencial; o detalhe técnico fica recolhido em `Avançado e diagnóstico`;
 - as ações operacionais (`test-connection`, `subscribe-page`, `subscription-status`) devolvem um resultado estruturado `{ ok, data | error }` para evitar que uma falha operacional da Meta apareça como erro genérico de Server Components em produção;
 - a ativação operacional usa a mesma abordagem estruturada para permitir que páginas importadas via OAuth sejam habilitadas sem abrir o formulário manual;
+- a remoção da página integrada também usa retorno estruturado para permitir desconexão com feedback amigável e confirmação visual no client;
 - quando uma action server-side falha na renderização inicial, a página mostra fallback visual com a mensagem da falha em vez de explodir com o erro genérico de Server Components do Next.js;
 - a resolução do tenant continua do lado do backend.
 

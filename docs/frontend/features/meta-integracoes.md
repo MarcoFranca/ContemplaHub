@@ -41,23 +41,24 @@ Responsabilidades observadas:
 ## Fluxo principal do usuário
 
 1. O gestor abre `/app/meta-integracoes`.
-2. O fluxo assistido aparece como caminho principal da tela.
-3. O usuário clica em `Conectar Meta`, sai para o consentimento OAuth e volta para a mesma tela com `success=true`, `meta_connected=1` ou `error=...`.
-4. Ao voltar do callback, o frontend faz refresh da rota e recarrega `GET /meta/integrations`.
-5. Em seguida, o assistente chama `GET /meta/pages` para carregar as páginas autorizadas persistidas temporariamente pelo backend para o usuário atual.
-6. O usuário seleciona a página, escolhe o formulário, define nome interno e responsável padrão e finaliza a integração.
-7. A configuração manual fica recolhida em `Configuração avançada` como fallback técnico/admin.
-8. Usa os botões operacionais para testar conexão, inscrever página e verificar a assinatura.
-9. Quando quiser encerrar a integração, usa `Remover página` e confirma a exclusão.
-10. Acompanha `webhook_configured`, `access_token_configured`, `page_subscribed`, `last_webhook_at`, `last_success_at` e `last_error_*`.
-11. Abre a tela de eventos da integração para inspecionar payloads recebidos, erros de processamento e formulários retornados pela Graph API.
+2. A tela abre com cards-resumo de saúde operacional: total, ativas, último lead e erros recentes.
+3. O fluxo assistido aparece como caminho principal da tela, com linguagem orientada a resultado.
+4. O usuário clica em `Conectar Meta`, sai para o consentimento OAuth e volta para a mesma tela com `success=true`, `meta_connected=1` ou `error=...`.
+5. Ao voltar do callback, o frontend faz refresh da rota e recarrega `GET /meta/integrations`.
+6. Em seguida, o assistente chama `GET /meta/pages` para carregar as páginas autorizadas persistidas temporariamente pelo backend para o usuário atual.
+7. O usuário seleciona a página, escolhe o formulário, define nome interno, rótulo da origem e responsável padrão e finaliza a integração.
+8. A listagem principal mostra apenas os campos essenciais: integração, página, formulário, responsável, status, último lead e ações.
+9. A configuração manual fica recolhida em `Avançado e diagnóstico` como fallback técnico/admin.
+10. Usa os botões operacionais para testar conexão, inscrever página e verificar a assinatura apenas dentro do bloco avançado da linha.
+11. Quando quiser encerrar a integração, usa `Remover` com confirmação explícita de desconexão.
+12. Abre a tela de eventos da integração para inspecionar payloads recebidos, erros de processamento e formulários retornados pela Graph API.
 
 ## Estrutura atual da feature
 
-- a página `src/app/app/meta-integracoes/page.tsx` trata o OAuth como caminho principal e move o manual para uma área recolhida de `Configuração avançada`;
+- a página `src/app/app/meta-integracoes/page.tsx` trata o OAuth como caminho principal, usa cards-resumo para responder rapidamente “está funcionando?” e move o manual para uma área recolhida de `Avançado e diagnóstico`;
 - `MetaIntegrationFormDialog` continua sendo o fallback/admin para cadastro manual;
 - `MetaOAuthAssistant` concentra o stepper simples, a conexão OAuth, o refresh pós-callback, a seleção de página/formulário e a confirmação final;
-- `MetaIntegrationOperations` concentra badges e ações operacionais reutilizadas na listagem e no detalhe, incluindo ativar/desativar a integração importada pelo OAuth e remover a página com confirmação.
+- `MetaIntegrationOperations` concentra ativar/desativar, remover com confirmação e o bloco recolhido de diagnóstico técnico, reutilizado na listagem e no detalhe.
 
 ## Integrações com backend
 
@@ -81,7 +82,7 @@ Responsabilidades observadas:
 - a UI usa Server Components para carregar listagem e eventos;
 - as páginas server-side do domínio tratam falhas de actions com fallback visual, para evitar a mensagem genérica de erro de renderização em produção do Next.js;
 - `MetaIntegrationOperations` consome Server Actions operacionais com retorno estruturado `{ ok, data | error }`, então falhas de token/permissão da Meta aparecem como erro funcional no toast em vez de quebrar a renderização;
-- a escolha entre fluxo manual e assistido fica concentrada em tabs na própria página;
+- a experiência principal evita expor termos técnicos como webhook/token logo de cara; esses detalhes ficam recolhidos em accordion de diagnóstico;
 - o fluxo assistido usa uma sessão OAuth temporária mantida no backend, sem expor token à camada client;
 - o frontend nunca recebe o `access_token` bruto; ele só recebe páginas, formulários e status já sanitizados;
 - o formulário usa Zod no client com envio por Server Actions;
