@@ -4,7 +4,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { canalOrigem, leadStage, perfilPsico, atividadeTipo } from "./enums";
 import { orgs, profiles } from "./orgs-profiles";
-import {landingPages} from "@/db/schema/marketing";
+import { landingPages } from "./marketing";
 
 export const leads = pgTable(
     "leads",

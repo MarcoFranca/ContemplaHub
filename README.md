@@ -2,7 +2,7 @@
 [![Built with Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-🚀-009688)](https://fastapi.tiangolo.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E)](https://supabase.com/)
-[![Drizzle ORM](https://img.shields.io/badge/Drizzle-ORM-6C5CE7)](https://orm.drizzle.team/)
+[![Drizzle Tooling](https://img.shields.io/badge/Drizzle-Tooling-6C5CE7)](https://orm.drizzle.team/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **“Planeje hoje, conquiste sempre.”** — O propósito da Autentika não é vender consórcio, é **construir liberdade com método**. Cada linha de código, cada atendimento e cada automação deve refletir isso.
@@ -11,7 +11,7 @@
 
 ## 🧱 Banco & RLS Avançado
 
-Esta seção descreve a modelagem multi-tenant do ContemplaHub, usando **Supabase (Postgres + RLS)** e **Drizzle ORM** para tipagem e migrations.
+Esta seção descreve a modelagem multi-tenant do ContemplaHub, usando **Supabase (Postgres + RLS)** como base operacional e **Drizzle** apenas como tooling histórico de schema e migrations no pacote `packages/database`.
 
 ### 🔐 Princípios
 - Isolamento por organização (`org_id`): cada corretora visualiza apenas seus dados.

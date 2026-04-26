@@ -10,6 +10,26 @@
 - Supabase SSR para autenticação e leitura de perfil
 - Backend HTTP externo consumido via `NEXT_PUBLIC_BACKEND_URL` ou `BACKEND_URL`
 
+## Autoridade de banco
+
+O app Next.js não é a autoridade operacional do banco.
+
+A autoridade atual é:
+
+- backend FastAPI
+- Supabase/Postgres
+- RLS e validações backend por `org_id`
+
+O schema e as migrations históricas do Drizzle foram movidos para [`packages/database`](/E:/Autentika/Projetos/Programas/CONTEMPLAHUB/contemplahub/packages/database/package.json:1), fora do runtime do app.
+
+Implicações:
+
+- o `DATABASE_URL` não é necessário para `dev`, `build` ou `start` do frontend
+- `drizzle-orm` e `postgres` não fazem parte do runtime do app Next
+- o app mantém apenas scripts de conveniência que delegam para o pacote de tooling
+
+O inventário completo das tabelas históricas do Drizzle versus tabelas operadas pelo backend está em [database-tooling.md](/E:/Autentika/Projetos/Programas/CONTEMPLAHUB/contemplahub/docs/frontend/database-tooling.md:1).
+
 ## Estrutura principal
 
 ### `src/app`
