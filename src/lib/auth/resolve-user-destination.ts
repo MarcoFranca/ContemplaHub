@@ -33,6 +33,14 @@ export async function resolveUserDestinationFromUserId(
         return "/app";
     }
 
+    if (profile && !profile.org_id) {
+        console.info("[auth] resolveUserDestination resolved onboarding user", {
+            userId,
+            destination: "/app/organizacao",
+        });
+        return "/app/organizacao";
+    }
+
     const { data: partner, error: partnerError } = await service
         .from("partner_users")
         .select("id, ativo, org_id, parceiro_id")
@@ -55,8 +63,8 @@ export async function resolveUserDestinationFromUserId(
         return "/partner";
     }
 
-    console.warn("[auth] resolveUserDestination user has no access", { userId });
-    return "/login?msg=Usuario%20sem%20acesso";
+    console.warn("[auth] resolveUserDestination user without org or partner access, sending to onboarding", { userId });
+    return "/app/organizacao";
 }
 
 export async function resolveUserDestination(): Promise<string> {

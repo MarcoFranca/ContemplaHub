@@ -168,8 +168,9 @@ Uso:
 - `resolveUserDestinationFromUserId()` resolve o destino logo após o callback
 - o destino final é:
   - `/app` para usuário interno
+  - `/app/organizacao` para conta autenticada que ainda não foi vinculada a uma organização
   - `/partner` para parceiro ativo
-  - `/login?msg=...` quando não há acesso válido
+  - o retorno ao login fica reservado para falhas reais de autenticação, não para onboarding pendente
 
 ### Convenção de URLs
 

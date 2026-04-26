@@ -4,12 +4,23 @@ import * as React from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 
+type ShellStyle = React.CSSProperties & {
+    "--sidebar-w": string;
+    "--header-h": string;
+};
+
 /**
  * Controla o estado de "collapsed" da sidebar e aplica CSS vars globais.
  * --sidebar-w: largura dinâmica (recolhida/expandida)
  * --header-h:  altura do header (para cálculos de altura)
  */
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+    children,
+    hasOrg = true,
+}: {
+    children: React.ReactNode;
+    hasOrg?: boolean;
+}) {
     const [collapsed, setCollapsed] = React.useState(false);
 
     const sidebarW = collapsed ? "4.5rem" : "15rem"; // 72px / 240px
@@ -18,16 +29,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
         <div
             className="flex h-full w-full"
-            style={
-                {
-                    // CSS vars usadas no layout todo
-                    ["--sidebar-w" as any]: sidebarW,
-                    ["--header-h" as any]: headerH,
-                } as React.CSSProperties
-            }
+            style={{
+                "--sidebar-w": sidebarW,
+                "--header-h": headerH,
+            } as ShellStyle}
         >
             {/* Sidebar fixa */}
-            <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
+            <Sidebar
+                collapsed={collapsed}
+                hasOrg={hasOrg}
+                onToggle={() => setCollapsed((v) => !v)}
+            />
 
             {/* Spacer que ocupa o espaço da sidebar apenas no md+ (sincronizado com a largura) */}
             <div className="hidden md:block shrink-0" style={{ width: `var(--sidebar-w)` }} />

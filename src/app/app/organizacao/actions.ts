@@ -66,9 +66,25 @@ export async function criarOrg(nome: string) {
     if (!nome || !nome.trim()) throw new Error("Nome inválido");
 
     const s = srv();
+    const { error: ensureProfileError } = await s
+        .from("profiles")
+        .upsert({
+            user_id: me.userId,
+            org_id: null,
+            role: "admin",
+            nome: me.nome?.trim() || null,
+        }, {
+            onConflict: "user_id",
+        });
+
+    if (ensureProfileError) throw ensureProfileError;
+
     const { data: org, error: oErr } = await s
         .from("orgs")
-        .insert([{ nome: nome.trim() }])
+        .insert([{
+            nome: nome.trim(),
+            owner_user_id: me.userId,
+        }])
         .select("id")
         .single();
 
@@ -76,8 +92,14 @@ export async function criarOrg(nome: string) {
 
     const { error: pErr } = await s
         .from("profiles")
-        .update({ org_id: org.id, role: "admin" })
-        .eq("user_id", me.userId);
+        .upsert({
+            user_id: me.userId,
+            org_id: org.id,
+            role: "admin",
+            nome: me.nome?.trim() || null,
+        }, {
+            onConflict: "user_id",
+        });
 
     if (pErr) throw pErr;
 

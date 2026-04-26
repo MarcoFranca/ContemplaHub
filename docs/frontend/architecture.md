@@ -274,8 +274,10 @@ O fluxo de autenticação precisa permanecer coerente com o App Router e com a l
 
 - a resolução de destino usa `resolveUserDestination()` e `resolveUserDestinationFromUserId()`
 - usuário interno com `profile.org_id` vai para `/app`
+- usuário autenticado sem `org_id` vai para `/app/organizacao` para concluir o onboarding da conta e criar sua primeira organização
 - usuário parceiro com acesso ativo em `partner_users` vai para `/partner`
-- sem vínculo válido, o fluxo volta para `/login?msg=...`
+- sem vínculo interno ou parceiro, o frontend prioriza onboarding em `/app/organizacao` antes de considerar a conta “sem acesso”
+- ao criar a primeira organização, o frontend server-side primeiro garante uma linha mínima em `profiles`, depois grava `orgs.owner_user_id = userId` e por fim promove/vincula o próprio usuário para `role = admin` na nova organização
 
 ### Convenção de URLs de auth
 

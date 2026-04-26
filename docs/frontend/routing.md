@@ -32,9 +32,14 @@ Responsabilidades:
 
 - validar usuário autenticado
 - redirecionar parceiro para `/partner`
-- validar vínculo com organização
+- permitir sessão autenticada sem `orgId` para concluir onboarding em `/app/organizacao`
 - aplicar `AppShell`
 - aplicar fundo visual premium com `SectionFX`
+
+Observações:
+
+- quando o usuário ainda não tem organização, o shell continua acessível, mas a navegação lateral fica reduzida ao essencial (`Painel` e `Organização`);
+- isso evita o ciclo de logout para contas novas e preserva o isolamento multi-tenant até a criação da primeira organização.
 
 ### `src/app/partner/layout.tsx`
 

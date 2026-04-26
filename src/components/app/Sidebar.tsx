@@ -22,14 +22,22 @@ const links = [
     { href: "/app/landing-pages", icon: Globe2, label: "Landing Pages" },
 ];
 
+const onboardingLinks = [
+    { href: "/app", icon: Home, label: "Painel" },
+    { href: "/app/organizacao", icon: Building2, label: "Organização" },
+];
+
 export function Sidebar({
                             collapsed,
+                            hasOrg,
                             onToggle,
                         }: {
     collapsed: boolean;
+    hasOrg: boolean;
     onToggle: () => void;
 }) {
     const path = usePathname();
+    const visibleLinks = hasOrg ? links : onboardingLinks;
 
     return (
         <aside
@@ -57,7 +65,7 @@ export function Sidebar({
 
             {/* navegação */}
             <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
-                {links.map(({ href, icon: Icon, label }) => {
+                {visibleLinks.map(({ href, icon: Icon, label }) => {
                     const active = path === href || path.startsWith(href + "/");
                     return (
                         <Link

@@ -26,9 +26,7 @@ export default async function AppLayout({
     }
 
     const profile = await getCurrentProfile();
-    if (!profile?.orgId) {
-        redirect("/login?msg=Usuario%20sem%20organizacao");
-    }
+    const hasOrg = Boolean(profile?.orgId);
 
     return (
         <div
@@ -49,8 +47,7 @@ export default async function AppLayout({
                     backgroundSize: "300px 300px",
                 }}
             />
-
-            <AppShell>{children}</AppShell>
+            <AppShell hasOrg={hasOrg}>{children}</AppShell>
         </div>
     );
 }

@@ -50,7 +50,26 @@ export async function getCurrentProfile() {
         console.error("getCurrentProfile service read error:", pSrvErr);
         return null;
     }
-    if (!pSrv) return null;
+    if (!pSrv) {
+        console.warn("getCurrentProfile: profile not found via service role fallback");
+        const metadata = user.user_metadata ?? {};
+        const fallbackName =
+            typeof metadata.name === "string" && metadata.name.trim()
+                ? metadata.name.trim()
+                : typeof metadata.full_name === "string" && metadata.full_name.trim()
+                    ? metadata.full_name.trim()
+                    : typeof user.email === "string" && user.email.includes("@")
+                        ? user.email.split("@")[0]
+                        : "";
+
+        return {
+            userId: user.id,
+            orgId: null,
+            role: "vendedor",
+            nome: fallbackName,
+            isManager: false,
+        };
+    }
 
     const role = (pSrv.role ?? "vendedor") as string;
     return {
