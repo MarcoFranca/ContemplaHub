@@ -39,6 +39,7 @@ Principais ações em `src/app/app/leads`:
 - criar contrato a partir do lead
 - atualizar status de contrato
 - salvar diagnóstico
+- o payload do kanban pode incluir `source_label`, `form_label`, `channel`, `utm_campaign`, `utm_term`, `utm_content`, `meta_ads_summary` e `meta_ads_form_answers` quando o lead vier da Meta
 
 ### Carteira
 

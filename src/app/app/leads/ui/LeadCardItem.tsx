@@ -12,6 +12,7 @@ import { DiagnosticSheet } from "@/app/app/leads/ui/DiagnosticSheet";
 import { DeleteLeadButton } from "@/app/app/leads/ui/DeleteLeadButton";
 import { updateContractStatus } from "@/app/app/leads/actions";
 import type { LeadCard, ContractStatus } from "@/app/app/leads/types";
+import { buildMetaAdsCompactLines } from "@/app/app/leads/meta-ads";
 
 function contractStatusLabel(status?: ContractStatus | null) {
     switch (status) {
@@ -74,6 +75,7 @@ export function LeadCardItem({
     const ready = lead.readiness_score ?? null;
     const [isUpdatingContract, setIsUpdatingContract] = React.useState(false);
     const nextAction = nextContractAction(lead.contract_status);
+    const metaAdsLines = buildMetaAdsCompactLines(lead);
 
     return (
         <div
@@ -94,9 +96,26 @@ export function LeadCardItem({
                         {lead.nome ?? "—"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                        {lead.telefone ? formatPhoneBR(lead.telefone) : lead.email ?? "—"} •{" "}
-                        {lead.origem ?? lead.utm_source ?? "site"}
+                        {lead.telefone ? formatPhoneBR(lead.telefone) : lead.email ?? "—"}
                     </p>
+
+                    {metaAdsLines.originLine ? (
+                        <p className="mt-1 text-[11px] text-emerald-200/90 truncate">
+                            {metaAdsLines.originLine}
+                        </p>
+                    ) : null}
+
+                    {metaAdsLines.creativeLine ? (
+                        <p className="mt-1 text-[11px] font-medium text-emerald-100 truncate">
+                            {metaAdsLines.creativeLine}
+                        </p>
+                    ) : null}
+
+                    {metaAdsLines.summaryLine ? (
+                        <p className="mt-1 text-[11px] text-slate-300/90 line-clamp-2">
+                            {metaAdsLines.summaryLine}
+                        </p>
+                    ) : null}
 
                     {lead.etapa === "contrato" && (
                         <div className="mt-2 space-y-1">

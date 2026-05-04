@@ -9,6 +9,7 @@ import { LeadPropostasCard } from "./LeadPropostasCard";
 import { LeadInfoCard } from "./LeadInfoCard";
 import { LeadStrategiesCard } from "./LeadStrategiesCard";
 import { LeadCotasCard } from "@/app/app/leads/[leadId]/LeadCotasCard";
+import { LeadMetaAdsCard } from "@/app/app/leads/[leadId]/LeadMetaAdsCard";
 import { listContractOptions } from "@/app/app/leads/actions";
 
 export const runtime = "nodejs";
@@ -103,8 +104,9 @@ export default async function LeadDetailsPage({
         throw new Error("Org inválida");
     }
 
-    const [lead, cotas, contractOptions] = await Promise.all([
+    const [lead, diagnostic, cotas, contractOptions] = await Promise.all([
         loadLead(leadId, profile.orgId),
+        loadDiagnostic(leadId, profile.orgId),
         loadCotas(leadId, profile.orgId),
         listContractOptions(),
     ]);
@@ -140,6 +142,7 @@ export default async function LeadDetailsPage({
 
                     <div className="space-y-4">
                         <LeadInfoCard lead={lead} />
+                        <LeadMetaAdsCard lead={lead} diagnostic={diagnostic} />
                         <LeadStrategiesCard lead={lead} />
                     </div>
                 </main>

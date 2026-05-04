@@ -38,6 +38,18 @@ export type InterestInsight = {
 
 export type LeadCardInterest = Interest;
 
+export type MetaAdsSummary = {
+    objetivo_consorcio_label?: string | null;
+    valor_mensal_pretendido_label?: string | null;
+    renda_mensal_label?: string | null;
+    leadgen_id?: string | null;
+    platform?: string | null;
+    campaign_name?: string | null;
+    adset_name?: string | null;
+    ad_name?: string | null;
+    form_name?: string | null;
+};
+
 export interface LeadCard {
     id: string;
     nome: string | null;
@@ -45,19 +57,27 @@ export interface LeadCard {
 
     telefone?: string | null;
     email?: string | null;
-    origem?: CanalOrigem | null;
+    origem?: string | null;
     owner_id?: string | null;
 
     created_at?: string | null;
     first_contact_at?: string | null;
 
     utm_source?: string | null;
+    source_label?: string | null;
+    form_label?: string | null;
+    channel?: string | null;
+    utm_campaign?: string | null;
+    utm_term?: string | null;
+    utm_content?: string | null;
 
     valor_interesse?: string | null;
     prazo_meses?: number | null;
 
     interest?: LeadCardInterest | null;
     interest_insight?: InterestInsight | null;
+    meta_ads_form_answers?: Record<string, unknown> | null;
+    meta_ads_summary?: MetaAdsSummary | null;
 
     readiness_score?: number | null;
     score_risco?: number | null;
@@ -87,7 +107,7 @@ export interface KanbanMetrics {
     diagCompletionPct?: MetricsByStage | null;
     readinessAvg?: MetricsByStage | null;
     tFirstContactAvgMin?: MetricsByStage | null;
-    raw?: any;
+    raw?: unknown;
 }
 
 export type KanbanColumns = Record<Stage, LeadCard[]>;
