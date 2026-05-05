@@ -19,6 +19,10 @@ function compactMetaMoneyLabel(value?: string | null): string | null {
         .replace(/$/, "/mês");
 }
 
+export function toCompactMetaMoneyLabel(value?: string | null): string | null {
+    return compactMetaMoneyLabel(value);
+}
+
 export function getMetaAdsFormAnswers(
     value: unknown
 ): MetaAdsFormAnswers | null {
@@ -87,6 +91,40 @@ export function buildMetaAdsCompactLines(lead: LeadCard): {
         originLine,
         creativeLine,
         summaryLine,
+    };
+}
+
+export function getMetaAdsCompactDiagnostics(lead: LeadCard): {
+    objetivoLabel: string | null;
+    investimentoLabel: string | null;
+    rendaLabel: string | null;
+} {
+    const summary = lead.meta_ads_summary ?? null;
+    const answers = getMetaAdsFormAnswers(lead.meta_ads_form_answers);
+
+    return {
+        objetivoLabel:
+            answers?.objetivo_consorcio_label ??
+            summary?.objetivo_consorcio_label ??
+            null,
+        investimentoLabel:
+            compactMetaMoneyLabel(
+                answers?.valor_mensal_pretendido_label ??
+                    summary?.valor_mensal_pretendido_label ??
+                    null
+            ) ??
+            answers?.valor_mensal_pretendido_label ??
+            summary?.valor_mensal_pretendido_label ??
+            null,
+        rendaLabel:
+            compactMetaMoneyLabel(
+                answers?.renda_mensal_label ??
+                    summary?.renda_mensal_label ??
+                    null
+            ) ??
+            answers?.renda_mensal_label ??
+            summary?.renda_mensal_label ??
+            null,
     };
 }
 

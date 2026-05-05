@@ -47,6 +47,7 @@ export type { Stage, LeadCard };
 export async function listLeadsForKanban(options?: {
     showActive?: boolean;
     showLost?: boolean;
+    showCold?: boolean;
     scope?: "me" | "team";
 }): Promise<LeadCard[]> {
     const profile = await getCurrentProfile();
@@ -55,6 +56,7 @@ export async function listLeadsForKanban(options?: {
     const params = new URLSearchParams();
     if (options?.showActive) params.set("show_active", "true");
     if (options?.showLost) params.set("show_lost", "true");
+    if (options?.showCold) params.set("show_cold", "true");
 
     const query = params.toString();
     const path = query ? `/kanban?${query}` : `/kanban`;
@@ -68,7 +70,7 @@ export async function listLeadsForKanban(options?: {
     const rows: LeadCard[] = Object.values(columns).flat();
 
     const contractLeadIds = rows
-        .filter((row) => row.etapa === "contrato")
+        .filter((row) => row.etapa === "contrato" || row.etapa === "pos_venda")
         .map((row) => row.id);
 
     if (contractLeadIds.length === 0) {
@@ -160,7 +162,7 @@ export async function listLeadsForKanban(options?: {
     }
 
     return rows.map((row) => {
-        if (row.etapa !== "contrato") return row;
+        if (row.etapa !== "contrato" && row.etapa !== "pos_venda") return row;
 
         const cota = latestCotaByLead.get(row.id);
         if (!cota) return row;

@@ -131,7 +131,7 @@ export function LeadMetaAdsCard({
                         <div className="space-y-3">
                             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                                 <FileText className="h-4 w-4 text-emerald-300" />
-                                Diagnóstico inicial do formulário
+                                Diagnóstico inicial (Meta)
                             </div>
 
                             <div className="grid gap-3 md:grid-cols-3">

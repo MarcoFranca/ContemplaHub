@@ -13,6 +13,7 @@ import type {
     LeadCard,
     KanbanMetrics,
 } from "@/app/app/leads/types";
+import { ALL_KANBAN_STAGES } from "@/app/app/leads/types";
 import { CreateContratoSheet } from "@/features/contratos/components/create-contrato-sheet";
 
 type OptimisticAction = { id: string; from: Stage; to: Stage };
@@ -24,20 +25,32 @@ const MAX_SPEED = 28;
 type Props = {
     initialColumns: Record<Stage, LeadCard[]>;
     stages: Stage[];
-    onMove: (leadId: string, to: Stage) => Promise<void>;
+    onMove: (leadId: string, to: Stage, reason?: string) => Promise<void>;
     contractOptions: { administradoras: AdminOption[] };
     metrics?: KanbanMetrics | null;
 };
 
 const stageLabels: Record<Stage, { label: string; color: string }> = {
     novo: { label: "Novo", color: "bg-emerald-500/20" },
+    tentativa_contato: { label: "Tentativa de contato", color: "bg-cyan-500/20" },
+    contato_realizado: { label: "Contato realizado", color: "bg-teal-500/20" },
     diagnostico: { label: "Diagnóstico", color: "bg-sky-500/20" },
     proposta: { label: "Proposta", color: "bg-indigo-500/20" },
     negociacao: { label: "Negociação", color: "bg-yellow-500/20" },
     contrato: { label: "Contrato", color: "bg-orange-500/20" },
-    ativo: { label: "Ativo", color: "bg-green-600/20" },
+    pos_venda: { label: "Pós-venda", color: "bg-lime-500/20" },
+    frio: { label: "Frio", color: "bg-slate-500/20" },
     perdido: { label: "Perdido", color: "bg-red-500/20" },
 };
+
+function ensureAllStageColumns(
+    state: Partial<Record<Stage, LeadCard[]>>
+): Record<Stage, LeadCard[]> {
+    return ALL_KANBAN_STAGES.reduce<Record<Stage, LeadCard[]>>((acc, stage) => {
+        acc[stage] = state[stage] ?? [];
+        return acc;
+    }, {} as Record<Stage, LeadCard[]>);
+}
 
 export default function KanbanBoard({
                                         initialColumns,
@@ -46,18 +59,19 @@ export default function KanbanBoard({
                                         contractOptions,
                                         metrics,
                                     }: Props) {
-    const [, start] = useTransition();
+    const [, startTransition] = useTransition();
 
     const [columns, setColumns] = useOptimistic<
         Record<Stage, LeadCard[]>,
         OptimisticAction
     >(
-        initialColumns,
-        (state, action) => {
+        ensureAllStageColumns(initialColumns),
+        (rawState, action) => {
+            const state = ensureAllStageColumns(rawState);
             if (action.from === action.to) return state;
 
-            const fromList = [...state[action.from]];
-            const toList = [...state[action.to]];
+            const fromList = [...(state[action.from] ?? [])];
+            const toList = [...(state[action.to] ?? [])];
             const idx = fromList.findIndex((l) => l.id === action.id);
 
             if (idx >= 0) {
@@ -99,6 +113,25 @@ export default function KanbanBoard({
         draggingRef.current = true;
     }
 
+    async function moveLeadWithFeedback(
+        lead: LeadCard,
+        to: Stage,
+        reason?: string
+    ) {
+        const from = lead.etapa;
+
+        if (to === "contrato") {
+            openContractDrawerFor(lead.id, lead.nome ?? "Cliente");
+            return;
+        }
+
+        startTransition(() => {
+            setColumns({ id: lead.id, from, to });
+        });
+        await onMove(lead.id, to, reason);
+        toast.info(`Lead movido para: ${stageLabels[to].label}`);
+    }
+
     function onDrop(ev: React.DragEvent, to: Stage) {
         ev.preventDefault();
         draggingRef.current = false;
@@ -109,18 +142,7 @@ export default function KanbanBoard({
 
         try {
             const lead = JSON.parse(raw) as LeadCard;
-            const from = lead.etapa;
-
-            if (to === "contrato") {
-                openContractDrawerFor(lead.id, lead.nome ?? "Cliente");
-                return;
-            }
-
-            start(async () => {
-                setColumns({ id: lead.id, from, to });
-                await onMove(lead.id, to);
-                toast.info(`Lead movido para: ${stageLabels[to].label}`);
-            });
+            void moveLeadWithFeedback(lead, to);
         } catch {
             // ignore
         }
@@ -206,7 +228,7 @@ export default function KanbanBoard({
                 {stages.map((s) => (
                     <Card
                         key={s}
-                        className="bg-white/5 border-white/10 overflow-hidden flex-none w-[70vw] xs:w-[72vw] sm:w-[260px] md:w-[280px] xl:w-[300px] h-full"
+                        className="bg-white/5 border-white/10 overflow-hidden flex-none w-[78vw] min-w-[280px] sm:w-[300px] md:w-[320px] xl:w-[340px] h-full"
                     >
                         <ColumnHeaderStats
                             stage={s}
@@ -229,17 +251,20 @@ export default function KanbanBoard({
                         <CardContent
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => onDrop(e, s)}
-                            className="h-[calc(100%-48px)] overflow-y-auto p-2 md:p-3 space-y-3 [scrollbar-width:thin]"
+                            className="h-[calc(100%-48px)] overflow-y-auto p-3 md:p-4 space-y-3 [scrollbar-width:thin]"
                         >
-                            {columns[s].map((l) => (
+                            {(columns[s] ?? []).map((l) => (
                                 <LeadCardItem
                                     key={l.id}
                                     lead={l}
                                     onDragStart={onDragStart}
+                                    onQuickMove={async (lead, to, reason) => {
+                                        await moveLeadWithFeedback(lead, to, reason);
+                                    }}
                                 />
                             ))}
 
-                            {columns[s].length === 0 && (
+                            {(columns[s] ?? []).length === 0 && (
                                 <p className="text-xs text-muted-foreground">
                                     Arraste cards para cá.
                                 </p>

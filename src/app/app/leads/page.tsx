@@ -8,24 +8,36 @@ import {
     type Stage,
     type LeadCard,
 } from "./actions";
+import { LeadsToolbar } from "./ui/LeadsToolbar";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { getKanbanMetricsFromDB } from "./metrics-actions";
-import type { KanbanMetrics } from "./types";   // 👈 importa o tipo
+import { ALL_KANBAN_STAGES, PRIMARY_KANBAN_STAGES } from "./types";
+import type { KanbanMetrics } from "./types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Estágios base do funil (pré-contrato)
-const STAGES_BASE: Stage[] = ["novo","diagnostico","proposta","negociacao","contrato"];
-
 function isStage(v: string): v is Stage {
-    const all: Stage[] = ["novo","diagnostico","proposta","negociacao","contrato","ativo","perdido"];
+    const all: Stage[] = [
+        "novo",
+        "tentativa_contato",
+        "contato_realizado",
+        "diagnostico",
+        "proposta",
+        "negociacao",
+        "contrato",
+        "pos_venda",
+        "frio",
+        "perdido",
+    ];
     return all.includes(v as Stage);
 }
 
 function normalizeStage(raw: string | null | undefined): Stage {
     const s = (raw ?? "").toString().toLowerCase();
     if (s === "fechamento") return "contrato";
+    if (s === "contato") return "contato_realizado";
+    if (s === "ativo") return "pos_venda";
     return isStage(s) ? (s as Stage) : "novo";
 }
 
@@ -33,10 +45,10 @@ function columnsByStage(rows: LeadCard[], stages: Stage[]) {
     const cols = stages.reduce<Record<Stage, LeadCard[]>>((acc, s) => {
         acc[s] = [];
         return acc;
-    }, {} as any);
+    }, {} as Record<Stage, LeadCard[]>);
 
     for (const l of rows) {
-        const etapa = normalizeStage((l as any).etapa);
+        const etapa = normalizeStage(l.etapa);
         if (!cols[etapa]) continue;
         cols[etapa].push({ ...l, etapa });
     }
@@ -67,28 +79,30 @@ export default async function LeadsKanbanPage(props: PageProps) {
 
     const showActive = getFlag("ativos");
     const showLost = getFlag("perdidos");
+    const showCold = getFlag("frios");
 
     const STAGES: Stage[] = [
-        ...STAGES_BASE,
-        ...(showActive ? (["ativo"] as const) : []),
+        ...PRIMARY_KANBAN_STAGES,
+        ...(showActive ? (["pos_venda"] as const) : []),
+        ...(showCold ? (["frio"] as const) : []),
         ...(showLost ? (["perdido"] as const) : []),
     ];
 
-    const rows = await listLeadsForKanban({ showActive, showLost, scope: "me" });
-    const columns = columnsByStage(rows as LeadCard[], STAGES);
+    const rows = await listLeadsForKanban({ showActive, showLost, showCold, scope: "me" });
+    const columns = columnsByStage(rows as LeadCard[], ALL_KANBAN_STAGES);
 
-    // 2) Métricas do Kanban – já no shape novo
     const metrics: KanbanMetrics | null = await getKanbanMetricsFromDB();
 
     const contractOptions = await listContractOptions();
 
-    async function onMove(leadId: string, to: Stage) {
+    async function onMove(leadId: string, to: Stage, reason?: string) {
         "use server";
-        await moveLeadStage({ leadId, to });
+        await moveLeadStage({ leadId, to, reason });
     }
 
     return (
         <div className="h-full w-full overflow-hidden px-4 md:px-6 py-4">
+
             <div className="h-full">
                 <KanbanBoard
                     initialColumns={columns}

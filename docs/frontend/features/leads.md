@@ -58,11 +58,19 @@ Não há um schema Zod único do domínio de leads concentrado como em contratos
 ## Fluxo principal do usuário
 
 1. O operador entra em `/app/leads`.
-2. Visualiza o kanban por estágio.
-3. Cria lead via `CreateLeadSheet` ou abre um lead existente.
-4. Leads capturados por Meta Lead Ads entram na mesma feature já em `etapa = novo`, mas a configuração dessa captura vive em `/app/meta-integracoes`.
-5. No detalhe do lead, consulta interesse, cotas, propostas, diagnóstico e, quando houver, a origem Meta Ads com destaque para o criativo/anúncio, campanha/formulário e respostas iniciais do formulário.
-6. A partir do lead, pode iniciar proposta ou formalização de contrato.
+2. Visualiza o kanban no funil comercial de consórcio:
+   - `novo`
+   - `tentativa_contato`
+   - `contato_realizado`
+   - `diagnostico`
+   - `proposta`
+   - `negociacao`
+   - `contrato`
+3. Pode abrir colunas suplementares para `pós-venda`, `frios` e `perdidos` sem poluir o fluxo principal.
+4. Cria lead via `CreateLeadSheet` ou abre um lead existente.
+5. Leads capturados por Meta Lead Ads entram na mesma feature já em `etapa = novo`, mas a configuração dessa captura vive em `/app/meta-integracoes`.
+6. No detalhe do lead, consulta interesse, cotas, propostas, diagnóstico e, quando houver, a origem Meta Ads com destaque para o criativo/anúncio, campanha/formulário e respostas iniciais do formulário.
+7. A partir do lead, pode iniciar proposta ou formalização de contrato.
 
 ## Integrações com backend
 
@@ -73,6 +81,9 @@ Não há um schema Zod único do domínio de leads concentrado como em contratos
 - BFFs de proposta e proposta pública
 - ingestões externas como Meta Lead Ads passam pelo backend e aterrissam na mesma tabela `leads`
 - o kanban agora também consome resumo de `lead_diagnosticos.extras.meta_ads` para exibir origem, criativo (`ad_name`) e objetivo/faixa declarada sem poluir o card
+- ações rápidas no card permitem marcar `Contatado`, `Sem resposta` (`frio`) e `Perdido` sem sair do quadro
+- o estado local do Kanban mantém todas as etapas (`novo` até `perdido`) mesmo quando `frios` e `perdidos` estão ocultos; assim, mover um card para uma coluna escondida remove o item da visão ativa sem quebrar o drag & drop nem exigir ativar o toggle
+- os cards priorizam leitura vertical: nome, contato, bloco de origem Meta Ads/criativo, chips compactos de diagnóstico inicial e ações rápidas em `flex-wrap`
 
 ## Observações arquiteturais
 

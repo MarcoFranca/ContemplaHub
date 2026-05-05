@@ -13,6 +13,7 @@ export function LeadsToolbar() {
 
     const showActive = sp.get("ativos") === "1";
     const showLost = sp.get("perdidos") === "1";
+    const showCold = sp.get("frios") === "1";
     const readinessMinParam = sp.get("rmin"); // "25" | "50" | "75" | null
 
     const debounceRef = React.useRef<number | null>(null);
@@ -38,10 +39,15 @@ export function LeadsToolbar() {
     const readinessValue = readinessMinParam ?? "all";
 
     return (
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-4 md:gap-6">
             <div className="flex items-center gap-2">
                 <Switch id="ativos" checked={showActive} onCheckedChange={(v) => setParam("ativos", v ? "1" : null)} />
-                <Label htmlFor="ativos" className="text-sm">Mostrar Ativos</Label>
+                <Label htmlFor="ativos" className="text-sm">Mostrar Ativos complementares</Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <Switch id="frios" checked={showCold} onCheckedChange={(v) => setParam("frios", v ? "1" : null)} />
+                <Label htmlFor="frios" className="text-sm">Mostrar Frios</Label>
             </div>
 
             <div className="flex items-center gap-2">

@@ -1,11 +1,31 @@
 export type Stage =
     | "novo"
+    | "tentativa_contato"
+    | "contato_realizado"
     | "diagnostico"
     | "proposta"
     | "negociacao"
     | "contrato"
-    | "ativo"
+    | "pos_venda"
+    | "frio"
     | "perdido";
+
+export const PRIMARY_KANBAN_STAGES: Stage[] = [
+    "novo",
+    "tentativa_contato",
+    "contato_realizado",
+    "diagnostico",
+    "proposta",
+    "negociacao",
+    "contrato",
+];
+
+export const ALL_KANBAN_STAGES: Stage[] = [
+    ...PRIMARY_KANBAN_STAGES,
+    "pos_venda",
+    "frio",
+    "perdido",
+];
 
 export type CanalOrigem = "lp" | "whatsapp" | "indicacao" | "orgânico" | "pago" | "outro";
 

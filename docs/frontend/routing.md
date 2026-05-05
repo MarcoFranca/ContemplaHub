@@ -231,7 +231,7 @@ Observação:
 ## Query params relevantes
 
 - `/app/leads`:
-  `ativos=1`, `perdidos=1`
+  `ativos=1`, `frios=1`, `perdidos=1`
 - `/app/carteira`:
   `view`, `mode`, `q`, `produto`, `status_carteira`, `all`, `sort`
 - `/app/comissoes`:

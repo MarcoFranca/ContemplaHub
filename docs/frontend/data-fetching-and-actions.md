@@ -40,6 +40,8 @@ Principais ações em `src/app/app/leads`:
 - atualizar status de contrato
 - salvar diagnóstico
 - o payload do kanban pode incluir `source_label`, `form_label`, `channel`, `utm_campaign`, `utm_term`, `utm_content`, `meta_ads_summary` e `meta_ads_form_answers` quando o lead vier da Meta
+- a listagem do kanban aceita `show_active`, `show_cold` e `show_lost` para abrir colunas suplementares de `pos_venda`, `frio` e `perdido`
+- `moveLeadStage` também é usado pelas ações rápidas do card para marcar `contato_realizado`, `frio` e `perdido`
 
 ### Carteira
 
