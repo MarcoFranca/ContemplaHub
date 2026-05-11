@@ -15,24 +15,27 @@ const APP_URL =
 export const metadata: Metadata = {
     metadataBase: new URL(APP_URL),
     title: "ContemplaHub",
-    description: "Consórcio com estratégia e clareza.",
+    description:
+        "CRM, operação e inteligência para consultorias, corretoras e gestores de consórcio.",
     openGraph: {
         title: "ContemplaHub",
-        description: "Consórcio com estratégia e clareza.",
+        description:
+            "CRM, operação e inteligência para consultorias, corretoras e gestores de consórcio.",
         type: "website",
         images: [
             {
                 url: "/og/proposta-cover.png", // com metadataBase vira URL absoluta
                 width: 1200,
                 height: 630,
-                alt: "Proposta personalizada de consórcio",
+                alt: "ContemplaHub, plataforma operacional para consórcio",
             },
         ],
     },
     twitter: {
         card: "summary_large_image",
         title: "ContemplaHub",
-        description: "Consórcio com estratégia e clareza.",
+        description:
+            "CRM, operação e inteligência para consultorias, corretoras e gestores de consórcio.",
         images: ["/og/proposta-cover.png"],
     },
 };

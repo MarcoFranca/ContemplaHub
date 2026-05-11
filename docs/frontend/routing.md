@@ -54,7 +54,7 @@ Responsabilidades:
 ## Rotas públicas e de marketing
 
 - `/`:
-  landing principal com `Hero`, `Benefits`, `SimulatorCTA`, `WhyAutentika`, `FounderSection`, `Testimonials`, `GuideCTA` e `DiagnosticSection`
+  home institucional do ContemplaHub como plataforma SaaS B2B para operações de consórcio, com hero, mockup de dashboard, funcionalidades, IA, segurança, dashboards e CTA de demonstração
 - `/politica-de-privacidade`:
   página pública institucional para compliance e cadastro de app na Meta
 - `/exclusao-de-dados`:
