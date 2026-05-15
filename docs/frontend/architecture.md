@@ -271,6 +271,19 @@ Padrão atual:
 - tokens nunca são reidratados para o browser depois de persistidos;
 - inspeção operacional dos eventos fica separada da feature comercial de leads.
 
+### Área administrativa de importação da carteira
+
+O frontend agora possui uma rota administrativa dedicada em `/app/carteira/importar`.
+
+Padrão aplicado:
+
+- página server-side valida sessão, `orgId` e `isManager`;
+- usuário sem permissão é redirecionado de volta para `/app/carteira`;
+- o fluxo de preview/confirmação usa Server Actions dedicadas;
+- as actions enviam `Authorization: Bearer <access_token>` ao backend;
+- o backend continua sendo a autoridade operacional para validação de tenant, role e gravação em lote;
+- o usuário pode colar texto tabulado/CSV ou carregar um arquivo `.csv`, recebe preview por linha e só então confirma a importação.
+
 ## Padrões de segurança
 
 - autenticação priorizada no servidor com `supabaseServer()`

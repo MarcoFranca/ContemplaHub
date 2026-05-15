@@ -262,6 +262,12 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                                 <Button variant="outline">Ver Leads</Button>
                             </Link>
 
+                            {me.isManager && (
+                                <Link href="/app/carteira/importar">
+                                    <Button variant="outline">Importar planilha</Button>
+                                </Link>
+                            )}
+
                             <CreateCarteiraCartaSheet
                                 clientes={clientesParaCarta}
                                 administradoras={administradoras}
