@@ -17,15 +17,15 @@ export function PublicHeader() {
         <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B1220]/82 backdrop-blur-xl">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
                 <Link href="/" className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#27E0A5]/20 bg-white/[0.04] shadow-[0_0_0_1px_rgba(39,224,165,0.08)]">
-                        <Image
-                            src="/icon.png"
-                            alt="Ícone ContemplaHub"
-                            width={28}
-                            height={28}
-                            className="h-7 w-7"
-                        />
-                    </span>
+                    {/*<span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#27E0A5]/20 bg-white/[0.04] shadow-[0_0_0_1px_rgba(39,224,165,0.08)]">*/}
+                    {/*    <Image*/}
+                    {/*        src="/icon.png"*/}
+                    {/*        alt="Ícone ContemplaHub"*/}
+                    {/*        width={28}*/}
+                    {/*        height={28}*/}
+                    {/*        className="h-7 w-7"*/}
+                    {/*    />*/}
+                    {/*</span>*/}
                     <Image
                         src="/logo_horizontal_branca_verde.png"
                         alt="ContemplaHub"
