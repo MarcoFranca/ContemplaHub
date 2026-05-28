@@ -27,6 +27,7 @@ export default async function AppLayout({
 
     const profile = await getCurrentProfile();
     const hasOrg = Boolean(profile?.orgId);
+    const isManager = Boolean(profile?.isManager);
 
     return (
         <div
@@ -47,7 +48,7 @@ export default async function AppLayout({
                     backgroundSize: "300px 300px",
                 }}
             />
-            <AppShell hasOrg={hasOrg}>{children}</AppShell>
+            <AppShell hasOrg={hasOrg} isManager={isManager}>{children}</AppShell>
         </div>
     );
 }

@@ -1,3 +1,5 @@
+import { formatPhoneBR } from "@/lib/formatters";
+
 export function norm(s?: string | null) {
     return (s ?? "").trim().toLowerCase();
 }
@@ -27,6 +29,25 @@ export function fmtDate(v: string | null | undefined) {
     } catch {
         return v;
     }
+}
+
+export function isPlaceholderImportEmail(v?: string | null) {
+    const value = norm(v);
+    return value.includes("@sem-contato.local") && value.startsWith("importacao-");
+}
+
+export function fmtPhone(v?: string | null) {
+    const raw = (v ?? "").trim();
+    if (!raw) return null;
+    const digits = raw.replace(/\D+/g, "");
+    if (!digits) return null;
+    return formatPhoneBR(digits);
+}
+
+export function fmtLeadEmail(v?: string | null) {
+    const raw = (v ?? "").trim();
+    if (!raw || isPlaceholderImportEmail(raw)) return null;
+    return raw;
 }
 
 export function pickLatestByCreatedAt<T extends { created_at?: string | null }>(

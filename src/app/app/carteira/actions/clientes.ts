@@ -12,6 +12,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { backendFetch } from "@/lib/backend";
+import { supabaseServer } from "@/lib/supabase/server";
 
 
 function sortItems(items: CarteiraClienteItem[], sort?: ClienteSort | null) {
@@ -170,4 +171,60 @@ export async function startClientNegotiationAction(formData: FormData) {
     revalidatePath("/app/leads");
     revalidatePath("/app/carteira");
     redirect("/app/leads");
+}
+
+type UpdateCarteiraClienteContatoResult =
+    | { ok: true }
+    | { ok: false; error: string };
+
+function toNullableString(value: FormDataEntryValue | null) {
+    const str = String(value ?? "").trim();
+    return str ? str : null;
+}
+
+export async function updateCarteiraClienteContatoAction(
+    leadId: string,
+    formData: FormData
+): Promise<UpdateCarteiraClienteContatoResult> {
+    try {
+        const profile = await getCurrentProfile();
+        if (!profile?.orgId) {
+            return { ok: false, error: "Organizacao invalida." };
+        }
+
+        const supabase = await supabaseServer();
+
+        const nome = toNullableString(formData.get("nome"));
+        const telefone = toNullableString(formData.get("telefone"));
+        const email = toNullableString(formData.get("email"));
+
+        if (!nome) {
+            return { ok: false, error: "Nome e obrigatorio." };
+        }
+
+        const { error } = await supabase
+            .from("leads")
+            .update({
+                nome,
+                telefone,
+                email,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("org_id", profile.orgId)
+            .eq("id", leadId);
+
+        if (error) {
+            console.error("updateCarteiraClienteContatoAction", error);
+            return { ok: false, error: "Nao foi possivel atualizar o cliente." };
+        }
+
+        revalidatePath("/app/carteira");
+        revalidatePath("/app/leads");
+        revalidatePath(`/app/leads/${leadId}`);
+
+        return { ok: true };
+    } catch (error) {
+        console.error("updateCarteiraClienteContatoAction unexpected", error);
+        return { ok: false, error: "Erro inesperado ao atualizar o cliente." };
+    }
 }

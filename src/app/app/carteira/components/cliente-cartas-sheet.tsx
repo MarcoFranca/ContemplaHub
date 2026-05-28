@@ -69,9 +69,9 @@ export function ClienteCartasSheet({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-8 rounded-full border-white/10 bg-white/[0.03] text-xs hover:bg-white/[0.06]"
+                    className="h-7 rounded-full border-white/10 bg-white/[0.03] px-2.5 text-[11px] hover:bg-white/[0.06]"
                 >
-                    Ver todas as cotas ({cartas.length})
+                    +{cartas.length} cotas
                 </Button>
             </SheetTrigger>
 

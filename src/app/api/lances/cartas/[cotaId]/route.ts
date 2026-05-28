@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentProfile } from "@/lib/auth/server";
 import { getBackendUrl } from "@/lib/backend";
-import { supabaseServer } from "@/lib/supabase/server";
+import { getBackendAuthContext } from "@/app/app/lances/actions/backend";
 
 function getCompetenciaDefault() {
     const now = new Date();
@@ -15,20 +14,10 @@ export async function GET(
     ctx: { params: Promise<{ cotaId: string }> }
 ) {
     const { cotaId } = await ctx.params;
+    const auth = await getBackendAuthContext().catch(() => null);
 
-    const profile = await getCurrentProfile().catch(() => null);
-    if (!profile?.orgId) {
-        return NextResponse.json({ error: "Organização inválida." }, { status: 401 });
-    }
-
-    const supabase = await supabaseServer();
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
-
-    const accessToken = session?.access_token;
-    if (!accessToken) {
-        return NextResponse.json({ error: "Sessão inválida." }, { status: 401 });
+    if (!auth?.orgId || !auth.accessToken) {
+        return NextResponse.json({ error: "Sessao invalida." }, { status: 401 });
     }
 
     const competencia =
@@ -41,8 +30,8 @@ export async function GET(
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "X-Org-Id": profile.orgId,
-                Authorization: `Bearer ${accessToken}`,
+                "X-Org-Id": auth.orgId,
+                Authorization: `Bearer ${auth.accessToken}`,
             },
             cache: "no-store",
         }

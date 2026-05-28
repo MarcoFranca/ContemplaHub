@@ -4,28 +4,26 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { cookies } from "next/headers";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getContratoFormOptions } from "@/features/contratos/server/get-form-options";
 import { getCurrentProfile } from "@/lib/auth/server";
-import { listCarteiraClientes, listCarteiraCartas } from "./actions/index";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HeaderActionsPortal } from "@/components/app/HeaderActionsPortal";
 
-import type {
-    ClienteSort,
-    CarteiraClienteItem,
-    CarteiraClientesResponse,
-    CarteiraCartaItem,
-    CarteiraCartasResponse,
-} from "./lib/types";
-
+import { listCarteiraCartas, listCarteiraClientes } from "./actions/index";
+import { CartasList } from "./components/cartas-list";
 import { CarteiraFilters } from "./components/carteira-filters";
+import { CarteiraPagination } from "./components/carteira-pagination";
+import { CarteiraViewTabs } from "./components/carteira-view-tabs";
 import { ClientesCards } from "./components/clientes-cards";
 import { ClientesTable } from "./components/clientes-table";
-import { CartasList } from "./components/cartas-list";
 import { ClientesViewModeToggle } from "./components/clientes-view-mode-toggle";
-import { CarteiraViewTabs } from "./components/carteira-view-tabs";
-import { CreateCarteiraClienteSheet } from "./ui/CreateCarteiraClienteSheet";
+import type {
+    CarteiraCartaItem,
+    CarteiraCartasResponse,
+    CarteiraClienteItem,
+    CarteiraClientesResponse,
+    ClienteSort,
+} from "./lib/types";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -75,6 +73,11 @@ function parseSort(value?: string): ClienteSort {
     }
 }
 
+function parsePositiveInt(value?: string, fallback = 1) {
+    const parsed = Number.parseInt(value ?? "", 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function buildBaseHref(params: {
     view: "clientes" | "cartas";
     q: string;
@@ -96,32 +99,44 @@ function buildBaseHref(params: {
     return `/app/carteira?${qs.toString()}`;
 }
 
+function buildPageHref(baseHref: string, page: number) {
+    const url = new URL(baseHref, "http://localhost");
+    if (page <= 1) {
+        url.searchParams.delete("page");
+    } else {
+        url.searchParams.set("page", String(page));
+    }
+    return `${url.pathname}?${url.searchParams.toString()}`;
+}
+
 export default async function CarteiraPage({ searchParams }: PageProps) {
     const me = await getCurrentProfile();
 
     if (!me?.orgId) {
-        return <main className="p-6">Vincule-se a uma organização.</main>;
+        return <main className="p-6">Vincule-se a uma organizacao.</main>;
     }
 
     const cookieStore = await cookies();
     const savedView = cookieStore.get("carteira_view")?.value;
-
+    const savedMode = cookieStore.get("carteira_mode")?.value;
     const sp: SearchParams = (await searchParams) ?? {};
 
     const view =
         first(sp, "view") === "cartas"
             ? "cartas"
             : first(sp, "view") === "clientes"
-                ? "clientes"
-                : savedView === "cartas"
-                    ? "cartas"
-                    : "clientes";
+              ? "clientes"
+              : savedView === "cartas"
+                ? "cartas"
+                : "clientes";
 
     const mode =
         first(sp, "mode") === "lista"
             ? "lista"
             : first(sp, "mode") === "cards"
-                ? "cards"
+              ? "cards"
+              : savedMode === "lista"
+                ? "lista"
                 : "cards";
 
     const includeAll = first(sp, "all") === "1";
@@ -129,6 +144,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
     const produto = first(sp, "produto") ?? "";
     const statusCarteira = first(sp, "status_carteira") ?? "";
     const sort = parseSort(first(sp, "sort"));
+    const currentPage = parsePositiveInt(first(sp, "page"), 1);
+
     const logContext = {
         orgId: me.orgId,
         view,
@@ -145,25 +162,18 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
     let err: string | null = null;
 
     let clientesData: CarteiraClientesResponse | null = null;
+    let clientesBaseData: CarteiraClientesResponse | null = null;
     let cartasData: CarteiraCartasResponse | null = null;
     let administradoras: { id: string; nome: string }[] = [];
     let parceiros: { id: string; nome: string }[] = [];
 
     try {
         logPageInfo("[carteira-page] load:start", logContext);
-        const clientesBasePromise = listCarteiraClientes({
-            include_all: true,
-            produto: null,
-            q: null,
-            status_carteira: null,
-            sort: "nome_asc",
-        });
 
         const formOptionsPromise = getContratoFormOptions();
 
         if (view === "clientes") {
-            const [, clientesView, formOptions] = await Promise.all([
-                clientesBasePromise,
+            const [clientesView, formOptions] = await Promise.all([
                 listCarteiraClientes({
                     include_all: includeAll,
                     produto: produto || null,
@@ -175,8 +185,10 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
             ]);
 
             clientesData = clientesView;
+            clientesBaseData = clientesView;
             administradoras = formOptions.administradoras;
             parceiros = formOptions.parceiros;
+
             logPageInfo("[carteira-page] load:clientes", {
                 ...logContext,
                 clientes: clientesView.total,
@@ -184,6 +196,14 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                 parceiros: parceiros.length,
             });
         } else {
+            const clientesBasePromise = listCarteiraClientes({
+                include_all: true,
+                produto: null,
+                q: null,
+                status_carteira: null,
+                sort: "nome_asc",
+            });
+
             const [clientesBase, cartasView, formOptions] = await Promise.all([
                 clientesBasePromise,
                 listCarteiraCartas({
@@ -195,10 +215,11 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                 formOptionsPromise,
             ]);
 
-            clientesData = clientesBase;
+            clientesBaseData = clientesBase;
             cartasData = cartasView;
             administradoras = formOptions.administradoras;
             parceiros = formOptions.parceiros;
+
             logPageInfo("[carteira-page] load:cartas", {
                 ...logContext,
                 clientes: clientesBase.total,
@@ -217,8 +238,18 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
 
     const clientesItems = (clientesData?.items ?? []) as CarteiraClienteItem[];
     const cartasItems = (cartasData?.items ?? []) as CarteiraCartaItem[];
+    const clientesOptionsSource = (clientesBaseData?.items ?? clientesItems) as CarteiraClienteItem[];
+    const pageSize = view === "cartas" ? 18 : mode === "lista" ? 14 : 12;
+    const sourceItems = view === "cartas" ? cartasItems : clientesItems;
+    const totalItems = sourceItems.length;
+    const pageCount = Math.max(1, Math.ceil(totalItems / pageSize));
+    const safePage = Math.min(currentPage, pageCount);
+    const sliceStart = (safePage - 1) * pageSize;
+    const sliceEnd = sliceStart + pageSize;
+    const pagedClientesItems = clientesItems.slice(sliceStart, sliceEnd);
+    const pagedCartasItems = cartasItems.slice(sliceStart, sliceEnd);
 
-    const clientesParaCarta: ClienteCartaOption[] = clientesItems
+    const clientesParaCarta: ClienteCartaOption[] = clientesOptionsSource
         .map((item) => ({
             id: String(item.cliente?.lead_id ?? "").trim(),
             nome: String(item.cliente?.nome ?? "Cliente sem nome"),
@@ -247,107 +278,101 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
 
     return (
         <div className="h-full w-full overflow-hidden px-4 py-4 md:px-6">
-            <div className="h-full overflow-hidden">
-                <main className="flex h-full flex-col gap-4">
-                    <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                            <h1 className="text-2xl font-semibold">Carteira</h1>
-                            <p className="text-sm text-muted-foreground">
-                                Clientes da carteira com ou sem contrato, com visão por cliente e por carta.
-                            </p>
-                        </div>
+            <main className="flex h-full min-h-0 flex-col gap-3">
+                <HeaderActionsPortal>
+                    <CreateCarteiraCartaSheet
+                        clientes={clientesParaCarta}
+                        administradoras={administradoras}
+                        parceiros={parceiros}
+                        triggerLabel="Cadastrar carta"
+                        triggerVariant="outline"
+                    />
+                </HeaderActionsPortal>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Link href="/app/leads">
-                                <Button variant="outline">Ver Leads</Button>
-                            </Link>
-
-                            {me.isManager && (
-                                <Link href="/app/carteira/importar">
-                                    <Button variant="outline">Importar planilha</Button>
-                                </Link>
-                            )}
-
-                            <CreateCarteiraCartaSheet
-                                clientes={clientesParaCarta}
-                                administradoras={administradoras}
-                                parceiros={parceiros}
-                                triggerLabel="Cadastrar carta"
-                                triggerVariant="outline"
-                            />
-
-                            <CreateCarteiraClienteSheet />
-                        </div>
-                    </div>
-
-                    <div className="shrink-0">
-                        <CarteiraFilters
-                            view={view}
-                            q={q}
-                            produto={produto}
-                            statusCarteira={statusCarteira}
-                            includeAll={includeAll}
-                            sort={sort}
-                            mode={mode}
-                        />
-                    </div>
-
-                    {err && (
-                        <Card className="shrink-0 border-red-500/30 bg-red-500/10">
-                            <CardHeader>
-                                <CardTitle className="text-red-300">Erro</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-sm text-red-200">{err}</CardContent>
-                        </Card>
-                    )}
-
-                    {!err && (
-                        <>
-                            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <CarteiraViewTabs
-                                    current={view}
-                                    clientesHref={clientesHref}
-                                    cartasHref={cartasHref}
-                                />
-
-                                {view === "clientes" && (
-                                    <ClientesViewModeToggle
-                                        current={mode}
-                                        baseHref={clientesHref}
-                                        explicitMode={Boolean(first(sp, "mode"))}
+                <section className="sticky top-0 z-20 shrink-0">
+                    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.14),transparent_32%),linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.92))] shadow-[0_18px_50px_rgba(2,6,23,0.35)] backdrop-blur-2xl">
+                        <div className="flex flex-col gap-3 px-4 py-3 md:px-5">
+                            <div className="grid gap-3 xl:grid-cols-[auto,1fr] xl:items-center">
+                                <div className="flex items-center gap-2">
+                                    <CarteiraViewTabs
+                                        current={view}
+                                        clientesHref={clientesHref}
+                                        cartasHref={cartasHref}
                                     />
-                                )}
-                            </div>
 
-                            <div className="min-h-0 flex-1 overflow-hidden">
-                                {view === "clientes" ? (
-                                    mode === "cards" ? (
-                                        <div className="h-full overflow-auto pr-1">
-                                            <ClientesCards
-                                                items={clientesItems}
-                                                administradoras={administradoras}
-                                                parceiros={parceiros}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="h-full overflow-auto pr-1">
-                                            <ClientesTable
-                                                items={clientesItems}
-                                                administradoras={administradoras}
-                                                parceiros={parceiros}
-                                            />
-                                        </div>
-                                    )
-                                ) : (
-                                    <div className="h-full overflow-auto pr-1">
-                                        <CartasList items={cartasItems} />
-                                    </div>
-                                )}
+                                    {view === "clientes" ? (
+                                        <ClientesViewModeToggle
+                                            current={mode}
+                                            baseHref={clientesHref}
+                                        />
+                                    ) : null}
+                                </div>
+
+                                <div className="min-w-0">
+                                    <CarteiraFilters
+                                        view={view}
+                                        q={q}
+                                        produto={produto}
+                                        statusCarteira={statusCarteira}
+                                        includeAll={includeAll}
+                                        sort={sort}
+                                        mode={mode}
+                                    />
+                                </div>
                             </div>
-                        </>
-                    )}
-                </main>
-            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {err ? (
+                    <Card className="shrink-0 border-red-500/30 bg-red-500/10">
+                        <CardHeader>
+                            <CardTitle className="text-red-300">Erro</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm text-red-200">{err}</CardContent>
+                    </Card>
+                ) : (
+                    <section className="min-h-0 flex-1 overflow-hidden">
+                        {view === "clientes" ? (
+                            mode === "cards" ? (
+                                <div className="h-full overflow-auto pr-1">
+                                    <ClientesCards
+                                        items={pagedClientesItems}
+                                        administradoras={administradoras}
+                                        parceiros={parceiros}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="h-full overflow-auto pr-1">
+                                    <ClientesTable
+                                        items={pagedClientesItems}
+                                        administradoras={administradoras}
+                                        parceiros={parceiros}
+                                    />
+                                </div>
+                            )
+                        ) : (
+                            <div className="h-full overflow-auto pr-1">
+                                <CartasList items={pagedCartasItems} />
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {!err ? (
+                    <section className="shrink-0">
+                        <CarteiraPagination
+                            currentPage={safePage}
+                            pageCount={pageCount}
+                            totalItems={totalItems}
+                            pageSize={pageSize}
+                            buildPageHref={(page) =>
+                                buildPageHref(view === "cartas" ? cartasHref : clientesHref, page)
+                            }
+                        />
+                    </section>
+                ) : null}
+            </main>
         </div>
     );
 }

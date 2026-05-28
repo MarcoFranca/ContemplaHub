@@ -1,22 +1,14 @@
-import {
-    CalendarDays,
-    FileText,
-    Mail,
-    Phone,
-    UserRound,
-    Wallet,
-    Workflow,
-} from "lucide-react";
+import { CalendarDays, Mail, Phone, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 import { EmptyState } from "./empty-state";
-import { ClienteRowActions } from "./clientes-row-actions";
 import { ClienteCartasSheet } from "./cliente-cartas-sheet";
+import { ClienteRowActions } from "./clientes-row-actions";
 import { contratoBadgeVariant } from "../lib/badges";
-import { fmtCurrency, fmtDate } from "../lib/format";
-import type { CarteiraClienteItem } from "../lib/types";
+import { fmtCurrency, fmtDate, fmtLeadEmail, fmtPhone } from "../lib/format";
+import type { CarteiraClienteCartaResumo, CarteiraClienteItem } from "../lib/types";
 
 type ClientesCardsProps = {
     items: CarteiraClienteItem[];
@@ -37,244 +29,206 @@ function getCarteiraBadgeClass(status?: string | null) {
     }
 }
 
+function pickPrimaryCarta(cartas: CarteiraClienteCartaResumo[]) {
+    return [...cartas].sort((a, b) => (b.valor_carta ?? 0) - (a.valor_carta ?? 0))[0] ?? null;
+}
+
 export function ClientesCards({
-                                  items,
-                                  administradoras,
-                                  parceiros = [],
-                              }: ClientesCardsProps) {
+    items,
+    administradoras,
+    parceiros = [],
+}: ClientesCardsProps) {
     if (items.length === 0) {
         return (
             <EmptyState
                 title="Nenhum cliente encontrado"
-                message="Ajuste os filtros ou cadastre um novo cliente para começar a montar a carteira."
+                message="Ajuste os filtros ou cadastre um novo cliente para comecar a montar a carteira."
             />
         );
     }
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
             {items.map((it) => {
                 const clienteId = String(it.cliente?.lead_id ?? "").trim();
                 const clienteNome = it.cliente?.nome ?? "Cliente sem nome";
                 const clienteTelefone = it.cliente?.telefone ?? undefined;
                 const clienteEmail = it.cliente?.email ?? undefined;
+                const phoneLabel = fmtPhone(clienteTelefone) ?? "Sem telefone";
+                const emailLabel = fmtLeadEmail(clienteEmail);
                 const cartas = it.cartas ?? [];
-                const cartasPreview = cartas.slice(0, 2);
-                const cartasExtras = Math.max(cartas.length - cartasPreview.length, 0);
+                const primaryCarta = pickPrimaryCarta(cartas);
+                const extraCartas = Math.max(cartas.length - (primaryCarta ? 1 : 0), 0);
 
                 return (
                     <Card
                         key={clienteId || `cliente-card-${clienteNome}`}
-                        className="group overflow-hidden rounded-2xl border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.03] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-emerald-400/20"
+                        className="overflow-hidden rounded-[24px] border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.03] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-xl transition-all hover:border-emerald-400/20"
                     >
-                        <CardHeader className="space-y-4 pb-3">
+                        <CardContent className="space-y-4 p-4">
                             <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <CardTitle className="flex min-w-0 items-start gap-3 text-base leading-tight">
-                                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10">
+                                <div className="min-w-0 space-y-2">
+                                    <div className="flex items-start gap-3">
+                                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10">
                                             <UserRound className="h-4 w-4 text-emerald-300" />
                                         </span>
-                                        <span className="min-w-0 flex-1 break-words">
-                                            {clienteNome}
-                                        </span>
-                                    </CardTitle>
 
-                                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] text-xs text-muted-foreground">
-                                        <span className="inline-flex items-center gap-1.5">
-                                            <Phone className="h-3.5 w-3.5" />
-                                            {clienteTelefone || "Sem telefone"}
-                                        </span>
+                                        <div className="min-w-0">
+                                            <div className="break-words text-sm font-semibold text-foreground">
+                                                {clienteNome}
+                                            </div>
 
-                                        <span className="inline-flex items-center gap-1.5">
-                                            <Mail className="h-3.5 w-3.5" />
-                                            {clienteEmail || "Sem email"}
-                                        </span>
+                                            <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
+                                                <span className="inline-flex min-w-0 items-center gap-1.5">
+                                                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                                                    <span className="truncate">{phoneLabel}</span>
+                                                </span>
+
+                                                {emailLabel ? (
+                                                    <span className="inline-flex min-w-0 items-center gap-1.5">
+                                                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                                                        <span className="truncate">{emailLabel}</span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px]">
+                                                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                                                        <span className="truncate">Contato nao informado na importacao</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="shrink-0 opacity-100 transition">
-                                    <ClienteRowActions
-                                        clienteId={clienteId}
-                                        clienteNome={clienteNome}
-                                        clienteTelefone={clienteTelefone}
-                                        clienteEmail={clienteEmail}
-                                        administradoras={administradoras}
-                                        parceiros={parceiros}
-                                        compact
-                                    />
-                                </div>
-                            </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        <Badge
+                                            variant="outline"
+                                            className={`capitalize ${getCarteiraBadgeClass(it.cliente?.status_carteira)}`}
+                                        >
+                                            {it.cliente?.status_carteira ?? "-"}
+                                        </Badge>
 
-                            <div className="flex flex-wrap gap-2">
-                                <Badge
-                                    variant="outline"
-                                    className={`capitalize ${getCarteiraBadgeClass(
-                                        it.cliente?.status_carteira
-                                    )}`}
-                                >
-                                    {it.cliente?.status_carteira ?? "—"}
-                                </Badge>
+                                        <Badge variant="secondary" className="capitalize">
+                                            {it.cliente?.origem_entrada ?? "Sem origem"}
+                                        </Badge>
 
-                                <Badge variant="secondary" className="capitalize">
-                                    origem: {it.cliente?.origem_entrada ?? "—"}
-                                </Badge>
-
-                                {it.resumo.status_contrato_mais_recente ? (
-                                    <Badge
-                                        variant={contratoBadgeVariant(
-                                            it.resumo.status_contrato_mais_recente
+                                        {it.resumo.status_contrato_mais_recente ? (
+                                            <Badge
+                                                variant={contratoBadgeVariant(it.resumo.status_contrato_mais_recente)}
+                                                className="capitalize"
+                                            >
+                                                {it.resumo.status_contrato_mais_recente}
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline">Sem contrato</Badge>
                                         )}
-                                        className="capitalize"
-                                    >
-                                        contrato: {it.resumo.status_contrato_mais_recente}
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="outline">sem contrato</Badge>
-                                )}
 
-                                {it.cliente.etapa ? (
-                                    <Badge variant="outline" className="capitalize">
-                                        etapa: {it.cliente.etapa}
-                                    </Badge>
-                                ) : null}
-                            </div>
-                        </CardHeader>
-
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                                        <Wallet className="h-3.5 w-3.5" />
-                                        Total em cartas
+                                        {it.cliente.etapa ? (
+                                            <Badge variant="outline" className="capitalize">
+                                                {it.cliente.etapa}
+                                            </Badge>
+                                        ) : null}
                                     </div>
-                                    <div className="mt-2 text-lg font-semibold">
+                                </div>
+
+                                <ClienteRowActions
+                                    clienteId={clienteId}
+                                    clienteNome={clienteNome}
+                                    clienteTelefone={clienteTelefone}
+                                    clienteEmail={emailLabel ?? undefined}
+                                    administradoras={administradoras}
+                                    parceiros={parceiros}
+                                    compact
+                                />
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                                <div className="rounded-2xl border border-white/10 bg-black/15 p-3">
+                                    <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                                        Cartas
+                                    </div>
+                                    <div className="mt-1 text-sm font-semibold text-foreground">
+                                        {it.resumo.qtd_cartas}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl border border-white/10 bg-black/15 p-3">
+                                    <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                                        Contrato
+                                    </div>
+                                    <div className="mt-1 text-sm font-semibold text-foreground">
+                                        {it.resumo.possui_contrato ? "Sim" : "Nao"}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl border border-white/10 bg-black/15 p-3 sm:col-span-2">
+                                    <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                                        Valor total
+                                    </div>
+                                    <div className="mt-1 truncate text-sm font-semibold text-foreground">
                                         {fmtCurrency(it.resumo.valor_total_cartas)}
                                     </div>
-                                    <div className="mt-1 text-xs text-muted-foreground">
-                                        {it.resumo.qtd_cartas} carta(s) vinculada(s)
-                                    </div>
-                                </div>
-
-                                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                                        <CalendarDays className="h-3.5 w-3.5" />
-                                        Entrada na carteira
-                                    </div>
-                                    <div className="mt-2 text-sm font-medium">
-                                        {fmtDate(it.cliente.entered_at)}
-                                    </div>
-                                    <div className="mt-1 text-xs text-muted-foreground">
-                                        Maior carta: {fmtCurrency(it.resumo.maior_carta_valor)}
-                                    </div>
                                 </div>
                             </div>
 
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                                <div className="mb-3 flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                                        <FileText className="h-3.5 w-3.5" />
-                                        Cartas em destaque
+                            {primaryCarta ? (
+                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="truncate text-sm font-semibold text-foreground">
+                                                Cota {primaryCarta.numero_cota ?? "-"}
+                                            </div>
+                                            <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                                {primaryCarta.administradora ?? "Sem administradora"} · Grupo {primaryCarta.grupo_codigo ?? "-"}
+                                            </div>
+                                        </div>
+
+                                        <div className="shrink-0 text-right">
+                                            <div className="whitespace-nowrap text-sm font-semibold text-foreground">
+                                                {fmtCurrency(primaryCarta.valor_carta)}
+                                            </div>
+                                            <div className="mt-1 whitespace-nowrap text-[11px] text-muted-foreground">
+                                                {primaryCarta.prazo ? `${primaryCarta.prazo} meses` : "Prazo -"}
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {cartas.length > 0 ? (
-                                        <ClienteCartasSheet
-                                            clienteNome={clienteNome}
-                                            cartas={cartas}
-                                        />
-                                    ) : null}
-                                </div>
+                                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                                        {primaryCarta.situacao ? (
+                                            <Badge variant="outline" className="capitalize">
+                                                {primaryCarta.situacao}
+                                            </Badge>
+                                        ) : null}
+                                        {primaryCarta.valor_parcela != null ? (
+                                            <span className="rounded-full border border-white/10 bg-black/15 px-2.5 py-1">
+                                                Parcela {fmtCurrency(primaryCarta.valor_parcela)}
+                                            </span>
+                                        ) : null}
+                                        {extraCartas > 0 ? (
+                                            <ClienteCartasSheet clienteNome={clienteNome} cartas={cartas} />
+                                        ) : null}
+                                    </div>
 
-                                <div className="space-y-2">
-                                    {cartasPreview.map((c, index) => (
-                                        <div
-                                            key={c.cota_id || `${clienteId}-carta-${index}`}
-                                            className="rounded-xl border border-white/10 bg-black/10 px-3 py-3"
-                                        >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0">
-                                                    <div className="truncate text-sm font-medium">
-                                                        Cota {c.numero_cota ?? "—"}
-                                                    </div>
-                                                    <div className="truncate text-xs text-muted-foreground">
-                                                        {c.administradora ?? "—"} · Grupo {c.grupo_codigo ?? "—"}
-                                                    </div>
-                                                    <div className="mt-1 truncate text-xs text-muted-foreground">
-                                                        {c.prazo ? `${c.prazo} meses` : "Prazo —"}
-                                                        {c.assembleia_dia ? ` • dia ${c.assembleia_dia}` : ""}
-                                                        {c.valor_parcela != null
-                                                            ? ` • parcela ${fmtCurrency(c.valor_parcela)}`
-                                                            : ""}
-                                                    </div>
-                                                </div>
-
-                                                <div className="shrink-0 text-right">
-                                                    <div className="text-sm font-medium">
-                                                        {fmtCurrency(c.valor_carta)}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-2 flex flex-wrap gap-2">
-                                                {c.situacao ? (
-                                                    <Badge variant="outline" className="capitalize">
-                                                        {c.situacao}
-                                                    </Badge>
-                                                ) : null}
-                                                {c.parcela_reduzida ? (
-                                                    <Badge variant="secondary">redutor</Badge>
-                                                ) : null}
-                                                {c.fgts_permitido ? (
-                                                    <Badge variant="secondary">FGTS</Badge>
-                                                ) : null}
-                                                {c.embutido_permitido ? (
-                                                    <Badge variant="secondary">embutido</Badge>
-                                                ) : null}
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {cartasExtras > 0 ? (
-                                        <div className="flex items-center justify-between rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-3 py-2.5">
-                                            <div className="text-sm text-muted-foreground">
-                                                +{cartasExtras} cota(s) adicionais
-                                            </div>
-                                            <ClienteCartasSheet
-                                                clienteNome={clienteNome}
-                                                cartas={cartas}
-                                            />
-                                        </div>
-                                    ) : null}
-
-                                    {cartas.length === 0 ? (
-                                        <div className="rounded-xl border border-dashed border-white/10 bg-black/10 px-3 py-3 text-sm text-muted-foreground">
-                                            Sem cartas no filtro atual.
+                                    {extraCartas > 0 ? (
+                                        <div className="mt-2 text-xs text-muted-foreground">
+                                            +{extraCartas} cota(s) adicionais no detalhe lateral.
                                         </div>
                                     ) : null}
                                 </div>
-                            </div>
-
-                            <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Workflow className="h-4 w-4" />
-                                    <span>Etapa: {it.cliente.etapa ?? "—"}</span>
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-3 py-4 text-sm text-muted-foreground">
+                                    Sem cartas vinculadas no filtro atual.
                                 </div>
+                            )}
+
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3 text-xs text-muted-foreground">
+                                <span className="inline-flex items-center gap-2">
+                                    <CalendarDays className="h-3.5 w-3.5" />
+                                    Entrada {fmtDate(it.cliente.entered_at)}
+                                </span>
 
                                 {it.cliente.observacoes ? (
-                                    <div className="text-xs text-muted-foreground">
-                                        <span className="font-medium text-foreground">Observações:</span>{" "}
-                                        {it.cliente.observacoes}
-                                    </div>
+                                    <span className="max-w-full truncate xl:max-w-[60%]">{it.cliente.observacoes}</span>
                                 ) : null}
-                            </div>
-
-                            <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                                <div className="text-xs text-muted-foreground">
-                                    {it.resumo.possui_contrato ? "Com contrato" : "Sem contrato"}
-                                </div>
-
-                                <div className="text-xs text-muted-foreground">
-                                    {it.resumo.qtd_cartas} carta(s)
-                                </div>
                             </div>
                         </CardContent>
                     </Card>

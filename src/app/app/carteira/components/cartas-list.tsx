@@ -1,9 +1,10 @@
 import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { contratoBadgeVariant } from "../lib/badges";
-import { fmtCurrency, fmtDate } from "../lib/format";
+import { fmtCurrency, fmtDate, fmtPhone } from "../lib/format";
 import type { CarteiraCartaItem } from "../lib/types";
 import { EmptyState } from "./empty-state";
 
@@ -12,73 +13,56 @@ type CartasListProps = {
 };
 
 export function CartasList({ items }: CartasListProps) {
-    return (
-        <Card className="bg-white/5 border-white/10">
-            <CardHeader>
-                <CardTitle>Cartas da carteira</CardTitle>
-            </CardHeader>
+    if (items.length === 0) {
+        return <EmptyState message="Nenhuma carta para o filtro atual." />;
+    }
 
-            <CardContent className="space-y-2">
+    return (
+        <div className="overflow-hidden rounded-[26px] border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.025] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-xl">
+            <div className="grid border-b border-white/10 bg-white/[0.03] px-4 py-3 text-xs uppercase tracking-[0.14em] text-muted-foreground md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center">
+                <div>Cliente / carta</div>
+                <div>Valor e prazo</div>
+                <div>Estado</div>
+                <div className="text-right">Acao</div>
+            </div>
+
+            <div className="divide-y divide-white/10">
                 {items.map((it) => (
                     <div
                         key={it.cota.cota_id}
-                        className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.03] p-4 md:flex-row md:items-start md:justify-between"
+                        className="grid gap-3 px-4 py-3 transition-colors hover:bg-white/[0.025] md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center"
                     >
-                        <div className="min-w-0 space-y-3">
-                            <div className="space-y-1">
-                                <div className="font-medium truncate">
-                                {it.cliente.nome ?? "—"}{" "}
-                                <span className="text-xs text-muted-foreground">
-                  • {it.cliente.telefone ?? "—"}
-                </span>
-                                </div>
-
-                                <div className="text-xs text-muted-foreground">
-                                    {it.cota.administradora ?? "Sem administradora"} • Cota{" "}
-                                    {it.cota.numero_cota ?? "—"} • Grupo {it.cota.grupo_codigo ?? "—"} •{" "}
-                                    {it.cota.produto ?? "—"}
-                                </div>
+                        <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-foreground">
+                                {it.cliente.nome ?? "-"}
                             </div>
-
-                            <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-3">
-                                <div className="rounded-xl border border-white/10 bg-black/10 px-3 py-2">
-                                    <div className="uppercase tracking-[0.14em] text-[10px] text-muted-foreground">
-                                        Valor da carta
-                                    </div>
-                                    <div className="mt-1 text-sm font-medium text-foreground">
-                                        {fmtCurrency(it.cota.valor_carta)}
-                                    </div>
-                                </div>
-
-                                <div className="rounded-xl border border-white/10 bg-black/10 px-3 py-2">
-                                    <div className="uppercase tracking-[0.14em] text-[10px] text-muted-foreground">
-                                        Parcela
-                                    </div>
-                                    <div className="mt-1 text-sm font-medium text-foreground">
-                                        {fmtCurrency(it.cota.valor_parcela)}
-                                    </div>
-                                </div>
-
-                                <div className="rounded-xl border border-white/10 bg-black/10 px-3 py-2">
-                                    <div className="uppercase tracking-[0.14em] text-[10px] text-muted-foreground">
-                                        Prazo / assembleia
-                                    </div>
-                                    <div className="mt-1 text-sm font-medium text-foreground">
-                                        {it.cota.prazo ? `${it.cota.prazo} meses` : "—"}
-                                        {it.cota.assembleia_dia ? ` • dia ${it.cota.assembleia_dia}` : ""}
-                                    </div>
-                                </div>
+                            <div className="mt-1 truncate text-xs text-muted-foreground">
+                                {fmtPhone(it.cliente.telefone) ?? "Sem telefone"} · {it.cota.administradora ?? "Sem administradora"} ·
+                                {" "}Cota {it.cota.numero_cota ?? "-"} · Grupo {it.cota.grupo_codigo ?? "-"}
                             </div>
+                        </div>
 
-                            <div className="flex flex-wrap gap-2">
+                        <div className="space-y-1">
+                            <div className="text-sm font-semibold text-foreground">
+                                {fmtCurrency(it.cota.valor_carta)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                Parcela {fmtCurrency(it.cota.valor_parcela)} ·{" "}
+                                {it.cota.prazo ? `${it.cota.prazo} meses` : "Prazo -"}
+                                {it.cota.assembleia_dia ? ` · dia ${it.cota.assembleia_dia}` : ""}
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <div className="flex flex-wrap gap-1.5">
                                 {it.cota.situacao ? (
                                     <Badge variant="outline" className="capitalize">
-                                        cota: {it.cota.situacao}
+                                        {it.cota.situacao}
                                     </Badge>
                                 ) : null}
 
                                 <Badge variant="outline" className="capitalize">
-                                    carteira: {it.carteira.status_carteira}
+                                    {it.carteira.status_carteira}
                                 </Badge>
 
                                 {it.contrato.status ? (
@@ -86,65 +70,29 @@ export function CartasList({ items }: CartasListProps) {
                                         variant={contratoBadgeVariant(it.contrato.status)}
                                         className="capitalize"
                                     >
-                                        contrato: {it.contrato.status}
+                                        {it.contrato.status}
                                     </Badge>
                                 ) : (
-                                    <Badge variant="outline">sem contrato</Badge>
+                                    <Badge variant="outline">Sem contrato</Badge>
                                 )}
-
-                                {it.cota.parcela_reduzida ? (
-                                    <Badge variant="secondary">redutor</Badge>
-                                ) : null}
-
-                                {it.cota.fgts_permitido ? (
-                                    <Badge variant="secondary">FGTS</Badge>
-                                ) : null}
-
-                                {it.cota.embutido_permitido ? (
-                                    <Badge variant="secondary">
-                                        embutido
-                                        {typeof it.cota.embutido_max_percent === "number"
-                                            ? ` ${it.cota.embutido_max_percent}%`
-                                            : ""}
-                                    </Badge>
-                                ) : null}
-
-                                {it.cota.parceiro_nome ? (
-                                    <Badge variant="outline">parceiro: {it.cota.parceiro_nome}</Badge>
-                                ) : null}
                             </div>
 
-                            {it.cota.ultimo_lance ? (
-                                <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.06] px-3 py-2 text-xs text-muted-foreground">
-                                    <span className="font-medium text-emerald-200">Último lance:</span>{" "}
-                                    {it.cota.ultimo_lance.tipo ?? "—"}
-                                    {typeof it.cota.ultimo_lance.percentual === "number"
-                                        ? ` • ${it.cota.ultimo_lance.percentual}%`
-                                        : ""}
-                                    {it.cota.ultimo_lance.valor != null
-                                        ? ` • ${fmtCurrency(it.cota.ultimo_lance.valor)}`
-                                        : ""}
-                                    {it.cota.ultimo_lance.data
-                                        ? ` • assembleia ${fmtDate(it.cota.ultimo_lance.data)}`
-                                        : ""}
-                                </div>
-                            ) : null}
+                            <div className="text-xs text-muted-foreground">
+                                Entrada {fmtDate(it.carteira.entered_at)}
+                                {it.cota.ultimo_lance?.data ? ` · ultimo lance ${fmtDate(it.cota.ultimo_lance.data)}` : ""}
+                            </div>
                         </div>
 
-                        <div className="flex items-center gap-3 flex-wrap md:justify-end">
+                        <div className="flex items-center justify-end">
                             <Link href={`/app/leads/${it.cliente.lead_id}`}>
-                                <Button size="sm" variant="outline">
+                                <Button size="sm" variant="outline" className="h-8 rounded-xl border-white/10 bg-white/[0.03]">
                                     Abrir cliente
                                 </Button>
                             </Link>
                         </div>
                     </div>
                 ))}
-
-                {items.length === 0 && (
-                    <EmptyState message="Nenhuma carta para o filtro atual." />
-                )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }

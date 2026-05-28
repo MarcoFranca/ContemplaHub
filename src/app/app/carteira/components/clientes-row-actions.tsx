@@ -26,6 +26,7 @@ import {
 import { DeleteLeadButton } from "@/app/app/leads/ui/DeleteLeadButton";
 import { CreateCarteiraCartaSheet } from "@/app/app/carteira/ui/CreateCarteiraCartaSheet";
 import { startClientNegotiationAction } from "../actions";
+import { EditClienteCarteiraSheet } from "./edit-cliente-carteira-sheet";
 
 type Option = {
     id: string;
@@ -105,6 +106,20 @@ export function ClienteRowActions({
                 </div>
             </IconAction>
 
+            <IconAction label="Editar cliente">
+                <div>
+                    <EditClienteCarteiraSheet
+                        compact
+                        lead={{
+                            id: clienteId,
+                            nome: clienteNome,
+                            telefone: clienteTelefone ?? null,
+                            email: clienteEmail ?? null,
+                        }}
+                    />
+                </div>
+            </IconAction>
+
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
@@ -127,6 +142,17 @@ export function ClienteRowActions({
                             Abrir cliente
                         </Link>
                     </DropdownMenuItem>
+
+                    <div className="px-2 py-1">
+                        <EditClienteCarteiraSheet
+                            lead={{
+                                id: clienteId,
+                                nome: clienteNome,
+                                telefone: clienteTelefone ?? null,
+                                email: clienteEmail ?? null,
+                            }}
+                        />
+                    </div>
 
                     <div className="px-2 py-1">
                         <CreateCarteiraCartaSheet

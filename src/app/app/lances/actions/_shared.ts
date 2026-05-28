@@ -1,36 +1,19 @@
-
 "use server";
 
 import { getBackendUrl } from "@/lib/backend";
-import { getCurrentProfile } from "@/lib/auth/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { getBackendAuthContext } from "./backend";
 
 export async function backendAuthed<T>(
     path: string,
     init?: RequestInit
 ): Promise<T> {
-    const supabase = await supabaseServer();
-
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.access_token) {
-        throw new Error("Sessão inválida. Faça login novamente.");
-    }
-
-    const profile = await getCurrentProfile();
-    const orgId = profile?.orgId;
-
-    if (!orgId) {
-        throw new Error("Organização inválida.");
-    }
+    const { orgId, accessToken } = await getBackendAuthContext();
 
     const response = await fetch(`${getBackendUrl()}${path}`, {
         ...init,
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
             "X-Org-Id": orgId,
             ...(init?.headers ?? {}),
         },

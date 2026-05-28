@@ -263,18 +263,18 @@ export function LancesFilters({
                                 </Button>
                             </div>
 
-                            <SheetFooter className="mt-5 grid grid-cols-2 gap-2 sm:flex">
+                            <SheetFooter className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     onClick={resetMobileFilters}
-                                    className="inline-flex items-center gap-2"
+                                    className="inline-flex w-full items-center justify-center gap-2 sm:w-auto"
                                 >
                                     <RotateCcw className="h-4 w-4" />
                                     Limpar
                                 </Button>
 
-                                <Button type="button" onClick={applyMobileFilters}>
+                                <Button type="button" onClick={applyMobileFilters} className="w-full sm:w-auto">
                                     Aplicar filtros
                                 </Button>
                             </SheetFooter>
@@ -296,7 +296,7 @@ export function LancesFilters({
                 </div>
             </div>
 
-            <div className="hidden gap-3 md:grid md:grid-cols-6">
+            <div className="hidden gap-3 md:grid md:grid-cols-[minmax(140px,0.95fr)_minmax(140px,0.8fr)_minmax(190px,1fr)_minmax(180px,0.9fr)_minmax(220px,1.2fr)_minmax(180px,0.9fr)]">
                 <Input
                     type="date"
                     value={competencia}
@@ -363,11 +363,11 @@ export function LancesFilters({
                     }}
                 />
 
-                <div className="flex gap-2">
+                <div className="flex min-w-0 gap-2">
                     <Button
                         type="button"
                         variant={somenteAutorizadas ? "default" : "outline"}
-                        className="w-full"
+                        className="min-w-0 flex-1"
                         onClick={() =>
                             updateParam("somente_autorizadas", somenteAutorizadas ? "" : "1")
                         }
@@ -375,7 +375,12 @@ export function LancesFilters({
                         Autorizadas
                     </Button>
 
-                    <Button type="button" variant="ghost" onClick={resetAllDesktop}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={resetAllDesktop}
+                        className="shrink-0 px-3"
+                    >
                         Limpar
                     </Button>
                 </div>
