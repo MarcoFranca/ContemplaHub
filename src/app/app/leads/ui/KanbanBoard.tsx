@@ -7,6 +7,7 @@ import { LeadCardItem } from "./LeadCardItem";
 import { toast } from "sonner";
 import { fireConfetti } from "@/lib/ui/confetti";
 import { ColumnHeaderStats } from "@/app/app/leads/ui/ColumnHeaderStats";
+import { useRouter } from "next/navigation";
 
 import type {
     Stage,
@@ -59,6 +60,7 @@ export default function KanbanBoard({
                                         contractOptions,
                                         metrics,
                                     }: Props) {
+    const router = useRouter();
     const [, startTransition] = useTransition();
 
     const [columns, setColumns] = useOptimistic<
@@ -128,8 +130,18 @@ export default function KanbanBoard({
         startTransition(() => {
             setColumns({ id: lead.id, from, to });
         });
-        await onMove(lead.id, to, reason);
-        toast.info(`Lead movido para: ${stageLabels[to].label}`);
+        try {
+            await onMove(lead.id, to, reason);
+            router.refresh();
+            toast.info(`Lead movido para: ${stageLabels[to].label}`);
+        } catch (error) {
+            startTransition(() => {
+                setColumns({ id: lead.id, from: to, to: from });
+            });
+            console.error(error);
+            toast.error("Nao foi possivel mover o lead. Tente novamente.");
+            throw error;
+        }
     }
 
     function onDrop(ev: React.DragEvent, to: Stage) {

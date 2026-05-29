@@ -206,6 +206,7 @@ export async function moveLeadStage(args: {
     });
 
     revalidatePath("/app/leads");
+    revalidatePath(`/app/leads/${leadId}`);
     return data;
 }
 
