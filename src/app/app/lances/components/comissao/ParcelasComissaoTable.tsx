@@ -1,7 +1,6 @@
 "use client";
 
-import { CalendarRange, CircleDollarSign, Percent, RotateCcw, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { ComissaoRegra } from "../../types";
 import { calcularValorEstimado } from "./comissao-calculator";
@@ -13,143 +12,119 @@ type Props = {
   onLiberarAuto: (index: number) => void;
 };
 
+const EVENTO_LABELS: Record<string, string> = {
+  adesao: "Adesão",
+  primeira_cobranca_valida: "1ª Cobrança",
+  proxima_cobranca: "Próx. Cobrança",
+  contemplacao: "Contemplação",
+  manual: "Manual",
+};
+
+const fmt = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
 export function ParcelasComissaoTable({
   regras,
   valorBase,
   onPercentualChange,
   onLiberarAuto,
 }: Props) {
+  if (!regras.length) {
+    return (
+      <div className="rounded-xl border border-dashed border-border/35 bg-card/15 p-5 text-center text-sm text-muted-foreground">
+        Nenhuma parcela gerada ainda. Use "Gerar automaticamente" acima ou ajuste o número de parcelas.
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4 rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm backdrop-blur-sm">
-      <div className="flex items-start gap-3">
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-300">
-          <CalendarRange className="h-4 w-4" />
-        </div>
-        <div>
-          <h4 className="font-semibold text-foreground">Parcelas da comissão</h4>
-          <p className="text-sm text-muted-foreground">
-            Ao editar uma parcela ela fica manual; o restante é redistribuído apenas nas automáticas.
-          </p>
+    <div className="overflow-hidden rounded-xl border border-border/35">
+      {/* Header */}
+      <div className="border-b border-border/25 bg-card/35 px-3 py-2.5">
+        <div className="grid grid-cols-[2rem_1fr_3.5rem_6rem_6rem_3.5rem] gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <span>#</span>
+          <span>Evento</span>
+          <span>Offset</span>
+          <span>Percentual</span>
+          <span>Valor est.</span>
+          <span>Modo</span>
         </div>
       </div>
 
-      <div className="space-y-3">
+      {/* Rows */}
+      <div className="divide-y divide-border/15">
         {regras.map((regra, index) => {
           const valorEstimado = calcularValorEstimado(
             valorBase,
             Number(regra.percentual_comissao || 0)
           );
+          const isManual = Boolean(regra.is_manual);
 
           return (
             <div
               key={`${regra.ordem}-${index}`}
-              className="rounded-2xl border border-border/70 bg-background/70 p-4 shadow-sm"
+              className={`
+                grid grid-cols-[2rem_1fr_3.5rem_6rem_6rem_3.5rem] items-center gap-2 px-3 py-2 transition-colors
+                hover:bg-white/2
+                ${isManual ? "bg-amber-500/4" : ""}
+              `}
             >
-              <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/15 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-300">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Parcela {regra.ordem}
-                </div>
+              {/* # */}
+              <span className="text-xs font-medium text-muted-foreground/80">{regra.ordem}</span>
 
-                <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-1 text-xs text-muted-foreground">
-                  {regra.is_manual ? "Origem manual" : "Origem automática"}
-                </div>
-              </div>
+              {/* Evento */}
+              <span className="truncate text-xs text-foreground">
+                {EVENTO_LABELS[regra.tipo_evento] ?? regra.tipo_evento}
+              </span>
 
-              <div className="grid gap-4 lg:grid-cols-[0.9fr_0.7fr_1fr_1fr_auto]">
-                <InfoBox label="Evento" value={labelEvento(regra.tipo_evento)} icon={CalendarRange} />
-                <InfoBox label="Offset" value={`${regra.offset_meses}`} icon={CalendarRange} />
+              {/* Offset */}
+              <span className="text-xs text-muted-foreground">
+                {regra.offset_meses === 0 ? "—" : `+${regra.offset_meses}m`}
+              </span>
 
-                <div className="space-y-1.5">
-                  <label className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                    <Percent className="h-3.5 w-3.5 text-emerald-300" />
-                    Percentual %
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.0001"
-                    min={0}
-                    value={regra.percentual_comissao}
-                    onChange={(e) =>
-                      onPercentualChange(index, Number(e.target.value || 0))
-                    }
-                  />
-                </div>
+              {/* Percentual (editável) */}
+              <Input
+                type="number"
+                step="0.0001"
+                min={0}
+                value={regra.percentual_comissao}
+                onChange={(e) => onPercentualChange(index, Number(e.target.value || 0))}
+                className="h-7 rounded-lg px-2 text-xs"
+              />
 
-                <InfoBox label="Valor estimado" value={formatMoney(valorEstimado)} icon={CircleDollarSign} />
+              {/* Valor estimado */}
+              <span className="text-xs font-medium text-foreground">
+                {valorBase > 0 ? fmt(valorEstimado) : "—"}
+              </span>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                    Ajuste
-                  </label>
-                  {regra.is_manual ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full border-emerald-500/20 hover:bg-emerald-500/5"
-                      onClick={() => onLiberarAuto(index)}
-                      title="Voltar para automático"
-                    >
-                      <RotateCcw className="mr-2 h-4 w-4 text-emerald-300" />
-                      Voltar para automático
-                    </Button>
-                  ) : (
-                    <div className="flex h-10 items-center rounded-xl border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
-                      Distribuição automática ativa
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* Modo toggle */}
+              {isManual ? (
+                <button
+                  type="button"
+                  onClick={() => onLiberarAuto(index)}
+                  title="Clique para voltar para distribuição automática"
+                  className="inline-flex items-center gap-1 rounded-md border border-amber-500/25 bg-amber-500/12 px-1.5 py-1 text-[10px] font-semibold text-amber-300 transition-colors hover:bg-amber-500/20"
+                >
+                  <RotateCcw className="h-2.5 w-2.5" />
+                  M
+                </button>
+              ) : (
+                <span className="inline-flex items-center justify-center rounded-md border border-border/25 bg-card/25 px-1.5 py-1 text-[10px] text-muted-foreground">
+                  Auto
+                </span>
+              )}
             </div>
           );
         })}
+      </div>
 
-        {!regras.length ? (
-          <div className="rounded-2xl border border-dashed border-emerald-500/20 bg-emerald-500/5 p-6 text-center text-sm text-muted-foreground">
-            Nenhuma parcela gerada ainda.
-          </div>
-        ) : null}
+      {/* Footer: legend */}
+      <div className="border-t border-border/20 bg-card/20 px-3 py-2 text-[10px] text-muted-foreground/60">
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded-sm bg-amber-500/30" />
+          M = editado manualmente · clique para redistribuir automaticamente
+        </span>
       </div>
     </div>
   );
-}
-
-function InfoBox({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-        <Icon className="h-3.5 w-3.5 text-emerald-300" />
-        {label}
-      </label>
-      <div className="flex h-10 items-center rounded-xl border border-border/70 bg-card/70 px-3 text-sm text-foreground">
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function labelEvento(value: string) {
-  const map: Record<string, string> = {
-    adesao: "Adesão",
-    primeira_cobranca_valida: "Primeira cobrança",
-    proxima_cobranca: "Próxima cobrança",
-    contemplacao: "Contemplação",
-    manual: "Manual",
-  };
-  return map[value] ?? value;
-}
-
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value || 0);
 }

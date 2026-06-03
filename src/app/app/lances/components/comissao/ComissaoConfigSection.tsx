@@ -10,18 +10,13 @@ type Props = {
   valorBase?: number | null;
 };
 
-export function ComissaoConfigSection({
-                                        value,
-                                        onChange,
-                                        parceirosDisponiveis,
-                                        valorBase,
-                                      }: Props) {
+export function ComissaoConfigSection({ value, onChange, parceirosDisponiveis, valorBase }: Props) {
   return (
-      <ComissaoBuilder
-          value={value}
-          onChange={onChange}
-          parceirosDisponiveis={parceirosDisponiveis}
-          valorBase={valorBase}
-      />
+    <ComissaoBuilder
+      value={value}
+      onChange={onChange}
+      parceirosDisponiveis={parceirosDisponiveis}
+      valorBase={valorBase}
+    />
   );
 }

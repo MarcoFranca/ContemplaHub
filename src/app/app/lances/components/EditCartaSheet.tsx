@@ -1134,6 +1134,7 @@ export function EditCartaSheet({
                                 value={comissaoPayload}
                                 onChange={setComissaoPayload}
                                 parceirosDisponiveis={parceirosDisponiveis}
+                                valorBase={Number(valorCarta || 0)}
                             />
 
                             {loadingComissao ? (

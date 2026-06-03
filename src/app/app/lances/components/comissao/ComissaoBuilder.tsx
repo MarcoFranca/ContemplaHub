@@ -3,18 +3,17 @@
 import * as React from "react";
 import {
   BadgePercent,
+  Building2,
   Calculator,
   CircleDollarSign,
-  HandCoins,
   Handshake,
+  Info,
   Plus,
-  Sparkles,
   WandSparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { CotaComissaoPayload } from "../../types";
+import type { CotaComissaoPayload, CotaComissaoParceiro, ParceiroSelectOption } from "../../types";
 import {
   gerarRegrasProporcionais,
   redistribuirRegrasAutomaticas,
@@ -23,7 +22,6 @@ import {
 } from "./comissao-calculator";
 import { ParcelasComissaoTable } from "./ParcelasComissaoTable";
 import { ComissaoParceiroRow } from "./ComissaoParceiroRow";
-import type { ParceiroSelectOption, CotaComissaoParceiro } from "../../types";
 
 type Props = {
   value: CotaComissaoPayload;
@@ -32,138 +30,115 @@ type Props = {
   valorBase?: number | null;
 };
 
-export function ComissaoBuilder({
-  value,
-  onChange,
-  parceirosDisponiveis,
-  valorBase = 0,
-}: Props) {
+const fmt = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+export function ComissaoBuilder({ value, onChange, parceirosDisponiveis, valorBase = 0 }: Props) {
   const [quantidadeParcelas, setQuantidadeParcelas] = React.useState(
     Math.max(value.regras?.length || 1, 1)
   );
 
-  const percentualTotal = Number(value.percentual_total || 0);
+  const base = Number(valorBase || 0);
+  const pctTotal = Number(value.percentual_total || 0);
   const totalDistribuido = somarPercentuais(value.regras || []);
-  const saldo = Number((percentualTotal - totalDistribuido).toFixed(4));
-  const valorTotalEstimado = Number(valorBase || 0) * (percentualTotal / 100);
-  const totalParceiros = (value.parceiros || []).filter((item) => item.ativo).length;
+  const saldo = Number((pctTotal - totalDistribuido).toFixed(4));
+  const podeSalvar = Math.abs(saldo) < 0.0001;
+  const progressPct = pctTotal > 0 ? Math.min((totalDistribuido / pctTotal) * 100, 100) : 0;
+  const valorTotalComissao = base * (pctTotal / 100);
+
+  const totalPctParceiros = (value.parceiros || [])
+    .filter((p) => p.ativo)
+    .reduce((s, p) => s + Number(p.percentual_parceiro || 0), 0);
+  const pctEmpresa = Math.max(pctTotal - totalPctParceiros, 0);
+  const valorEmpresa = base * (pctEmpresa / 100);
+  const valorParceiros = base * (totalPctParceiros / 100);
 
   const setField = <K extends keyof CotaComissaoPayload>(
     field: K,
     fieldValue: CotaComissaoPayload[K]
-  ) => {
-    onChange({ ...value, [field]: fieldValue });
-  };
+  ) => onChange({ ...value, [field]: fieldValue });
 
   const gerarParcelas = () => {
-    const regras = gerarRegrasProporcionais({
-      quantidadeParcelas,
-      percentualTotal,
-      modo: value.modo,
-    });
-
-    setField("regras", regras);
+    setField(
+      "regras",
+      gerarRegrasProporcionais({ quantidadeParcelas, percentualTotal: pctTotal, modo: value.modo })
+    );
   };
 
   const onPercentualChange = (index: number, percentual: number) => {
-    const regras = atualizarRegraManual({
-      regras: value.regras,
-      regraIndex: index,
-      percentual,
-      percentualTotal,
-    });
-
-    setField("regras", regras);
+    setField(
+      "regras",
+      atualizarRegraManual({ regras: value.regras, regraIndex: index, percentual, percentualTotal: pctTotal })
+    );
   };
 
   const onLiberarAuto = (index: number) => {
     const next = [...value.regras];
     next[index] = { ...next[index], is_manual: false };
-
-    setField(
-      "regras",
-      redistribuirRegrasAutomaticas({
-        regras: next,
-        percentualTotal,
-      })
-    );
+    setField("regras", redistribuirRegrasAutomaticas({ regras: next, percentualTotal: pctTotal }));
   };
 
   const addParceiro = () => {
-    const next: CotaComissaoParceiro = {
+    const novo: CotaComissaoParceiro = {
       parceiro_id: "",
       percentual_parceiro: 0,
       imposto_retido_pct: value.imposto_padrao_pct ?? 10,
       ativo: true,
       observacoes: "",
     };
-
-    setField("parceiros", [...value.parceiros, next]);
+    setField("parceiros", [...value.parceiros, novo]);
   };
 
-  const podeSalvar = Math.abs(saldo) < 0.0001;
-
   return (
-    <div className="space-y-5">
-      <div className="rounded-3xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/12 via-emerald-500/5 to-transparent p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-300">
-              <Sparkles className="h-3.5 w-3.5" />
-              Comissão e repasses
+    <div className="space-y-4">
+      {/* ── Resumo financeiro ── */}
+      <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-5">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-300">
+          <CircleDollarSign className="h-3.5 w-3.5" />
+          Comissão da carta
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="text-3xl font-bold tracking-tight text-foreground">
+              {base > 0 && pctTotal > 0 ? fmt(valorTotalComissao) : "—"}
             </div>
-            <div>
-              <h3 className="text-base font-semibold text-foreground">
-                Estruture a comissão com clareza financeira
-              </h3>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Defina o percentual total, distribua em parcelas e vincule parceiros com uma visão mais executiva do repasse.
-              </p>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {pctTotal > 0
+                ? `${pctTotal.toFixed(4)}% sobre ${base > 0 ? fmt(base) : "valor não informado"}`
+                : "Informe o percentual de comissão abaixo"}
             </div>
           </div>
 
-          <div className="grid min-w-full gap-3 sm:grid-cols-2 xl:min-w-[420px] xl:grid-cols-2">
-            <ResumoCard
-              icon={BadgePercent}
-              label="Comissão total"
-              value={`${percentualTotal.toFixed(4)}%`}
-            />
-            <ResumoCard
-              icon={CircleDollarSign}
-              label="Valor estimado"
-              value={formatMoney(valorTotalEstimado)}
-            />
-            <ResumoCard
-              icon={Calculator}
-              label="Distribuído"
-              value={`${totalDistribuido.toFixed(4)}%`}
-            />
-            <ResumoCard
-              icon={HandCoins}
-              label="Saldo"
-              value={`${saldo.toFixed(4)}%`}
-              danger={!podeSalvar}
-            />
-          </div>
+          {base > 0 && pctTotal > 0 && (
+            <div className="flex items-center gap-5">
+              <div className="text-right">
+                <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Empresa
+                </div>
+                <div className="text-lg font-bold text-sky-300">{fmt(valorEmpresa)}</div>
+                <div className="text-xs text-muted-foreground">{pctEmpresa.toFixed(2)}%</div>
+              </div>
+              {totalPctParceiros > 0 && (
+                <div className="text-right">
+                  <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    Parceiros
+                  </div>
+                  <div className="text-lg font-bold text-emerald-300">{fmt(valorParceiros)}</div>
+                  <div className="text-xs text-muted-foreground">{totalPctParceiros.toFixed(2)}%</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm backdrop-blur-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-300">
-              <Calculator className="h-4 w-4" />
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-foreground">Configuração principal</h4>
-              <p className="text-xs text-muted-foreground">
-                Ajuste a base da comissão antes de distribuir as parcelas.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <FieldShell label="Comissão total %" hint="Percentual bruto sobre a base configurada.">
+      {/* ── Bloco 1: Base financeira ── */}
+      <SectionBlock number={1} title="Base financeira" icon={<BadgePercent className="h-4 w-4" />}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <FieldLabel>Comissão total (%)</FieldLabel>
+            <div className="flex items-center gap-2">
               <Input
                 type="number"
                 step="0.0001"
@@ -172,128 +147,199 @@ export function ComissaoBuilder({
                 onChange={(e) => {
                   const nextTotal = Number(e.target.value || 0);
                   const next = { ...value, percentual_total: nextTotal };
-
                   if (next.regras?.length) {
                     next.regras = redistribuirRegrasAutomaticas({
                       regras: next.regras,
                       percentualTotal: nextTotal,
                     });
                   }
-
                   onChange(next);
                 }}
+                className="flex-1"
               />
-            </FieldShell>
-
-            <FieldShell label="Modo de pagamento" hint="À vista ou distribuído em parcelas.">
-              <select
-                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition focus:border-emerald-500/40 focus:ring-2 focus:ring-emerald-500/15"
-                value={value.modo}
-                onChange={(e) =>
-                  setField("modo", e.target.value as CotaComissaoPayload["modo"])
-                }
-              >
-                <option value="avista">À vista</option>
-                <option value="parcelado">Parcelado</option>
-              </select>
-            </FieldShell>
-
-            <FieldShell label="Imposto padrão %" hint="Base inicial aplicada aos parceiros.">
-              <Input
-                type="number"
-                step="0.01"
-                min={0}
-                value={value.imposto_padrao_pct}
-                onChange={(e) =>
-                  setField("imposto_padrao_pct", Number(e.target.value || 0))
-                }
-              />
-            </FieldShell>
-
-            <FieldShell label="Quantidade de parcelas" hint="Use para gerar a distribuição automática.">
-              <Input
-                type="number"
-                min={1}
-                value={quantidadeParcelas}
-                onChange={(e) => setQuantidadeParcelas(Number(e.target.value || 1))}
-              />
-            </FieldShell>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button type="button" variant="outline" className="border-emerald-500/20 hover:bg-emerald-500/5" onClick={gerarParcelas}>
-              <WandSparkles className="mr-2 h-4 w-4 text-emerald-300" />
-              Gerar parcelas automaticamente
-            </Button>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm backdrop-blur-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-300">
-              <Handshake className="h-4 w-4" />
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-foreground">Leitura rápida</h4>
-              <p className="text-xs text-muted-foreground">
-                Validação imediata para evitar erro antes de salvar.
-              </p>
+              {base > 0 && pctTotal > 0 && (
+                <span className="flex-shrink-0 text-sm font-semibold text-emerald-300">
+                  = {fmt(valorTotalComissao)}
+                </span>
+              )}
             </div>
           </div>
 
-          <Alert className={podeSalvar ? "border-emerald-500/20 bg-emerald-500/5 text-foreground" : "border-red-500/30 bg-red-500/5"}>
-            <AlertTitle>
-              {podeSalvar ? "Distribuição válida" : "Distribuição incompleta"}
-            </AlertTitle>
-            <AlertDescription>
-              {podeSalvar
-                ? "A comissão está equilibrada e pronta para seguir para persistência e geração de lançamentos."
-                : "Ajuste as parcelas para fechar exatamente o percentual total informado."}
-            </AlertDescription>
-          </Alert>
-
-          <div className="mt-4 grid gap-3">
-            <MiniInfo label="Base de cálculo" value={value.base_calculo === "valor_carta" ? "Valor da carta" : value.base_calculo} />
-            <MiniInfo label="Parcelas criadas" value={`${value.regras?.length || 0}`} />
-            <MiniInfo label="Parceiros ativos" value={`${totalParceiros}`} />
-            <MiniInfo label="Valor base" value={formatMoney(Number(valorBase || 0))} />
+          <div className="space-y-1.5">
+            <FieldLabel>Imposto padrão dos parceiros (%)</FieldLabel>
+            <Input
+              type="number"
+              step="0.01"
+              min={0}
+              value={value.imposto_padrao_pct}
+              onChange={(e) => setField("imposto_padrao_pct", Number(e.target.value || 0))}
+            />
           </div>
-        </section>
-      </div>
+        </div>
+      </SectionBlock>
 
-      <ParcelasComissaoTable
-        regras={value.regras}
-        valorBase={Number(valorBase || 0)}
-        onPercentualChange={onPercentualChange}
-        onLiberarAuto={onLiberarAuto}
-      />
-
-      <section className="space-y-4 rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm backdrop-blur-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-300">
-              <Handshake className="h-4 w-4" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">Parceiros vinculados</h4>
-              <p className="text-sm text-muted-foreground">
-                O repasse do parceiro é aplicado de forma proporcional ao cronograma da comissão.
-              </p>
+      {/* ── Bloco 2: Estrutura de recebimento ── */}
+      <SectionBlock
+        number={2}
+        title="Estrutura de recebimento"
+        icon={<Calculator className="h-4 w-4" />}
+      >
+        <div className="space-y-4">
+          {/* Segmented control: À vista / Parcelado */}
+          <div className="space-y-1.5">
+            <FieldLabel>Modo de recebimento</FieldLabel>
+            <div className="inline-flex rounded-xl border border-border/40 bg-card/40 p-0.5">
+              {(["avista", "parcelado"] as const).map((modo) => (
+                <button
+                  key={modo}
+                  type="button"
+                  onClick={() => setField("modo", modo)}
+                  className={`
+                    rounded-lg px-5 py-2 text-sm font-medium transition-all
+                    ${value.modo === modo
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : "text-muted-foreground hover:text-foreground"
+                    }
+                  `}
+                >
+                  {modo === "avista" ? "À vista" : "Parcelado"}
+                </button>
+              ))}
             </div>
           </div>
 
-          <Button type="button" variant="outline" className="border-emerald-500/20 hover:bg-emerald-500/5" onClick={addParceiro}>
-            <Plus className="mr-2 h-4 w-4 text-emerald-300" />
-            Adicionar parceiro
-          </Button>
+          {value.modo === "avista" ? (
+            <div className="flex items-center gap-2 rounded-xl border border-border/35 bg-card/20 px-4 py-3 text-sm text-muted-foreground">
+              <Info className="h-4 w-4 flex-shrink-0" />
+              <span>
+                Pagamento único no evento de <strong className="text-foreground">adesão</strong>.
+                {base > 0 && pctTotal > 0 && (
+                  <>
+                    {" "}Valor:{" "}
+                    <strong className="text-emerald-300">{fmt(valorTotalComissao)}</strong>
+                  </>
+                )}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="space-y-1.5">
+                <FieldLabel>Número de parcelas</FieldLabel>
+                <Input
+                  type="number"
+                  min={1}
+                  value={quantidadeParcelas}
+                  onChange={(e) => setQuantidadeParcelas(Number(e.target.value || 1))}
+                  className="w-28"
+                />
+              </div>
+              {base > 0 && pctTotal > 0 && quantidadeParcelas > 0 && (
+                <div className="pb-2.5 text-sm text-muted-foreground">
+                  ≈ <strong className="text-foreground">{fmt(valorTotalComissao / quantidadeParcelas)}</strong> / parcela
+                </div>
+              )}
+              <div className="pb-0.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-emerald-500/20 hover:bg-emerald-500/5"
+                  onClick={gerarParcelas}
+                >
+                  <WandSparkles className="mr-2 h-4 w-4 text-emerald-300" />
+                  Gerar automaticamente
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </SectionBlock>
+
+      {/* ── Bloco 3: Cronograma ── */}
+      <SectionBlock number={3} title="Cronograma de parcelas" icon={<Calculator className="h-4 w-4" />}>
+        {/* Barra de validação */}
+        <div className="mb-4">
+          <div className="mb-1.5 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Distribuição de percentuais</span>
+            <span className={`font-semibold ${podeSalvar ? "text-emerald-400" : "text-amber-400"}`}>
+              {totalDistribuido.toFixed(4)}% de {pctTotal.toFixed(4)}%
+              {!podeSalvar && saldo !== 0 && (
+                <span className="ml-1.5 text-amber-400/80">
+                  — {saldo > 0 ? `faltam ${saldo.toFixed(4)}%` : `excesso de ${Math.abs(saldo).toFixed(4)}%`}
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/6">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${
+                podeSalvar ? "bg-emerald-500/70" : "bg-amber-500/60"
+              }`}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          {podeSalvar && (
+            <p className="mt-1 text-xs text-emerald-400">✓ Distribuição balanceada e pronta para salvar</p>
+          )}
         </div>
 
+        <ParcelasComissaoTable
+          regras={value.regras}
+          valorBase={base}
+          onPercentualChange={onPercentualChange}
+          onLiberarAuto={onLiberarAuto}
+        />
+      </SectionBlock>
+
+      {/* ── Bloco 4: Parceiros ── */}
+      <SectionBlock number={4} title="Parceiros" icon={<Handshake className="h-4 w-4" />}>
+        {/* Visualização da divisão */}
+        {base > 0 && pctTotal > 0 && (
+          <div className="mb-4 space-y-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Divisão da comissão</span>
+              <span>{fmt(valorTotalComissao)} total</span>
+            </div>
+            <div className="flex h-3 w-full overflow-hidden rounded-full bg-white/6">
+              <div
+                className="h-full bg-sky-500/55 transition-all duration-300"
+                style={{
+                  width: `${pctTotal > 0 ? (pctEmpresa / pctTotal) * 100 : 100}%`,
+                }}
+              />
+              <div
+                className="h-full bg-emerald-500/55 transition-all duration-300"
+                style={{
+                  width: `${pctTotal > 0 ? (totalPctParceiros / pctTotal) * 100 : 0}%`,
+                }}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              <span className="flex items-center gap-1.5">
+                <Building2 className="h-3 w-3 text-sky-400" />
+                <span className="text-muted-foreground">Empresa</span>
+                <strong className="text-sky-300">{fmt(valorEmpresa)}</strong>
+                <span className="text-muted-foreground">({pctEmpresa.toFixed(2)}%)</span>
+              </span>
+              {totalPctParceiros > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <Handshake className="h-3 w-3 text-emerald-400" />
+                  <span className="text-muted-foreground">Parceiros</span>
+                  <strong className="text-emerald-300">{fmt(valorParceiros)}</strong>
+                  <span className="text-muted-foreground">({totalPctParceiros.toFixed(2)}%)</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Linhas de parceiros */}
         <div className="space-y-3">
           {value.parceiros.map((item, index) => (
             <ComissaoParceiroRow
               key={`${item.parceiro_id || "novo"}-${index}`}
               item={item}
               parceiros={parceirosDisponiveis}
+              valorBase={base}
               onChange={(patch) => {
                 const next = [...value.parceiros];
                 next[index] = { ...next[index], ...patch };
@@ -308,80 +354,59 @@ export function ComissaoBuilder({
             />
           ))}
 
-          {!value.parceiros.length ? (
-            <div className="rounded-2xl border border-dashed border-emerald-500/20 bg-emerald-500/5 px-4 py-6 text-center text-sm text-muted-foreground">
-              Nenhum parceiro vinculado ainda. Adicione apenas quando houver repasse nesta negociação.
+          {!value.parceiros.length && (
+            <div className="rounded-xl border border-dashed border-border/35 bg-card/15 px-4 py-5 text-center text-sm text-muted-foreground">
+              Nenhum parceiro vinculado. Adicione apenas quando houver repasse nesta negociação.
             </div>
-          ) : null}
+          )}
         </div>
-      </section>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mt-3 border-emerald-500/20 hover:bg-emerald-500/5"
+          onClick={addParceiro}
+        >
+          <Plus className="mr-2 h-3.5 w-3.5 text-emerald-300" />
+          Adicionar parceiro
+        </Button>
+      </SectionBlock>
     </div>
   );
 }
 
-function ResumoCard({
-  icon: Icon,
-  label,
-  value,
-  danger = false,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  danger?: boolean;
-}) {
-  return (
-    <div
-      className={[
-        "rounded-2xl border px-4 py-3 shadow-sm backdrop-blur-sm",
-        danger
-          ? "border-red-500/25 bg-red-500/8"
-          : "border-emerald-500/15 bg-background/80",
-      ].join(" ")}
-    >
-      <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-        <Icon className={danger ? "h-3.5 w-3.5 text-red-300" : "h-3.5 w-3.5 text-emerald-300"} />
-        {label}
-      </div>
-      <div className="mt-2 text-lg font-semibold text-foreground">{value}</div>
-    </div>
-  );
-}
-
-function FieldShell({
-  label,
-  hint,
+function SectionBlock({
+  number,
+  title,
+  icon,
   children,
 }: {
-  label: string;
-  hint: string;
+  number: number;
+  title: string;
+  icon: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-        {label}
-      </label>
-      {children}
-      <p className="text-[11px] leading-5 text-muted-foreground">{hint}</p>
-    </div>
-  );
-}
-
-function MiniInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
-      <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-        {label}
+    <div className="rounded-2xl border border-border/40 bg-card/20 p-5">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-xs font-bold text-emerald-400">
+          {number}
+        </div>
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          <span className="text-emerald-400">{icon}</span>
+          {title}
+        </div>
       </div>
-      <div className="mt-1 text-sm font-semibold text-foreground">{value}</div>
+      {children}
     </div>
   );
 }
 
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value || 0);
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      {children}
+    </label>
+  );
 }
