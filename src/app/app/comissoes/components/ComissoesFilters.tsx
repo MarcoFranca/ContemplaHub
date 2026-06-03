@@ -4,8 +4,8 @@ import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Filter, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { ParceiroOption } from "../types";
 
 type Props = {
@@ -35,23 +35,46 @@ export function ComissoesFilters({ parceiros }: Props) {
   }
 
   function clearAll() {
-    router.push(pathname);
+    const next = new URLSearchParams();
+    const tab = params.get("tab");
+    if (tab) next.set("tab", tab);
+    setForm({ parceiro_id: "", status: "", repasse_status: "", competencia_de: "", competencia_ate: "" });
+    router.push(`${pathname}?${next.toString()}`);
   }
 
+  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) =>
+    setForm((p) => ({ ...p, [key]: e.target.value }));
+
   return (
-    <Card className="bg-white/5 border-white/10">
-      <CardContent className="pt-6 grid gap-3 md:grid-cols-5">
-        <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">Parceiro</label>
-          <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.parceiro_id} onChange={(e) => setForm((p) => ({ ...p, parceiro_id: e.target.value }))}>
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Parceiro
+          </Label>
+          <select
+            value={form.parceiro_id}
+            onChange={set("parceiro_id")}
+            className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none transition focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20"
+          >
             <option value="">Todos</option>
-            {parceiros.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            {parceiros.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nome}
+              </option>
+            ))}
           </select>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">Status do lançamento</label>
-          <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Status
+          </Label>
+          <select
+            value={form.status}
+            onChange={set("status")}
+            className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none transition focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20"
+          >
             <option value="">Todos</option>
             <option value="previsto">Previsto</option>
             <option value="disponivel">Disponível</option>
@@ -60,9 +83,15 @@ export function ComissoesFilters({ parceiros }: Props) {
           </select>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">Repasse</label>
-          <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.repasse_status} onChange={(e) => setForm((p) => ({ ...p, repasse_status: e.target.value }))}>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Repasse
+          </Label>
+          <select
+            value={form.repasse_status}
+            onChange={set("repasse_status")}
+            className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none transition focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20"
+          >
             <option value="">Todos</option>
             <option value="pendente">Pendente</option>
             <option value="pago">Pago</option>
@@ -70,21 +99,41 @@ export function ComissoesFilters({ parceiros }: Props) {
           </select>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">Competência de</label>
-          <Input type="date" value={form.competencia_de} onChange={(e) => setForm((p) => ({ ...p, competencia_de: e.target.value }))} />
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Competência de
+          </Label>
+          <Input
+            type="date"
+            value={form.competencia_de}
+            onChange={set("competencia_de")}
+            className="h-9 rounded-lg text-sm"
+          />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">Competência até</label>
-          <Input type="date" value={form.competencia_ate} onChange={(e) => setForm((p) => ({ ...p, competencia_ate: e.target.value }))} />
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Competência até
+          </Label>
+          <Input
+            type="date"
+            value={form.competencia_ate}
+            onChange={set("competencia_ate")}
+            className="h-9 rounded-lg text-sm"
+          />
         </div>
+      </div>
 
-        <div className="md:col-span-5 flex justify-end gap-2">
-          <Button variant="outline" onClick={clearAll}><SearchX className="mr-2 h-4 w-4" />Limpar</Button>
-          <Button onClick={apply}><Filter className="mr-2 h-4 w-4" />Aplicar filtros</Button>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={clearAll} className="gap-1.5 text-xs">
+          <SearchX className="h-3.5 w-3.5" />
+          Limpar
+        </Button>
+        <Button size="sm" onClick={apply} className="gap-1.5 text-xs">
+          <Filter className="h-3.5 w-3.5" />
+          Aplicar
+        </Button>
+      </div>
+    </div>
   );
 }

@@ -1,24 +1,46 @@
 import { Badge } from "@/components/ui/badge";
 import type { ComissaoStatus, RepasseStatus } from "../types";
 
-export function ComissaoStatusBadge({ status }: { status: ComissaoStatus }) {
-  const map: Record<ComissaoStatus, string> = {
-    previsto: "bg-slate-500/15 text-slate-300 border-slate-500/30",
-    disponivel: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    pago: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-    cancelado: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  };
+const COMISSAO_STATUS_STYLES: Record<ComissaoStatus, string> = {
+  previsto: "bg-slate-500/12 text-slate-300 border-slate-500/25",
+  disponivel: "bg-amber-500/12 text-amber-300 border-amber-500/25",
+  pago: "bg-emerald-500/12 text-emerald-300 border-emerald-500/25",
+  cancelado: "bg-rose-500/12 text-rose-300 border-rose-500/25",
+};
 
-  return <Badge variant="outline" className={map[status]}>{status}</Badge>;
+const COMISSAO_STATUS_LABELS: Record<ComissaoStatus, string> = {
+  previsto: "Previsto",
+  disponivel: "Disponível",
+  pago: "Pago",
+  cancelado: "Cancelado",
+};
+
+export function ComissaoStatusBadge({ status }: { status: ComissaoStatus }) {
+  return (
+    <Badge variant="outline" className={COMISSAO_STATUS_STYLES[status]}>
+      {COMISSAO_STATUS_LABELS[status]}
+    </Badge>
+  );
 }
 
-export function RepasseStatusBadge({ status }: { status: RepasseStatus }) {
-  const map: Record<RepasseStatus, string> = {
-    nao_aplicavel: "bg-slate-500/15 text-slate-300 border-slate-500/30",
-    pendente: "bg-orange-500/15 text-orange-300 border-orange-500/30",
-    pago: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-    cancelado: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  };
+const REPASSE_STATUS_STYLES: Record<RepasseStatus, string> = {
+  nao_aplicavel: "bg-slate-500/10 text-slate-400 border-slate-500/20",
+  pendente: "bg-amber-500/12 text-amber-300 border-amber-500/25",
+  pago: "bg-emerald-500/12 text-emerald-300 border-emerald-500/25",
+  cancelado: "bg-rose-500/12 text-rose-300 border-rose-500/25",
+};
 
-  return <Badge variant="outline" className={map[status]}>{status === "nao_aplicavel" ? "n/a" : status}</Badge>;
+const REPASSE_STATUS_LABELS: Record<RepasseStatus, string> = {
+  nao_aplicavel: "N/A",
+  pendente: "Pendente",
+  pago: "Pago",
+  cancelado: "Cancelado",
+};
+
+export function RepasseStatusBadge({ status }: { status: RepasseStatus }) {
+  return (
+    <Badge variant="outline" className={REPASSE_STATUS_STYLES[status]}>
+      {REPASSE_STATUS_LABELS[status]}
+    </Badge>
+  );
 }
