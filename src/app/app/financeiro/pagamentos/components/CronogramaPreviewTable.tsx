@@ -18,23 +18,23 @@ export function CronogramaPreviewTable({ items }: CronogramaPreviewTableProps) {
     }
 
     return (
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70">
-            <div className="grid grid-cols-[0.6fr_1fr_0.7fr_0.9fr_1fr_1fr_1fr_1fr] gap-3 border-b border-white/10 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
-                <span>Parcela</span>
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70">
+            <div className="grid grid-cols-[2.5rem_1fr_3.5rem_5rem_1fr_1fr_1fr_1fr] gap-2 border-b border-white/10 bg-slate-950/40 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                <span>#</span>
                 <span>Evento</span>
                 <span>Offset</span>
-                <span>% comissao</span>
+                <span>% Comissão</span>
                 <span>Total bruto</span>
                 <span>Parceiro bruto</span>
-                <span>Imposto parceiro</span>
-                <span>Empresa liquida</span>
+                <span>Imposto</span>
+                <span>Empresa líq.</span>
             </div>
 
             <div className="divide-y divide-white/5">
                 {items.map((item) => (
                     <div
                         key={`${item.ordem}-${item.tipo_evento}-${item.offset_meses}`}
-                        className="grid grid-cols-[0.6fr_1fr_0.7fr_0.9fr_1fr_1fr_1fr_1fr] gap-3 px-4 py-4 text-sm text-slate-200"
+                        className="grid grid-cols-[2.5rem_1fr_3.5rem_5rem_1fr_1fr_1fr_1fr] items-center gap-2 px-4 py-2.5 text-sm text-slate-200"
                     >
                         <Cell icon={CalendarRange} value={`#${item.ordem}`} />
                         <Cell value={labelEvento(item.tipo_evento)} />
@@ -68,10 +68,10 @@ function Cell({
 
 function labelEvento(value: string) {
     const map: Record<string, string> = {
-        adesao: "Apos alocacao",
-        primeira_cobranca_valida: "Primeira cobranca",
-        proxima_cobranca: "Proxima cobranca",
-        contemplacao: "Contemplacao",
+        adesao: "Após alocação",
+        primeira_cobranca_valida: "1ª Cobrança",
+        proxima_cobranca: "Próx. Cobrança",
+        contemplacao: "Contemplação",
         manual: "Manual",
     };
     return map[value] ?? value;

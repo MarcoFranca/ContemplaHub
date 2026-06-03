@@ -258,14 +258,14 @@ export function ComissaoOperacionalWorkspace({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="grid gap-2">
             <Badge className="w-fit border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-emerald-300">
-              Operação de comissão
+              Regra comercial · por carta
             </Badge>
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-white">
-                Configuração e cronograma financeiro
+                Configuração de Comissão por Carta
               </h1>
               <p className="mt-0.5 max-w-2xl text-sm text-slate-400">
-                Selecione a carta, configure a comissão e confirme o cronograma operacional.
+                Configure a regra de comissão, visualize o cronograma previsto e opere as parcelas mensais.
               </p>
             </div>
           </div>
@@ -418,7 +418,7 @@ export function ComissaoOperacionalWorkspace({
                 disabled={isSaving}
               >
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar configuração
+                Salvar regra
               </Button>
               <Button
                 type="button"
@@ -428,9 +428,14 @@ export function ComissaoOperacionalWorkspace({
                 disabled={
                   isProjecting || !contratoSelecionado.tem_contrato || numeroContratoPendente
                 }
+                title={
+                  pagamentos.length > 0
+                    ? "Reprocessa o cronograma com a regra atual. Parcelas já operadas não são afetadas."
+                    : "Confirma o cronograma e gera as parcelas operacionais."
+                }
               >
                 {isProjecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Confirmar cronograma
+                {pagamentos.length > 0 ? "Reprocessar cronograma" : "Confirmar cronograma"}
               </Button>
             </div>
           </div>
@@ -613,16 +618,27 @@ export function ComissaoOperacionalWorkspace({
             </TabsList>
 
             <TabsContent value="operacao" className="grid gap-3 mt-3">
-              <p className="text-xs text-slate-400">
-                O cronograma confirmado vira a operação mensal. Atue apenas nas exceções: marcar pago,
-                inadimplente, cancelar futuros ou pular a competência.
-              </p>
+              <div className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
+                <p>
+                  <strong className="text-slate-300">Operação mensal:</strong>{" "}
+                  use o menu <span className="text-slate-200">▾</span> de cada linha para marcar como pago,
+                  inadimplente, reverter para previsto, pular ou editar detalhes da parcela.
+                </p>
+                {pagamentos.length > 0 && (
+                  <p className="mt-1">
+                    Se precisou ajustar a regra de comissão, use{" "}
+                    <strong className="text-emerald-400">Reprocessar cronograma</strong> para atualizar
+                    as parcelas futuras sem afetar o que já foi pago.
+                  </p>
+                )}
+              </div>
               <CronogramaOperacionalTable
                 pagamentos={pagamentos}
                 busyPagamentoId={busyPagamentoId}
                 onStatusChange={handlePagamentoStatus}
                 onSkip={handleSkipPagamento}
                 onCancelFuture={handleCancelFuture}
+                onRefresh={() => router.refresh()}
               />
             </TabsContent>
 

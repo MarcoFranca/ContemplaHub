@@ -311,6 +311,58 @@ export async function updateFinanceiroPagamentoStatusAction(
     }
 }
 
+/**
+ * Edição completa de um pagamento do cronograma — permite alterar valor, vencimento,
+ * status, pago_em e observações sem depender do PagamentoForm (FormData).
+ */
+export async function editFinanceiroPagamentoAction(
+    pagamentoId: string,
+    patch: {
+        status: PagamentoStatus;
+        valor?: number;
+        vencimento?: string;
+        pago_em?: string;
+        observacoes?: string;
+    },
+    base: PagamentoItem,
+): Promise<FinanceiroPagamentoOperacaoResult> {
+    try {
+        await backendAuthed(`/financeiro/pagamentos/${pagamentoId}`, {
+            method: "PUT",
+            body: JSON.stringify({
+                contrato_id: base.contrato_id,
+                competencia: base.competencia,
+                valor: patch.valor ?? Number(base.valor),
+                vencimento: patch.vencimento ?? base.vencimento,
+                status: patch.status,
+                pago_em: patch.pago_em
+                    ? new Date(patch.pago_em).toISOString()
+                    : patch.status === "pago"
+                      ? (base.pago_em ?? new Date().toISOString())
+                      : undefined,
+                observacoes: patch.observacoes?.trim() || base.observacoes || undefined,
+                tipo: base.tipo || "parcela_mensal",
+                origem: base.origem || "manual",
+            }),
+        });
+
+        revalidatePath("/app/financeiro/pagamentos");
+        revalidatePath("/app/comissoes");
+
+        return {
+            ok: true,
+            pagamento_id: pagamentoId,
+            pagamentos_afetados: 1,
+            message: `Pagamento atualizado — status: ${patch.status}.`,
+        };
+    } catch (error) {
+        return {
+            ok: false,
+            error: error instanceof Error ? error.message : "Não foi possível editar o pagamento.",
+        };
+    }
+}
+
 export async function skipFinanceiroPagamentoAction(
     pagamentoId: string,
 ): Promise<FinanceiroPagamentoOperacaoResult> {

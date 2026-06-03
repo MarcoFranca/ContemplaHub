@@ -100,7 +100,7 @@ const sections: NavSection[] = [
           },
           {
             href: "/app/financeiro/pagamentos",
-            label: "Por Contrato",
+            label: "Config. Comissão",
             icon: BookOpen,
             alsoActiveFor: ["/app/financeiro/pagamentos"],
           },
