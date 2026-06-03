@@ -16,6 +16,7 @@ import type {
     FinanceiroContratoNumeroResult,
     FinanceiroCronogramaPersistResult,
     FinanceiroPagamentoOperacaoResult,
+    FinanceiroProjectionResponse,
     PagamentoActionState,
     PagamentoItem,
     PagamentoListResponse,
