@@ -269,14 +269,22 @@ export function ComissaoOperacionalWorkspace({
               </p>
             </div>
           </div>
-          {contratoSelecionado.tem_contrato && (
+          <div className="flex items-center gap-2">
             <Link
-              href={`/app/comissoes?contrato_id=${contratoSelecionado.contrato_id}`}
-              className="inline-flex h-9 items-center rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white transition hover:bg-white/[0.08]"
+              href="/app/comissoes"
+              className="inline-flex h-9 items-center rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
             >
-              Ver comissão gerada →
+              ← Comissões
             </Link>
-          )}
+            {contratoSelecionado.tem_contrato && (
+              <Link
+                href={`/app/comissoes?contrato_id=${contratoSelecionado.contrato_id}`}
+                className="inline-flex h-9 items-center rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white transition hover:bg-white/[0.08]"
+              >
+                Ver lançamentos →
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Seletor de carta */}

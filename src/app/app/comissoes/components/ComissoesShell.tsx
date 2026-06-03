@@ -1,14 +1,16 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  LayoutDashboard,
-  GitMerge,
-  List,
-  Wallet,
+  BookOpen,
   CalendarDays,
+  GitMerge,
+  LayoutDashboard,
+  List,
   SlidersHorizontal,
+  Wallet,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -86,22 +88,30 @@ export function ComissoesShell({ items, resumo, parceiros, activeTab, refreshPat
                 )}
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters((v) => !v)}
-              className={`gap-2 text-xs ${
-                showFilters ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" : ""
-              }`}
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filtros
-              {filterCount > 0 && (
-                <span className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black">
-                  {filterCount}
-                </span>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button asChild variant="outline" size="sm" className="gap-2 text-xs">
+                <Link href="/app/financeiro/pagamentos">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Por Contrato
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters((v) => !v)}
+                className={`gap-2 text-xs ${
+                  showFilters ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" : ""
+                }`}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Filtros
+                {filterCount > 0 && (
+                  <span className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black">
+                    {filterCount}
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Collapsible filters */}
