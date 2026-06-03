@@ -219,7 +219,7 @@ export async function generateFinanceiroProjectionAction(
     contratoId: string,
 ): Promise<FinanceiroComissaoActionResult> {
     try {
-        const projection = await gerarLancamentosContratoAction(contratoId, false);
+        const projection: FinanceiroProjectionResponse = await gerarLancamentosContratoAction(contratoId, false);
         revalidatePath("/app/financeiro/pagamentos");
 
         return {

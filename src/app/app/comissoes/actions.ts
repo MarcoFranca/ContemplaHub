@@ -16,6 +16,7 @@ import type {
   ResumoFinanceiroContratoResponse,
   TimelineContratoResponse,
 } from "./types";
+import type { FinanceiroProjectionResponse } from "@/app/app/financeiro/pagamentos/types";
 
 type Envelope<T> = {
   ok?: boolean;
@@ -102,8 +103,11 @@ export async function listParceirosOptionsAction(): Promise<ParceiroOption[]> {
   return (data.items ?? []).map((item) => ({ id: item.id, nome: item.nome }));
 }
 
-export async function gerarLancamentosContratoAction(contratoId: string, sobrescrever = false) {
-  const data = await backendAuthed(`/comissoes/contratos/${contratoId}/gerar`, {
+export async function gerarLancamentosContratoAction(
+  contratoId: string,
+  sobrescrever = false,
+): Promise<FinanceiroProjectionResponse> {
+  const data = await backendAuthed<FinanceiroProjectionResponse>(`/comissoes/contratos/${contratoId}/gerar`, {
     method: "POST",
     body: JSON.stringify({ sobrescrever }),
   });
