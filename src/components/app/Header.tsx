@@ -31,6 +31,7 @@ export function Header({
         if (path.startsWith("/app/leads")) return "Leads";
         if (isCarteira) return "Carteira";
         if (isLances) return "Lances";
+        if (path.startsWith("/app/financeiro")) return "Financeiro";
         if (path.startsWith("/app/comissoes")) return "Comissoes";
         if (path.startsWith("/app/meta-integracoes")) return "Meta Ads";
         if (path.startsWith("/app/contratos")) return "Contratos";
