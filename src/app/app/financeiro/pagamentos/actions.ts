@@ -371,6 +371,10 @@ type FinanceiroBackendActionResponse = {
             id?: string;
             status?: string;
         };
+        items?: Array<{
+            id?: string;
+            status?: string;
+        }>;
         processamento?: {
             items?: Array<{
                 id?: string;
@@ -382,8 +386,11 @@ type FinanceiroBackendActionResponse = {
 
 function summarizeProcessamento(result: FinanceiroBackendActionResponse): PagamentoProcessamentoFeedback {
     const competencia = result?.processamento?.competencia ?? result?.competencia ?? null;
-    const processamento = result?.processamento?.processamento ?? result?.processamento ?? null;
-    const items = Array.isArray(processamento?.items) ? processamento.items : [];
+    const items = Array.isArray(result?.processamento?.processamento?.items)
+        ? result.processamento.processamento.items
+        : Array.isArray(result?.processamento?.items)
+          ? result.processamento.items
+          : [];
     const firstLancamento = items[0] ?? null;
     const lancamentoStatus = firstLancamento?.status;
 

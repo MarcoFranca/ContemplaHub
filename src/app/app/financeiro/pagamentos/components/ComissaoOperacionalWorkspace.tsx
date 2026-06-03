@@ -523,7 +523,7 @@ export function ComissaoOperacionalWorkspace({
                 ) : null}
             </section>
 
-            <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+            <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
                 <section className="grid gap-5 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.45)]">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="grid gap-1">

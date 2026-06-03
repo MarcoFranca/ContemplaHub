@@ -31,7 +31,8 @@ export function CronogramaOperacionalTable({
     }
 
     return (
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70">
+        <div className="overflow-x-auto rounded-3xl border border-white/10 bg-slate-950/70">
+            <div className="min-w-[1100px]">
             <div className="grid grid-cols-[0.8fr_0.8fr_0.9fr_0.8fr_0.9fr_0.9fr_1.4fr] gap-3 border-b border-white/10 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                 <span>Competencia</span>
                 <span>Vencimento</span>
@@ -129,6 +130,7 @@ export function CronogramaOperacionalTable({
                         </div>
                     );
                 })}
+            </div>
             </div>
         </div>
     );
