@@ -362,6 +362,10 @@ export async function cancelFinanceiroFuturePaymentsAction(
 type FinanceiroBackendActionResponse = {
     ok: boolean;
     item?: PagamentoItem;
+    competencia?: {
+        id?: string;
+        status?: string;
+    };
     processamento?: {
         competencia?: {
             id?: string;
