@@ -173,9 +173,9 @@ export async function updateFinanceiroContratoNumeroAction(
             `/financeiro/contratos/${contratoId}/numero`,
             {
                 method: "PUT",
-                body: {
+                body: JSON.stringify({
                     numero_contrato: numeroContrato.trim(),
-                },
+                }),
             },
         );
 
@@ -274,7 +274,7 @@ export async function updateFinanceiroPagamentoStatusAction(
     try {
         await backendAuthed(`/financeiro/pagamentos/${item.id}`, {
             method: "PUT",
-            body: {
+            body: JSON.stringify({
                 contrato_id: item.contrato_id,
                 competencia: item.competencia,
                 valor: Number(item.valor),
@@ -284,7 +284,7 @@ export async function updateFinanceiroPagamentoStatusAction(
                 observacoes: item.observacoes || undefined,
                 tipo: item.tipo || "parcela_mensal",
                 origem: item.origem || "manual",
-            },
+            }),
         });
 
         revalidatePath("/app/financeiro/pagamentos");
@@ -425,7 +425,7 @@ export async function createPagamentoAction(_: PagamentoActionState, formData: F
         const parsed = parseFormData(formData);
         const result = await backendAuthed<FinanceiroBackendActionResponse>("/financeiro/pagamentos", {
             method: "POST",
-            body: buildPayload(parsed),
+            body: JSON.stringify(buildPayload(parsed)),
         });
 
         revalidatePath("/app/financeiro/pagamentos");
@@ -454,7 +454,7 @@ export async function updatePagamentoAction(_: PagamentoActionState, formData: F
         const parsed = parseFormData(formData);
         const result = await backendAuthed<FinanceiroBackendActionResponse>(`/financeiro/pagamentos/${pagamentoId}`, {
             method: "PUT",
-            body: buildPayload(parsed),
+            body: JSON.stringify(buildPayload(parsed)),
         });
 
         revalidatePath("/app/financeiro/pagamentos");
