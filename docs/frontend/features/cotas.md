@@ -26,6 +26,7 @@ Por isso, `cotas` não existe hoje como pasta de feature dedicada em `src/featur
 - `src/app/app/lances/[cotaId]/page.tsx`
 - `src/app/app/carteira/page.tsx`
 - `src/app/app/contratos/[contratoId]/page.tsx`
+- `src/app/app/cartas/[cotaId]/page.tsx` (cota sem contrato; redireciona para `/app/contratos/[contratoId]` quando já existir contrato)
 
 ### Actions e helpers
 
@@ -35,6 +36,7 @@ Por isso, `cotas` não existe hoje como pasta de feature dedicada em `src/featur
 - `src/app/app/lances/components/actions/update-carta-modalidades.ts`
 - `src/app/app/lances/components/schemas/carta-operacao.schema.ts`
 - `src/app/app/lances/components/schemas/carta-modalidades.schema.ts`
+- `src/app/app/contratos/[contratoId]/actions.ts` (`updateCotaDadosAction` e `updateContratoDadosAction`, edição da cota e do contrato a partir do detalhe do contrato — cobre todos os campos do cadastro, incluindo redutor/parcela reduzida, taxa adm. percentual/mensal, autorização de gestão, número/data de assinatura do contrato e observações)
 - `src/features/contratos/utils/contrato-payload-mappers.ts` no momento de entrada da cota em `fromLead` e `registerExisting`
 
 ### Componentes
@@ -48,6 +50,7 @@ Por isso, `cotas` não existe hoje como pasta de feature dedicada em `src/featur
 - `LanceStrategyCard`
 - `EditCartaSheet`
 - `CartaSheet`
+- `EditCotaSheet` (`/app/contratos/[contratoId]`, edição sempre disponível de todos os campos do cadastro: contrato (número/data de assinatura), identificação, valores/prazo, taxa administrativa e redutor, modalidades, fundo de reserva, seguro prestamista, taxa adm. antecipada e observações)
 
 ## Papel funcional da feature
 

@@ -167,7 +167,7 @@ export async function loadCarteiraUniverse(
         const { data: cotasData, error: cotasError } = await s
             .from("cotas")
             .select(
-                "id, org_id, lead_id, administradora_id, numero_cota, grupo_codigo, produto, valor_carta, valor_parcela, prazo, assembleia_dia, autorizacao_gestao, created_at"
+                "id, org_id, lead_id, administradora_id, numero_cota, grupo_codigo, produto, valor_carta, valor_parcela, prazo, assembleia_dia, autorizacao_gestao, data_adesao, created_at"
             )
             .eq("org_id", me.orgId)
             .in("lead_id", filteredLeadIds);
@@ -178,6 +178,10 @@ export async function loadCarteiraUniverse(
 
         if (filters.produto) {
             cotasRows = cotasRows.filter((c) => c.produto === filters.produto);
+        }
+
+        if (filters.administradora_id) {
+            cotasRows = cotasRows.filter((c) => c.administradora_id === filters.administradora_id);
         }
 
         logInfo("[carteira] loadCarteiraUniverse:cotas", {

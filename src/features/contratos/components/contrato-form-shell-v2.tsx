@@ -70,6 +70,7 @@ export function ContratoFormShellV2({
   administradoras,
   parceiros = [],
   existingContractId,
+  prefill,
   onSuccess,
   insideSheet = false,
 }: ContratoFormShellV2Props) {
@@ -94,7 +95,7 @@ export function ContratoFormShellV2({
 
   const form = useForm<ContratoFormValues, unknown, ContratoFormValues>({
     resolver,
-    defaultValues: getContratoDefaultValues({ mode, leadId, dealId }),
+    defaultValues: getContratoDefaultValues({ mode, leadId, dealId, prefill }),
   });
 
   const { isPending, serverError, createdContractId, submit } =

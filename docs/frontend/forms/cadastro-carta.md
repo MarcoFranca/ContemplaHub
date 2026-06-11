@@ -18,6 +18,7 @@ Pontos de entrada:
 - fluxo a partir da carteira
 - `CreateCarteiraCartaSheet`
 - `CreateContratoSheet`
+- `CompletarCadastroCarta` (`/app/cartas/[cotaId]`), para completar o contrato de uma cota já cadastrada (modo `registerExisting` com `prefill` e `existingCotaId`)
 
 ## Estrutura do formulário
 
@@ -88,6 +89,7 @@ Campos principais:
 - `repasse_percentual_comissao`
 - `contract_status`
 - `cota_situacao`
+- `existing_cota_id` (apenas quando o form foi aberto via `CompletarCadastroCarta`, para indicar que a cota já existe e deve ser atualizada em vez de recriada)
 
 Observações:
 

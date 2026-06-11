@@ -41,7 +41,7 @@ export default async function ComissoesPage({
       items={data.items}
       resumo={data.resumo}
       parceiros={parceiros}
-      activeTab={get("tab") ?? "dashboard"}
+      activeTab={get("tab") ?? "operacao"}
       refreshPath="/app/comissoes"
     />
   );

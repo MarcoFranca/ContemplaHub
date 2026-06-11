@@ -1,6 +1,8 @@
-import { CalendarDays, Mail, Phone, UserRound, Wallet } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, FileText, Mail, MessageCircle, Phone, UserRound, Wallet } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
     Table,
     TableBody,
@@ -12,6 +14,7 @@ import {
 
 import { ClienteCartasSheet } from "@/app/app/carteira/components/cliente-cartas-sheet";
 
+import { buildWhatsAppLink } from "@/lib/formatters";
 import { EmptyState } from "./empty-state";
 import { ClienteRowActions } from "./clientes-row-actions";
 import { contratoBadgeVariant } from "../lib/badges";
@@ -223,7 +226,7 @@ export function ClientesTable({
                                                     </div>
 
                                                     <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                                                        {primaryCarta.administradora ?? "Sem administradora"} · Grupo {primaryCarta.grupo_codigo ?? "-"}
+                                                        {primaryCarta.administradora ?? "Sem administradora"} · Grupo {primaryCarta.grupo_codigo ?? "-"} · Adesão {fmtDate(primaryCarta.data_adesao)}
                                                     </div>
                                                 </div>
 
@@ -257,8 +260,30 @@ export function ClientesTable({
                                                     <Badge variant="secondary">Embutido</Badge>
                                                 ) : null}
 
+                                                <Link
+                                                    href={
+                                                        primaryCarta.contrato_id
+                                                            ? `/app/contratos/${primaryCarta.contrato_id}`
+                                                            : `/app/cartas/${primaryCarta.cota_id}`
+                                                    }
+                                                >
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-7 rounded-full border-white/10 bg-white/[0.03] px-2.5 text-[11px] hover:bg-white/[0.06]"
+                                                    >
+                                                        <FileText className="mr-1 h-3 w-3" />
+                                                        Ver carta
+                                                    </Button>
+                                                </Link>
+
                                                 {extraCartas > 0 ? (
-                                                    <ClienteCartasSheet clienteNome={clienteNome} cartas={cartas} />
+                                                    <ClienteCartasSheet
+                                                        clienteNome={clienteNome}
+                                                        cartas={cartas}
+                                                        leadId={clienteId}
+                                                        clienteTelefone={clienteTelefone}
+                                                    />
                                                 ) : null}
                                             </div>
 
@@ -283,7 +308,26 @@ export function ClientesTable({
                                 </TableCell>
 
                                 <TableCell className="px-4 py-3 align-top">
-                                    <div className="flex justify-end">
+                                    <div className="flex justify-end gap-1.5">
+                                        {clienteTelefone ? (
+                                            <a
+                                                href={buildWhatsAppLink(
+                                                    clienteTelefone,
+                                                    `Olá ${clienteNome}, tudo bem?`
+                                                )}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-8 w-8 rounded-xl border-white/10 bg-white/[0.03] p-0"
+                                                >
+                                                    <MessageCircle className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </a>
+                                        ) : null}
+
                                         <ClienteRowActions
                                             clienteId={clienteId}
                                             clienteNome={clienteNome}

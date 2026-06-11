@@ -70,6 +70,17 @@ No sistema atual, ela é um domínio próprio porque:
 - consolida leitura por cliente e por carta;
 - preserva relacionamento contínuo mesmo quando o cliente volta ao funil.
 
+## Acesso à carta (com ou sem contrato)
+
+Todo item de carta exibe um botão "Ver carta", independente de já ter contrato:
+
+- se a cota tem `contrato_id`, o link aponta para `/app/contratos/[contratoId]`;
+- se não tem, o link aponta para `/app/cartas/[cotaId]` (página de "completar cadastro");
+
+Esse padrão está em `cartas-list.tsx`, `clientes-cards.tsx`, `clientes-table.tsx` e `cliente-cartas-sheet.tsx` (campo `contrato_id?: string | null` em `CartaItem`).
+
+Também há botão de WhatsApp (via `buildWhatsAppLink`) no header de `ClienteCartasSheet`, em `clientes-cards.tsx` e `clientes-table.tsx`, usando `clienteTelefone`.
+
 ## Integrações com backend
 
 - `/carteira/clientes`

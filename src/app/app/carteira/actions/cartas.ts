@@ -36,6 +36,8 @@ export async function listCarteiraCartas(
             const contrato = latestContratoByCota.get(cota.id) ?? null;
             const ultimoLance = latestLanceByCota.get(cota.id) ?? null;
 
+            if (filters.sem_contrato && contrato) continue;
+
             items.push({
                 cliente: {
                     lead_id: lead.id,
@@ -64,6 +66,7 @@ export async function listCarteiraCartas(
                     embutido_max_percent: asNumber(cota.embutido_max_percent),
                     parcela_reduzida: cota.parcela_reduzida ?? null,
                     data_ultimo_lance: cota.data_ultimo_lance ?? null,
+                    data_adesao: cota.data_adesao ?? null,
                     administradora: cota.administradora_id
                         ? administradorasMap.get(cota.administradora_id)?.nome ?? null
                         : null,

@@ -135,7 +135,7 @@ export async function updateLancamentoStatusAction(formData: FormData) {
   const refreshPath = String(formData.get("refresh_path") || "/app/comissoes");
 
   if (!lancamentoId) throw new Error("Lançamento inválido.");
-  if (!["disponivel", "pago", "cancelado"].includes(status)) throw new Error("Status inválido.");
+  if (!["previsto", "disponivel", "pago", "cancelado"].includes(status)) throw new Error("Status inválido.");
 
   await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/status`, {
     method: "PATCH",
@@ -201,6 +201,102 @@ export async function processarPagamentoComissaoAction(pagamentoId: string, refr
   revalidatePath("/app/comissoes");
   revalidatePath(refreshPath);
   return data;
+}
+
+/**
+ * Reverte um lançamento para "previsto" (desfaz baixa ou cancelamento incorretos).
+ */
+export async function reverterPrevistoAction(lancamentoId: string) {
+  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      status: "previsto",
+      competencia_real: null,
+      observacoes: "Revertido para previsto manualmente.",
+    }),
+  });
+  revalidatePath("/app/comissoes");
+}
+
+/**
+ * Marca o lançamento para cobrança ativa (cliente em atraso no boleto).
+ * Mantém o lançamento como "previsto" mas sinaliza com flag de inadimplência.
+ */
+export async function marcarParaCobrancaAction(lancamentoId: string, motivo = "") {
+  const obs = `⚠ INADIMPLENTE${motivo ? `: ${motivo}` : ""}`;
+  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      status: "previsto",
+      competencia_real: null,
+      observacoes: obs,
+    }),
+  });
+  revalidatePath("/app/comissoes");
+}
+
+/**
+ * Remove o flag de inadimplência de um lançamento (cliente regularizou).
+ */
+export async function removerFlagCobrancaAction(lancamentoId: string) {
+  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      status: "previsto",
+      competencia_real: null,
+      observacoes: null,
+    }),
+  });
+  revalidatePath("/app/comissoes");
+}
+
+/**
+ * Marca um único lançamento como pago (ação direta, sem FormData).
+ * Usada nos botões "Dar baixa" inline da visão operacional.
+ */
+export async function marcarPagoAction(
+  lancamentoId: string,
+  obs = "Baixa registrada na operação mensal."
+) {
+  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "pago", competencia_real: null, observacoes: obs }),
+  });
+  revalidatePath("/app/comissoes");
+}
+
+/**
+ * Marca um lançamento como cancelado (cota cancelada / não será mais pago).
+ */
+export async function marcarCanceladoAction(
+  lancamentoId: string,
+  obs = "Cancelado na operação mensal."
+) {
+  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "cancelado", competencia_real: null, observacoes: obs }),
+  });
+  revalidatePath("/app/comissoes");
+}
+
+/**
+ * Dá baixa em lote em vários lançamentos de uma vez.
+ * Usada no botão "Dar baixa em lote" da visão do mês atual.
+ */
+export async function marcarLotePagoAction(lancamentoIds: string[]) {
+  await Promise.all(
+    lancamentoIds.map((id) =>
+      backendAuthed(`/comissoes/lancamentos/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: "pago",
+          competencia_real: null,
+          observacoes: "Baixa em lote — operação mensal.",
+        }),
+      })
+    )
+  );
+  revalidatePath("/app/comissoes");
 }
 
 export async function marcarRepassePagoAction(formData: FormData) {

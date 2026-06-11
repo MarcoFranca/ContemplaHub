@@ -88,6 +88,7 @@ export async function listCarteiraClientes(
                 administradora: cota.administradora_id
                     ? administradorasMap.get(cota.administradora_id)?.nome ?? null
                     : null,
+                data_adesao: cota.data_adesao ?? null,
                 ultimo_lance: ultimoLance
                     ? {
                           data: ultimoLance.assembleia_data ?? null,
@@ -97,6 +98,7 @@ export async function listCarteiraClientes(
                       }
                     : null,
                 status_contrato: contrato?.status ?? null,
+                contrato_id: contrato?.id ?? null,
             };
         });
 
@@ -140,7 +142,11 @@ export async function listCarteiraClientes(
         };
     });
 
-    const items = sortItems(itemsBase, filters.sort ?? "entrada_desc");
+    const filteredItems = filters.sem_contrato
+        ? itemsBase.filter((item) => item.cartas.some((carta) => !carta.contrato_id))
+        : itemsBase;
+
+    const items = sortItems(filteredItems, filters.sort ?? "entrada_desc");
 
     return {
         items,

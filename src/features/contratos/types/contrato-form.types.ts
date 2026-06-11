@@ -33,6 +33,7 @@ export type LanceFixoOptionFormValue = {
 export type ContratoFormValues = {
     leadId: string;
     dealId?: string | null;
+    existingCotaId?: string | null;
 
     administradoraId: string;
     grupoCodigo: string;
@@ -90,6 +91,7 @@ export interface ContratoFormShellV2Props {
     administradoras: AdministradoraOption[];
     parceiros?: ParceiroOption[];
     existingContractId?: string | null;
+    prefill?: Partial<ContratoFormValues>;
     onSuccess?: (params: {
         contractId: string | null;
         cotaId: string | null;

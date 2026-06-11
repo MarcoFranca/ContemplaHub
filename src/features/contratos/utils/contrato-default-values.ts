@@ -7,16 +7,19 @@ interface Params {
     mode: ContratoFormMode;
     leadId: string;
     dealId?: string | null;
+    prefill?: Partial<ContratoFormValues>;
 }
 
 export function getContratoDefaultValues({
                                              mode,
                                              leadId,
                                              dealId,
+                                             prefill,
                                          }: Params): ContratoFormValues {
     return {
         leadId,
         dealId: dealId ?? null,
+        existingCotaId: null,
 
         administradoraId: "",
         grupoCodigo: "",
@@ -65,5 +68,7 @@ export function getContratoDefaultValues({
 
         contractStatus: mode === "registerExisting" ? "alocado" : null,
         cotaSituacao: mode === "registerExisting" ? "ativa" : null,
+
+        ...prefill,
     };
 }

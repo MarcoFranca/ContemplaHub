@@ -1,11 +1,16 @@
 "use client";
 
+import Link from "next/link";
+
 import {
     Banknote,
     Building2,
     CalendarDays,
     CreditCard,
+    ExternalLink,
+    FileText,
     Layers3,
+    MessageCircle,
     ReceiptText,
     UserRoundPlus,
 } from "lucide-react";
@@ -21,7 +26,8 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 
-import { fmtCurrency } from "../lib/format";
+import { buildWhatsAppLink } from "@/lib/formatters";
+import { fmtCurrency, fmtDate } from "../lib/format";
 
 type CartaItem = {
     cota_id?: string | null;
@@ -41,6 +47,8 @@ type CartaItem = {
     embutido_max_percent?: number | null;
     parcela_reduzida?: boolean | null;
     parceiro_nome?: string | null;
+    data_adesao?: string | null;
+    contrato_id?: string | null;
     ultimo_lance?: {
         data?: string | null;
         tipo?: string | null;
@@ -52,6 +60,8 @@ type CartaItem = {
 type ClienteCartasSheetProps = {
     clienteNome: string;
     cartas: CartaItem[];
+    leadId?: string | null;
+    clienteTelefone?: string | null;
 };
 
 function statusLabel(carta: CartaItem) {
@@ -61,6 +71,8 @@ function statusLabel(carta: CartaItem) {
 export function ClienteCartasSheet({
                                        clienteNome,
                                        cartas,
+                                       leadId,
+                                       clienteTelefone,
                                    }: ClienteCartasSheetProps) {
     return (
         <Sheet>
@@ -77,12 +89,53 @@ export function ClienteCartasSheet({
 
             <SheetContent className="w-full border-white/10 bg-slate-950/95 sm:max-w-2xl">
                 <SheetHeader className="border-b border-white/10 pb-4">
-                    <SheetTitle className="text-left">
-                        Cotas de {clienteNome}
-                    </SheetTitle>
-                    <SheetDescription className="text-left">
-                        Visualização completa das cartas vinculadas ao cliente.
-                    </SheetDescription>
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <SheetTitle className="text-left">
+                                Cotas de {clienteNome}
+                            </SheetTitle>
+                            <SheetDescription className="text-left">
+                                Visualização completa das cartas vinculadas ao cliente.
+                            </SheetDescription>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1.5">
+                            {clienteTelefone ? (
+                                <a
+                                    href={buildWhatsAppLink(
+                                        clienteTelefone,
+                                        `Olá ${clienteNome}, tudo bem?`
+                                    )}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 gap-1.5 rounded-xl border-white/10 bg-white/[0.03] text-xs"
+                                    >
+                                        <MessageCircle className="h-3.5 w-3.5" />
+                                        WhatsApp
+                                    </Button>
+                                </a>
+                            ) : null}
+
+                            {leadId ? (
+                                <Link href={`/app/leads/${leadId}`}>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 gap-1.5 rounded-xl border-white/10 bg-white/[0.03] text-xs"
+                                    >
+                                        Abrir cliente
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                    </Button>
+                                </Link>
+                            ) : null}
+                        </div>
+                    </div>
                 </SheetHeader>
 
                 <div className="mt-6 space-y-3 overflow-y-auto pr-1">
@@ -116,6 +169,26 @@ export function ClienteCartasSheet({
                                     <Badge variant="outline" className="mt-2 capitalize">
                                         {statusLabel(carta)}
                                     </Badge>
+                                    {carta.cota_id ? (
+                                        <Link
+                                            href={
+                                                carta.contrato_id
+                                                    ? `/app/contratos/${carta.contrato_id}`
+                                                    : `/app/cartas/${carta.cota_id}`
+                                            }
+                                            className="mt-2 block"
+                                        >
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-7 gap-1.5 rounded-full border-white/10 bg-white/[0.03] px-2.5 text-[11px] hover:bg-white/[0.06]"
+                                            >
+                                                <FileText className="h-3 w-3" />
+                                                Ver carta completa
+                                            </Button>
+                                        </Link>
+                                    ) : null}
                                 </div>
                             </div>
 
@@ -162,6 +235,16 @@ export function ClienteCartasSheet({
                                     </div>
                                     <div className="text-sm font-medium text-foreground">
                                         {fmtCurrency(carta.parcela_atual ?? carta.valor_parcela ?? 0)}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl border border-white/10 bg-black/10 p-3">
+                                    <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                                        <CalendarDays className="h-3.5 w-3.5" />
+                                        Data de adesão
+                                    </div>
+                                    <div className="text-sm font-medium text-foreground">
+                                        {fmtDate(carta.data_adesao)}
                                     </div>
                                 </div>
                             </div>

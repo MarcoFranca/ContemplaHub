@@ -10,6 +10,8 @@ export type CarteiraFilters = {
     produto?: string | null;
     q?: string | null;
     status_carteira?: string | null;
+    administradora_id?: string | null;
+    sem_contrato?: boolean;
     sort?: ClienteSort | null;
 };
 
@@ -59,6 +61,7 @@ export type CotaRow = {
     embutido_max_percent: number | null;
     parcela_reduzida: boolean | null;
     data_ultimo_lance: string | null;
+    data_adesao: string | null;
     autorizacao_gestao: boolean | null;
     created_at?: string | null;
 };
@@ -97,6 +100,7 @@ export type CarteiraClienteCartaResumo = {
     parcela_reduzida: boolean | null;
     administradora: string | null;
     parceiro_nome?: string | null;
+    data_adesao: string | null;
     ultimo_lance?: {
         data: string | null;
         tipo: string | null;
@@ -104,6 +108,7 @@ export type CarteiraClienteCartaResumo = {
         valor: number | null;
     } | null;
     status_contrato: string | null;
+    contrato_id: string | null;
 };
 
 export type CarteiraClienteItem = {
@@ -157,6 +162,7 @@ export type CarteiraCartaItem = {
         embutido_max_percent: number | null;
         parcela_reduzida: boolean | null;
         data_ultimo_lance: string | null;
+        data_adesao: string | null;
         administradora: string | null;
         autorizacao_gestao: boolean | null;
         parceiro_nome?: string | null;

@@ -58,10 +58,22 @@ Observação estrutural:
 - `src/app/app/leads/ui/KanbanBoard.tsx`
 - `src/app/app/carteira/ui/CreateCarteiraCartaSheet.tsx`
 - `src/app/app/carteira/[leadId]/contratos/novo/page.tsx`
+- `src/app/app/cartas/[cotaId]/page.tsx` + `src/app/app/cartas/[cotaId]/components/completar-cadastro-carta.tsx`
+  (completar cadastro de contrato para uma cota já existente sem contrato, modo `registerExisting` com `prefill`)
 
 ### Detalhe do contrato
 
 - `src/app/app/contratos/[contratoId]/page.tsx`
+- `src/app/app/contratos/[contratoId]/components/ContratoStatusEditor.tsx`
+  (edição inline do status do contrato via `updateContractStatus` / `PATCH /contracts/{contractId}/status`)
+- `src/app/app/contratos/[contratoId]/components/EditCotaSheet.tsx` + `src/app/app/contratos/[contratoId]/actions.ts`
+  (sheet de edição sempre disponível, espelhando os campos do cadastro: número do contrato e data de assinatura
+  (`updateContratoDadosAction` / `PATCH /contracts/{contratoId}/dados`); identificação (grupo, número da cota, produto),
+  valores e prazo, assembleia, data de adesão; taxa administrativa total/distribuição mensal e redutor (`parcela_reduzida`,
+  `percentual_reducao`, `valor_parcela_sem_redutor`); modalidades (autorização de gestão, FGTS, lance embutido); fundo de
+  reserva; seguro prestamista; taxa adm. antecipada; e observações da cota — via `updateCotaDadosAction` /
+  `PATCH /lances/cartas/{cota_id}`)
+- `src/features/contratos/components/contrato-pdf-upload-card.tsx` (`ContratoPdfUploadCard`)
 
 ## Schemas e actions relevantes
 
@@ -104,18 +116,28 @@ Leitura correta do domínio:
 - a formalização cria ou referencia a cota;
 - depois registra o contrato como formalização dessa operação.
 
+## Pré-preenchimento do formulário (`prefill`)
+
+`ContratoFormShellV2Props` aceita `prefill?: Partial<ContratoFormValues>`, mesclado por cima dos defaults em `getContratoDefaultValues` (último spread). Usado por `CompletarCadastroCarta` para abrir o form de `registerExisting` já preenchido com os dados existentes da cota (administradora, grupo, número, valores, taxas, seguro prestamista etc.).
+
+`ContratoFormValues` inclui `existingCotaId?: string | null`, registrado via `prefill` (sem campo visível no form). Ele é mapeado por `mapContratoFormToApi` para `existing_cota_id` no payload de `registerExisting`.
+
 ## Integrações com backend
 
 - `/contracts/from-lead`
 - `/contracts/register-existing`
 - `/contracts/{contractId}/document`
 - `/contracts/{contractId}/document/signed-url`
+- `/contracts/{contractId}/status` (via `ContratoStatusEditor`)
+- `PATCH /lances/cartas/{cota_id}` (via `EditCotaSheet` / `updateCotaDadosAction`, edição da cota sempre disponível em `/app/contratos/[contratoId]`)
+- `PATCH /contracts/{contratoId}/dados` (via `EditCotaSheet` / `updateContratoDadosAction`, edição de número do contrato e data de assinatura)
 - sincronização complementar de campos da cota após criação
 
 Observação de contrato com o backend:
 
 - o POST principal envia apenas os campos aceitos pelo schema atual do backend;
-- campos extras de operação da cota, como `assembleiaDia`, `taxaAdminPercentual` e `taxaAdminValorMensal`, continuam a ser sincronizados depois por `syncCotaExtraFields`.
+- campos extras de operação da cota, como `assembleiaDia`, `taxaAdminPercentual` e `taxaAdminValorMensal`, continuam a ser sincronizados depois por `syncCotaExtraFields`;
+- quando `existingCotaId` está preenchido (fluxo de "completar cadastro"), o backend atualiza a cota existente em vez de criar uma nova — ver `existing_cota_id` em `/contracts/register-existing`.
 
 ## Regras importantes observadas no frontend
 

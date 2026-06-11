@@ -13,6 +13,7 @@ import { ContratoFormShellV2 } from "./contrato-form-shell-v2";
 import type {
     AdministradoraOption,
     ContratoFormMode,
+    ContratoFormValues,
     ParceiroOption,
 } from "../types/contrato-form.types";
 
@@ -24,6 +25,7 @@ interface CreateContratoSheetProps {
     parceiros?: ParceiroOption[];
     trigger: React.ReactNode;
     leadName?: string | null;
+    prefill?: Partial<ContratoFormValues>;
     onSuccess?: (params: { contractId: string | null; cotaId: string | null }) => void;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
@@ -37,6 +39,7 @@ export function CreateContratoSheet({
                                         parceiros = [],
                                         trigger,
                                         leadName,
+                                        prefill,
                                         onSuccess,
                                         open: controlledOpen,
                                         onOpenChange,
@@ -102,6 +105,7 @@ export function CreateContratoSheet({
                             dealId={dealId}
                             administradoras={administradoras}
                             parceiros={parceiros}
+                            prefill={prefill}
                             insideSheet
                             onSuccess={(params) => {
                                 handleOpenChange(false);

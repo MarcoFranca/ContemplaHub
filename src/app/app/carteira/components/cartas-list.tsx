@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { FileText, MessageCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+import { buildWhatsAppLink } from "@/lib/formatters";
 import { contratoBadgeVariant } from "../lib/badges";
 import { fmtCurrency, fmtDate, fmtPhone } from "../lib/format";
 import type { CarteiraCartaItem } from "../lib/types";
@@ -78,12 +80,44 @@ export function CartasList({ items }: CartasListProps) {
                             </div>
 
                             <div className="text-xs text-muted-foreground">
-                                Entrada {fmtDate(it.carteira.entered_at)}
+                                Adesão {fmtDate(it.cota.data_adesao)} · Entrada {fmtDate(it.carteira.entered_at)}
                                 {it.cota.ultimo_lance?.data ? ` · ultimo lance ${fmtDate(it.cota.ultimo_lance.data)}` : ""}
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                            {it.cliente.telefone ? (
+                                <a
+                                    href={buildWhatsAppLink(
+                                        it.cliente.telefone,
+                                        `Olá ${it.cliente.nome ?? ""}, tudo bem?`
+                                    )}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 rounded-xl border-white/10 bg-white/[0.03]"
+                                    >
+                                        <MessageCircle className="h-3.5 w-3.5" />
+                                    </Button>
+                                </a>
+                            ) : null}
+
+                            <Link
+                                href={
+                                    it.contrato.contrato_id
+                                        ? `/app/contratos/${it.contrato.contrato_id}`
+                                        : `/app/cartas/${it.cota.cota_id}`
+                                }
+                            >
+                                <Button size="sm" variant="outline" className="h-8 rounded-xl border-white/10 bg-white/[0.03]">
+                                    <FileText className="mr-1.5 h-3.5 w-3.5" />
+                                    Ver carta
+                                </Button>
+                            </Link>
+
                             <Link href={`/app/leads/${it.cliente.lead_id}`}>
                                 <Button size="sm" variant="outline" className="h-8 rounded-xl border-white/10 bg-white/[0.03]">
                                     Abrir cliente

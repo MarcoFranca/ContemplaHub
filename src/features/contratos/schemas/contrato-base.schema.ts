@@ -48,6 +48,7 @@ const lanceFixoOptionSchema = z.object({
 export const contratoBaseSchema = z.object({
     leadId: z.string().uuid("Lead inválido."),
     dealId: z.string().uuid().optional().nullable(),
+    existingCotaId: z.string().uuid().optional().nullable(),
 
     administradoraId: z.string().uuid("Administradora inválida."),
     grupoCodigo: z.string().trim().min(1, "Informe o grupo."),

@@ -1,8 +1,11 @@
-import { CalendarDays, Mail, Phone, UserRound } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, FileText, Mail, MessageCircle, Phone, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { buildWhatsAppLink } from "@/lib/formatters";
 import { EmptyState } from "./empty-state";
 import { ClienteCartasSheet } from "./cliente-cartas-sheet";
 import { ClienteRowActions } from "./clientes-row-actions";
@@ -130,15 +133,36 @@ export function ClientesCards({
                                     </div>
                                 </div>
 
-                                <ClienteRowActions
-                                    clienteId={clienteId}
-                                    clienteNome={clienteNome}
-                                    clienteTelefone={clienteTelefone}
-                                    clienteEmail={emailLabel ?? undefined}
-                                    administradoras={administradoras}
-                                    parceiros={parceiros}
-                                    compact
-                                />
+                                <div className="flex shrink-0 items-center gap-1.5">
+                                    {clienteTelefone ? (
+                                        <a
+                                            href={buildWhatsAppLink(
+                                                clienteTelefone,
+                                                `Olá ${clienteNome}, tudo bem?`
+                                            )}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8 w-8 rounded-xl border-white/10 bg-white/[0.03] p-0"
+                                            >
+                                                <MessageCircle className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </a>
+                                    ) : null}
+
+                                    <ClienteRowActions
+                                        clienteId={clienteId}
+                                        clienteNome={clienteNome}
+                                        clienteTelefone={clienteTelefone}
+                                        clienteEmail={emailLabel ?? undefined}
+                                        administradoras={administradoras}
+                                        parceiros={parceiros}
+                                        compact
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -178,7 +202,7 @@ export function ClientesCards({
                                                 Cota {primaryCarta.numero_cota ?? "-"}
                                             </div>
                                             <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                                                {primaryCarta.administradora ?? "Sem administradora"} · Grupo {primaryCarta.grupo_codigo ?? "-"}
+                                                {primaryCarta.administradora ?? "Sem administradora"} · Grupo {primaryCarta.grupo_codigo ?? "-"} · Adesão {fmtDate(primaryCarta.data_adesao)}
                                             </div>
                                         </div>
 
@@ -203,8 +227,30 @@ export function ClientesCards({
                                                 Parcela {fmtCurrency(primaryCarta.valor_parcela)}
                                             </span>
                                         ) : null}
+                                        <Link
+                                            href={
+                                                primaryCarta.contrato_id
+                                                    ? `/app/contratos/${primaryCarta.contrato_id}`
+                                                    : `/app/cartas/${primaryCarta.cota_id}`
+                                            }
+                                        >
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-7 rounded-full border-white/10 bg-white/[0.03] px-2.5 text-[11px] hover:bg-white/[0.06]"
+                                            >
+                                                <FileText className="mr-1 h-3 w-3" />
+                                                Ver carta
+                                            </Button>
+                                        </Link>
+
                                         {extraCartas > 0 ? (
-                                            <ClienteCartasSheet clienteNome={clienteNome} cartas={cartas} />
+                                            <ClienteCartasSheet
+                                                clienteNome={clienteNome}
+                                                cartas={cartas}
+                                                leadId={clienteId}
+                                                clienteTelefone={clienteTelefone}
+                                            />
                                         ) : null}
                                     </div>
 

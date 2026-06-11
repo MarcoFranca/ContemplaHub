@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/sheet";
 import {
     ArrowUpDown,
+    Building2,
+    FileWarning,
     Filter,
     Package,
     Search,
@@ -25,9 +27,12 @@ type CarteiraFiltersProps = {
     q: string;
     produto: string;
     statusCarteira: string;
+    administradoraId: string;
+    semContrato: boolean;
     includeAll: boolean;
     sort?: string;
     mode?: "cards" | "lista";
+    administradoras: { id: string; nome: string }[];
 };
 
 const selectClassName =
@@ -50,6 +55,8 @@ function FiltersFields({
     q,
     produto,
     statusCarteira,
+    administradoraId,
+    administradoras,
     sort = "entrada_desc",
 }: CarteiraFiltersProps) {
     return (
@@ -95,6 +102,26 @@ function FiltersFields({
                 </select>
             </div>
 
+            <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-muted-foreground">
+                <Building2 className="h-3.5 w-3.5" />
+                <Label htmlFor="administradora_id" className="sr-only">
+                    Administradora
+                </Label>
+                <select
+                    id="administradora_id"
+                    name="administradora_id"
+                    defaultValue={administradoraId}
+                    className={selectClassName}
+                >
+                    <option value="">Todas administradoras</option>
+                    {administradoras.map((adm) => (
+                        <option key={adm.id} value={adm.id}>
+                            {adm.nome}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
             {view === "clientes" ? (
                 <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-muted-foreground">
                     <ArrowUpDown className="h-3.5 w-3.5" />
@@ -124,6 +151,16 @@ function IncludeAllToggle({ includeAll }: Pick<CarteiraFiltersProps, "includeAll
     );
 }
 
+function SemContratoToggle({ semContrato }: Pick<CarteiraFiltersProps, "semContrato">) {
+    return (
+        <label className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-xs text-muted-foreground">
+            <FileWarning className="h-3.5 w-3.5" />
+            Sem contrato
+            <Switch name="sem_contrato" value="1" defaultChecked={semContrato} />
+        </label>
+    );
+}
+
 export function CarteiraFilters(props: CarteiraFiltersProps) {
     return (
         <>
@@ -132,6 +169,7 @@ export function CarteiraFilters(props: CarteiraFiltersProps) {
                     <HiddenFields view={props.view} mode={props.mode} />
                     <FiltersFields {...props} />
                     <IncludeAllToggle includeAll={props.includeAll} />
+                    <SemContratoToggle semContrato={props.semContrato} />
 
                     <Button
                         type="button"
@@ -189,6 +227,7 @@ export function CarteiraFilters(props: CarteiraFiltersProps) {
                                 <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                                     <FiltersFields {...props} />
                                     <IncludeAllToggle includeAll={props.includeAll} />
+                                    <SemContratoToggle semContrato={props.semContrato} />
                                 </div>
 
                                 <SheetFooter className="pt-2">

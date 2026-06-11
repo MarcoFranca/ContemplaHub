@@ -83,6 +83,8 @@ function buildBaseHref(params: {
     q: string;
     produto: string;
     statusCarteira: string;
+    administradoraId: string;
+    semContrato: boolean;
     includeAll: boolean;
     sort: ClienteSort;
 }) {
@@ -93,6 +95,8 @@ function buildBaseHref(params: {
     if (params.q) qs.set("q", params.q);
     if (params.produto) qs.set("produto", params.produto);
     if (params.statusCarteira) qs.set("status_carteira", params.statusCarteira);
+    if (params.administradoraId) qs.set("administradora_id", params.administradoraId);
+    if (params.semContrato) qs.set("sem_contrato", "1");
     if (params.includeAll) qs.set("all", "1");
     if (params.sort) qs.set("sort", params.sort);
 
@@ -143,6 +147,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
     const q = first(sp, "q") ?? "";
     const produto = first(sp, "produto") ?? "";
     const statusCarteira = first(sp, "status_carteira") ?? "";
+    const administradoraId = first(sp, "administradora_id") ?? "";
+    const semContrato = first(sp, "sem_contrato") === "1";
     const sort = parseSort(first(sp, "sort"));
     const currentPage = parsePositiveInt(first(sp, "page"), 1);
 
@@ -155,6 +161,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
             q: q || null,
             produto: produto || null,
             statusCarteira: statusCarteira || null,
+            administradoraId: administradoraId || null,
+            semContrato,
             sort,
         },
     };
@@ -179,6 +187,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                     produto: produto || null,
                     q: q || null,
                     status_carteira: statusCarteira || null,
+                    administradora_id: administradoraId || null,
+                    sem_contrato: semContrato,
                     sort,
                 }),
                 formOptionsPromise,
@@ -211,6 +221,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                     produto: produto || null,
                     q: q || null,
                     status_carteira: statusCarteira || null,
+                    administradora_id: administradoraId || null,
+                    sem_contrato: semContrato,
                 }),
                 formOptionsPromise,
             ]);
@@ -263,6 +275,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
         q,
         produto,
         statusCarteira,
+        administradoraId,
+        semContrato,
         includeAll,
         sort,
     });
@@ -272,6 +286,8 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
         q,
         produto,
         statusCarteira,
+        administradoraId,
+        semContrato,
         includeAll,
         sort,
     });
@@ -314,9 +330,12 @@ export default async function CarteiraPage({ searchParams }: PageProps) {
                                         q={q}
                                         produto={produto}
                                         statusCarteira={statusCarteira}
+                                        administradoraId={administradoraId}
+                                        semContrato={semContrato}
                                         includeAll={includeAll}
                                         sort={sort}
                                         mode={mode}
+                                        administradoras={administradoras}
                                     />
                                 </div>
                             </div>

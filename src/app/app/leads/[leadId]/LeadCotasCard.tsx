@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import {
     BadgeDollarSign,
     Building2,
+    CalendarDays,
     Clock3,
     CreditCard,
     Plus,
@@ -269,7 +270,7 @@ export function LeadCotasCard({
                                             </div>
                                         </div>
 
-                                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 xl:[&>*]:min-w-0">
+                                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5 xl:[&>*]:min-w-0">
                                             <InfoMiniCard
                                                 icon={<Building2 className="h-3.5 w-3.5 text-emerald-300" />}
                                                 label="Administradora"
@@ -303,6 +304,16 @@ export function LeadCotasCard({
                                                 icon={<Clock3 className="h-3.5 w-3.5 text-emerald-300" />}
                                                 label="Prazo"
                                                 value={cota.prazo ? `${cota.prazo} meses` : "—"}
+                                            />
+
+                                            <InfoMiniCard
+                                                icon={<CalendarDays className="h-3.5 w-3.5 text-emerald-300" />}
+                                                label="Data de adesão"
+                                                value={
+                                                    cota.data_adesao
+                                                        ? new Date(cota.data_adesao).toLocaleDateString("pt-BR")
+                                                        : "—"
+                                                }
                                             />
                                         </div>
 

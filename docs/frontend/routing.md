@@ -136,8 +136,20 @@ Observação:
 
 - não há listagem dedicada de contratos em `/app/contratos`
 - a rota atual é um detalhe de contrato com foco em comissão, resumo financeiro e cota associada
+- a página também expõe edição de status do contrato (`ContratoStatusEditor`) e upload/visualização do PDF (`ContratoPdfUploadCard`)
 - `pendente de confirmação`: se haverá uma listagem própria de contratos no futuro
 - a rota não substitui a operação de assembleia/lance/contemplação, que hoje vive no domínio de cotas/lances
+
+### Cartas (cota sem contrato)
+
+- `/app/cartas/[cotaId]`
+
+Observação:
+
+- rota chaveada por `cota_id` (não por `contrato_id`), pois nem toda cota da carteira já possui contrato
+- se já existir um contrato vinculado àquela cota, a página redireciona para `/app/contratos/[contratoId]`
+- caso contrário, exibe os dados já cadastrados da cota e um botão "Completar cadastro do contrato", que abre `CreateContratoSheet` (modo `registerExisting`) pré-preenchido com os dados da cota via `prefill`
+- esse é o destino do link "Ver carta" na carteira quando a cota ainda não tem contrato
 
 ### Cotas / lances
 

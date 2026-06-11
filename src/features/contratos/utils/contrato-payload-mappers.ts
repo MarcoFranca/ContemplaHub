@@ -113,5 +113,6 @@ export function mapContratoFormToApi(
                 : null,
         contract_status: values.contractStatus,
         cota_situacao: values.cotaSituacao,
+        existing_cota_id: emptyToNull(values.existingCotaId),
     };
 }

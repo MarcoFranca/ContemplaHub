@@ -158,6 +158,7 @@ Uso:
 - importação de carteira
 - cadastro manual
 - clientes antigos
+- completar cadastro de uma cota já existente sem contrato (`/app/cartas/[cotaId]`), enviando `existing_cota_id` para que o backend atualize a cota em vez de criar outra
 
 Regra crítica:
 

@@ -12,9 +12,11 @@ import {
   SlidersHorizontal,
   Wallet,
   X,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ComissaoLancamento, ComissaoResumo, ParceiroOption } from "../types";
+import { OperacaoMensal } from "./OperacaoMensal";
 import { ExecutiveDashboard } from "./ExecutiveDashboard";
 import { PipelineFinanceiro } from "./PipelineFinanceiro";
 import { LancamentosTable } from "./LancamentosTable";
@@ -31,7 +33,8 @@ type Props = {
 };
 
 const TABS = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "operacao", label: "Operação", icon: Zap },
+  { id: "dashboard", label: "Panorama", icon: LayoutDashboard },
   { id: "pipeline", label: "Pipeline", icon: GitMerge },
   { id: "lancamentos", label: "Lançamentos", icon: List },
   { id: "repasses", label: "Repasses", icon: Wallet },
@@ -181,6 +184,7 @@ export function ComissoesShell({ items, resumo, parceiros, activeTab, refreshPat
 
       {/* ── Tab content ── */}
       <div className="flex-1 overflow-y-auto">
+        {activeTab === "operacao" && <OperacaoMensal items={items} />}
         {activeTab === "dashboard" && <ExecutiveDashboard items={items} resumo={resumo} />}
         {activeTab === "pipeline" && <PipelineFinanceiro items={items} refreshPath={refreshPath} />}
         {activeTab === "lancamentos" && (
