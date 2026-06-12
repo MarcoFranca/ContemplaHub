@@ -33,6 +33,16 @@ export type ComissaoLancamento = {
     id: string;
     nome?: string | null;
   } | null;
+  contrato_numero?: string | null;
+  numero_cota?: string | null;
+  grupo_codigo?: string | null;
+  cliente_nome?: string | null;
+  repasse_parceiros?: {
+    nome?: string | null;
+    valor_bruto: number | string;
+    valor_liquido: number | string;
+    repasse_status: RepasseStatus;
+  }[] | null;
 };
 
 export type ComissaoResumo = {

@@ -512,6 +512,38 @@ export function ComissaoOperacionalWorkspace({
               </div>
             </div>
           </div>
+
+          {/* Ações de salvar (rodapé) — evita rolar até o topo após preencher tudo */}
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
+              onClick={handleSaveConfig}
+              disabled={isSaving}
+            >
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar regra
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+              onClick={handleGenerateProjection}
+              disabled={
+                isProjecting || !contratoSelecionado.tem_contrato || numeroContratoPendente
+              }
+              title={
+                pagamentos.length > 0
+                  ? "Reprocessa o cronograma com a regra atual. Parcelas já operadas não são afetadas."
+                  : "Confirma o cronograma e gera as parcelas operacionais."
+              }
+            >
+              {isProjecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {pagamentos.length > 0 ? "Reprocessar cronograma" : "Confirmar cronograma"}
+            </Button>
+          </div>
         </section>
 
         {/* ── Coluna direita: Pré-visualização e operação ── */}

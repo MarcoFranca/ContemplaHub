@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -239,6 +240,14 @@ function LancamentoRow({
   const isPrevisto = !isPago && !isCancelado;
   const inadimplente = isInadimplente(item);
 
+  const repasseParceiros = item.repasse_parceiros ?? [];
+  const repasseTotal = repasseParceiros.reduce((s, p) => s + Number(p.valor_bruto || 0), 0);
+  const valorTotal = Number(item.valor_bruto || 0) + repasseTotal;
+  const repasseNomes = repasseParceiros
+    .map((p) => p.nome)
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <div
       className={`grid grid-cols-[1fr_5.5rem_5.5rem_7rem_6.5rem] items-center gap-3 border-b border-white/5 px-4 py-2.5 text-sm last:border-0 transition-colors hover:bg-white/2 ${
@@ -255,7 +264,19 @@ function LancamentoRow({
               : (item.parceiros_corretores?.nome ?? "Parceiro")}
           </span>
         </div>
-        <div className="mt-0.5 text-xs text-muted-foreground">
+        <Link
+          href={`/app/contratos/${item.contrato_id}`}
+          className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground hover:text-emerald-300 hover:underline"
+          title="Ver detalhes da carta/contrato"
+        >
+          <span className="truncate">
+            {item.cliente_nome ?? "Cliente sem nome"}
+            {item.grupo_codigo && <> · Grupo {item.grupo_codigo}</>}
+            {item.numero_cota && <> · Cota {item.numero_cota}</>}
+          </span>
+          <ExternalLink className="h-3 w-3 flex-shrink-0 opacity-50" />
+        </Link>
+        <div className="mt-0.5 text-xs text-muted-foreground/70">
           {EVENTO_LABELS[item.tipo_evento] ?? item.tipo_evento}
           {inadimplente && item.observacoes && (
             <span className="ml-2 text-orange-400/80">
@@ -263,13 +284,23 @@ function LancamentoRow({
             </span>
           )}
         </div>
+        {repasseTotal > 0 && (
+          <div className="mt-0.5 text-xs text-sky-400/80">
+            Repassa {fmt(repasseTotal)}
+            {repasseNomes && <> p/ {repasseNomes}</>}
+          </div>
+        )}
       </div>
 
-      {/* Valor bruto */}
-      <div className="text-right font-semibold tabular-nums text-foreground">{fmt(item.valor_bruto)}</div>
+      {/* Total recebido da operadora */}
+      <div className="text-right font-semibold tabular-nums text-foreground">
+        {fmt(repasseTotal > 0 ? valorTotal : item.valor_bruto)}
+      </div>
 
-      {/* Valor líquido */}
-      <div className="text-right text-xs tabular-nums text-muted-foreground">{fmt(item.valor_liquido)} líq.</div>
+      {/* Valor que fica para a empresa */}
+      <div className="text-right text-xs tabular-nums text-muted-foreground">
+        {fmt(repasseTotal > 0 ? item.valor_bruto : item.valor_liquido)}
+      </div>
 
       {/* Status */}
       <div className="flex justify-center">
@@ -282,7 +313,7 @@ function LancamentoRow({
 
         {isPrevisto && !inadimplente && (
           <>
-            <ActionBtn onClick={onPago} disabled={busy} variant="green" title="Dar baixa — marcar como recebido">
+            <ActionBtn onClick={onPago} disabled={busy} variant="green" title="Confirmar que a empresa recebeu esta comissão (o pagamento do cliente já é registrado em Financeiro)">
               <CheckCircle2 className="h-3.5 w-3.5" />
             </ActionBtn>
             <ActionBtn onClick={onCobranca} disabled={busy} variant="orange" title="Marcar para cobrança — cliente em atraso no boleto">
@@ -296,7 +327,7 @@ function LancamentoRow({
 
         {isPrevisto && inadimplente && (
           <>
-            <ActionBtn onClick={onPago} disabled={busy} variant="green" title="Regularizou — dar baixa">
+            <ActionBtn onClick={onPago} disabled={busy} variant="green" title="Regularizou — confirmar recebimento da comissão pela empresa">
               <CheckCircle2 className="h-3.5 w-3.5" />
             </ActionBtn>
             <ActionBtn onClick={onRemoverCobranca} disabled={busy} variant="ghost" title="Remover alerta de cobrança">
@@ -476,8 +507,8 @@ function GrupoMes({
           <div className="border-t border-white/5">
             <div className="grid grid-cols-[1fr_5.5rem_5.5rem_7rem_6.5rem] gap-3 border-b border-white/5 bg-card/20 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
               <span>Beneficiário / Evento</span>
-              <span className="text-right">Bruto</span>
-              <span className="text-right">Líquido</span>
+              <span className="text-right">Total</span>
+              <span className="text-right">Empresa</span>
               <span className="text-center">Status</span>
               <span className="text-right">Ações</span>
             </div>
@@ -696,7 +727,7 @@ export function OperacaoMensal({ items }: { items: ComissaoLancamento[] }) {
       {/* Legenda de ações */}
       <div className="flex flex-wrap gap-4 rounded-xl border border-border/25 bg-card/10 px-4 py-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Dar baixa
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Dar baixa — empresa recebeu a comissão
         </span>
         <span className="flex items-center gap-1.5">
           <Bell className="h-3.5 w-3.5 text-orange-400" /> Marcar cobrança (boleto em atraso)

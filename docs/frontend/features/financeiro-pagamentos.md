@@ -97,6 +97,20 @@ O Financeiro agora aparece como categoria propria no menu lateral:
     - resumo financeiro;
     - timeline.
 
+## UX: acoes de salvar duplicadas (topo e rodape)
+
+Os botoes "Salvar regra" e "Confirmar cronograma"/"Reprocessar cronograma" aparecem duas vezes
+em `ComissaoOperacionalWorkspace`:
+
+- no cabecalho da secao "Configuracao comercial" (acesso rapido);
+- em uma barra de acoes no rodape do bloco de configuracao, apos "Configuracoes avancadas"
+  (observacoes/regra da primeira competencia).
+
+Motivo: o `ComissaoConfigSection`/`ComissaoBuilder` (base financeira, estrutura de recebimento,
+cronograma de parcelas, parceiros) e longo, e o usuario preenchia tudo e precisava rolar de volta
+ao topo para salvar. O botao do rodape usa os mesmos handlers (`handleSaveConfig` /
+`handleGenerateProjection`), sem duplicar logica.
+
 ## Panorama financeiro
 
 A rota `/app/financeiro` agora concentra uma leitura gerencial:

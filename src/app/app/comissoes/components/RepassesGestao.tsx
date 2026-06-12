@@ -1,6 +1,7 @@
 "use client";
 
-import { Users, Clock, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { Users, Clock, CheckCircle2, ExternalLink } from "lucide-react";
 import { RepasseDialog } from "./RepasseDialog";
 import { RepasseStatusBadge } from "./status-badges";
 import type { ComissaoLancamento } from "../types";
@@ -151,13 +152,26 @@ export function RepassesGestao({ items, refreshPath }: Props) {
                       className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-white/2"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">
-                            {EVENTO_LABELS[item.tipo_evento] ?? item.tipo_evento}
+                        <Link
+                          href={`/app/contratos/${item.contrato_id}`}
+                          className="group flex items-center gap-2 hover:underline"
+                          title="Ver detalhes da carta/contrato"
+                        >
+                          <span className="truncate text-sm font-medium group-hover:text-emerald-300">
+                            {item.cliente_nome ?? "Cliente sem nome"}
                           </span>
-                          <span className="text-xs text-muted-foreground">· Parcela {item.ordem}</span>
-                        </div>
+                          {item.grupo_codigo && (
+                            <span className="text-xs text-muted-foreground">· Grupo {item.grupo_codigo}</span>
+                          )}
+                          {item.numero_cota && (
+                            <span className="text-xs text-muted-foreground">· Cota {item.numero_cota}</span>
+                          )}
+                          <ExternalLink className="h-3 w-3 flex-shrink-0 opacity-50" />
+                        </Link>
                         <div className="mt-0.5 text-xs text-muted-foreground">
+                          {EVENTO_LABELS[item.tipo_evento] ?? item.tipo_evento} · Parcela {item.ordem}
+                        </div>
+                        <div className="mt-0.5 text-xs text-muted-foreground/70">
                           Competência:{" "}
                           {item.competencia_prevista
                             ? new Date(item.competencia_prevista).toLocaleDateString("pt-BR", {
