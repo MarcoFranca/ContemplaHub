@@ -36,6 +36,7 @@ Responsabilidades observadas:
 ### Integração com contrato
 
 - `src/app/app/contratos/[contratoId]/components/ComissoesContratoCard.tsx`
+- `src/app/app/contratos/[contratoId]/components/HistoricoLancesPanel.tsx`
 
 ## Schemas e actions relevantes
 
@@ -104,6 +105,74 @@ Em `OperacaoMensal.tsx`, as colunas da tabela foram renomeadas de "Bruto"/"Líqu
 - **Empresa**: se houver repasse associado, mostra `valor_bruto` (a parte que fica com a empresa); senão, mostra `valor_liquido` normalmente.
 
 Abaixo do evento, quando há repasse, aparece uma linha "Repassa `R$X` p/ `{nome do parceiro}`".
+
+## Página de detalhes do contrato/carta (`/app/contratos/[contratoId]`)
+
+`ComissoesContratoCard` (componente principal do card financeiro nessa página) recebe agora também `cotaId`, `historicoLances` e `contemplacao`, vindos de `getLanceCartaDetalhe(cota.id, hoje)` (action existente em `src/app/app/lances/actions/carta-actions.ts`, sem mudança de backend). A chamada é feita com `.catch(() => null)` para não quebrar a página caso a carta não tenha dados de lance.
+
+### Visão geral (status do mês atual)
+
+No topo do `CardContent`, uma faixa com 3 `StatusPill` (ícone + label + badge) resume o status do mês corrente (`mesAtualKey()`/`compKey()` comparando `YYYY-MM`):
+
+- **Pagamento do cliente (mês)**: `CompetenciaStatusBadge` da competência cujo `competencia` cai no mês atual.
+- **Comissão da empresa (mês)**: `ComissaoStatusBadge` do lançamento `beneficiario_tipo: "empresa"` do mês.
+- **Repasse ao parceiro (mês)**: `RepasseStatusBadge` do lançamento `beneficiario_tipo: "parceiro"` do mês.
+
+Quando não há item correspondente no mês, exibe texto "Sem competência/lançamento/parceiro no mês".
+
+### Aba "Lances"
+
+A `Tabs` do card ganhou uma 4ª aba ("Lances", ao lado de Competências/Lançamentos/Timeline), renderizando `HistoricoLancesPanel` (`src/app/app/contratos/[contratoId]/components/HistoricoLancesPanel.tsx`):
+
+- mostra destaque de contemplação (quando `contemplacao` existe): data, percentual do lance e motivo;
+- lista `historico_lances` com badge de resultado (`contemplado`/`desclassificado`/`não_contemplado`/pendente), tipo, percentual+valor e data da assembleia/origem;
+- link "Ver carta completa" para `/app/lances/{cotaId}`.
+
+### Valores em "Resumo financeiro" (ResumoPill)
+
+`resumoFinanceiro.totais.*` chega do backend como strings numéricas (ex.: `"12000.20"`). `ComissoesContratoCard` aplica `fmtMoney()` (formatação `pt-BR`/`BRL`) antes de exibir em cada `ResumoPill` (Total bruto, Empresa bruto, Parceiro bruto, Imposto parceiro, Parceiro líquido).
+
+### Ações rápidas na "Visão geral"
+
+- **Pagamento do cliente (mês)**: link "Gerenciar" para `/app/financeiro/pagamentos?contrato_id={contratoId}`.
+- **Comissão da empresa (mês)**: quando há lançamento no mês, exibe `LancamentoStatusDialog` para editar status/competência/observações diretamente.
+- **Repasse ao parceiro (mês)**: quando há lançamento no mês, exibe `RepasseDialog` para marcar repasse como pago/pendente.
+
+### Configurar comissão do contrato
+
+Botão "Configurar comissão" no cabeçalho do card leva para `/app/financeiro/pagamentos?contrato_id={contratoId}`, onde `ComissaoOperacionalWorkspace` permite criar/editar a configuração comercial da comissão (percentuais, parceiros, regras) — reaproveitado sem duplicar o editor nesta página.
+
+### `LancamentosTable` — prop `showContratoLink`
+
+Novo prop opcional `showContratoLink` (default `true`). Em `/app/comissoes`, o link "ver contrato" continua aparecendo na coluna Ações. Na aba "Lançamentos" do card do contrato, é passado `showContratoLink={false}` para remover o link redundante (já estamos na página do contrato).
+
+### Cards "Informações da cota"
+
+O card "Seguro prestamista", antes separado, foi incorporado como um `InfoMiniCard` dentro da grade "Informações da cota" (mostra percentual + valor mensal, ou "Não contratado").
+
+### Coluna "Assembleia" — texto auxiliar
+
+Na 2ª linha da célula "Assembleia" (`CompetenciasTable`), quando `participou_assembleia === true` e não há `motivo_nao_participacao`, exibe-se "Sorteio" (em vez de "—"). Isso reflete que, ao participar da assembleia sem um lance livre/fixo registrado, a cota concorre pelo sorteio padrão daquele mês. É apenas texto informativo no frontend — não há, ainda, cruzamento com o histórico de lances para diferenciar "lance dado" de "sorteio".
+
+### Badges de status de competência
+
+`CompetenciasTable` agora usa `CompetenciaStatusBadge` (novo componente em `status-badges.tsx`, cobrindo os 6 valores de `CompetenciaStatus`) na coluna Status, e colore as colunas Pagamento/Comissão (verde quando `pago`/`gera_comissao`, cinza caso contrário).
+
+### Ações na tabela de Competências
+
+`CompetenciasTable` ganhou uma coluna "Ações" com `CompetenciaPagamentoDialog` (novo componente), que permite editar o pagamento da competência (status, valor, vencimento, data de pagamento, observações) chamando `editFinanceiroPagamentoAction` (já existente em `src/app/app/financeiro/pagamentos/actions.ts`), usando `item.pagamento_id` da `CotaPagamentoCompetencia`. Quando a competência ainda não possui `pagamento_id` (cronograma não gerado), o botão fica desabilitado com tooltip explicativo.
+
+`editFinanceiroPagamentoAction` agora também chama `revalidatePath(\`/app/contratos/${contrato_id}\`)`, para que a edição reflita imediatamente na página de detalhes do contrato.
+
+### Ações rápidas na tabela de Lançamentos (`LancamentoQuickActions`)
+
+Novo componente `LancamentoQuickActions` (`src/app/app/comissoes/components/LancamentoQuickActions.tsx`) replica, dentro de `LancamentosTable`, o padrão de botões de ícone usado em `OperacaoMensal` ("AÇÕES": ✓ verde, 🔔 laranja, ⊘ vermelho/rosa, ↺ cinza), para lançamentos `beneficiario_tipo: "empresa"`:
+
+- **Previsto (sem cobrança)**: ✓ dar baixa (`marcarPagoAction`), 🔔 marcar para cobrança (`marcarParaCobrancaAction`, com modal de motivo), ⊘ cancelar este lançamento (`marcarCanceladoAction`, com modal de confirmação).
+- **Previsto + inadimplente**: ✓ dar baixa, 🔕 remover alerta de cobrança (`removerFlagCobrancaAction`).
+- **Pago/Cancelado**: ↺ reverter para previsto (`reverterPrevistoAction`).
+
+Após cada ação, chama `router.refresh()` (não depende de `revalidatePath` adicional). Renderizado ao lado do `LancamentoStatusDialog`/`RepasseDialog` existentes — não os substitui, apenas adiciona o atalho de 1 clique também presente em `/app/comissoes`. Como `LancamentosTable` é compartilhada, esse atalho aparece tanto em `/app/comissoes` (aba "Todos os lançamentos") quanto na aba "Lançamentos" da página de detalhes do contrato — mantendo a mesma UX de avaliação/alteração rápida da cota nos dois lugares.
 
 ## Pendentes de confirmação
 

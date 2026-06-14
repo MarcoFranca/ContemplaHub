@@ -348,6 +348,7 @@ export async function editFinanceiroPagamentoAction(
 
         revalidatePath("/app/financeiro/pagamentos");
         revalidatePath("/app/comissoes");
+        revalidatePath(`/app/contratos/${base.contrato_id}`);
 
         return {
             ok: true,

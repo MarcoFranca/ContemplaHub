@@ -13,12 +13,12 @@ import {
 
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { Badge } from "@/components/ui/badge";
 import {
     getCompetenciasContratoAction,
     getLancamentosContratoAction,
     getResumoFinanceiroContratoAction, getTimelineContratoAction
 } from "@/app/app/comissoes/actions";
+import { getLanceCartaDetalhe } from "@/app/app/lances/actions/carta-actions";
 import { ComissoesContratoCard } from "./components/ComissoesContratoCard";
 import { ContratoStatusEditor } from "./components/ContratoStatusEditor";
 import { EditCotaSheet } from "./components/EditCotaSheet";
@@ -110,6 +110,10 @@ export default async function ContratoDetailsPage({
         getTimelineContratoAction(contratoId),
         loadLeadNome(cota?.lead_id, profile.orgId),
     ]);
+
+    const lanceDetalhe = cota?.id
+        ? await getLanceCartaDetalhe(cota.id, new Date().toISOString().slice(0, 10)).catch(() => null)
+        : null;
 
     const seguroAtivo = Boolean(cota?.seguro_prestamista_ativo);
 
@@ -247,47 +251,20 @@ export default async function ContratoDetailsPage({
                             label="Assembleia"
                             value={cota?.assembleia_dia ? `Dia ${cota.assembleia_dia}` : "—"}
                         />
-                    </div>
-                </div>
-
-                {/* SEGURO PRESTAMISTA */}
-                <div className="rounded-[26px] border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.025] p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-xl">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                        <h2 className="text-sm font-semibold text-foreground">Seguro prestamista</h2>
-                        <Badge
-                            variant="outline"
-                            className={
+                        <InfoMiniCard
+                            icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />}
+                            label="Seguro prestamista"
+                            value={
                                 seguroAtivo
-                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                    : "border-white/10 bg-white/5 text-muted-foreground"
+                                    ? `${
+                                          cota?.seguro_prestamista_percentual != null
+                                              ? `${Number(cota.seguro_prestamista_percentual).toLocaleString("pt-BR")}% · `
+                                              : ""
+                                      }${fmtCurrency(cota?.seguro_prestamista_valor_mensal)}/mês`
+                                    : "Não contratado"
                             }
-                        >
-                            {seguroAtivo ? "Ativo" : "Não contratado"}
-                        </Badge>
+                        />
                     </div>
-
-                    {seguroAtivo ? (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            <InfoMiniCard
-                                icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />}
-                                label="Percentual"
-                                value={
-                                    cota?.seguro_prestamista_percentual != null
-                                        ? `${Number(cota.seguro_prestamista_percentual).toLocaleString("pt-BR")}%`
-                                        : "—"
-                                }
-                            />
-                            <InfoMiniCard
-                                icon={<Banknote className="h-3.5 w-3.5 text-emerald-300" />}
-                                label="Valor mensal"
-                                value={fmtCurrency(cota?.seguro_prestamista_valor_mensal)}
-                            />
-                        </div>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">
-                            Esta cota não possui seguro prestamista contratado.
-                        </p>
-                    )}
                 </div>
 
                 {/* CONTRATO PDF */}
@@ -299,6 +276,9 @@ export default async function ContratoDetailsPage({
                     lancamentos={lancamentos.items}
                     competencias={competencias.items}
                     timeline={timeline.items}
+                    cotaId={cota?.id}
+                    historicoLances={lanceDetalhe?.historico_lances}
+                    contemplacao={lanceDetalhe?.contemplacao}
                 />
             </div>
         </div>

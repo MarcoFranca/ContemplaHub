@@ -107,7 +107,7 @@ export function resolveSuggestedTipo(item: LanceCartaListItem) {
     const fixoAtivo = (item.opcoes_lance_fixo ?? []).some((op) => op.ativo);
     if (fixoAtivo) return "Fixo";
 
-    return "A definir";
+    return "Sorteio";
 }
 
 export function resolveSuggestedPercent(item: LanceCartaListItem) {

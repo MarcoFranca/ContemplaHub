@@ -8,11 +8,13 @@ import type { ComissaoLancamento } from "../types";
 import { ComissaoStatusBadge, RepasseStatusBadge } from "./status-badges";
 import { LancamentoStatusDialog } from "./LancamentoStatusDialog";
 import { RepasseDialog } from "./RepasseDialog";
+import { LancamentoQuickActions } from "./LancamentoQuickActions";
 
 type Props = {
   items: ComissaoLancamento[];
   refreshPath: string;
   title?: string;
+  showContratoLink?: boolean;
 };
 
 const EVENTO_LABELS: Record<string, string> = {
@@ -23,7 +25,7 @@ const EVENTO_LABELS: Record<string, string> = {
   manual: "Manual",
 };
 
-export function LancamentosTable({ items, refreshPath, title = "Lançamentos" }: Props) {
+export function LancamentosTable({ items, refreshPath, title = "Lançamentos", showContratoLink = true }: Props) {
   return (
     <Card className="border-border/35 bg-card/15">
       <CardHeader className="pb-3">
@@ -139,11 +141,14 @@ export function LancamentosTable({ items, refreshPath, title = "Lançamentos" }:
 
                 <TableCell className="pr-6">
                   <div className="flex items-center justify-end gap-1.5">
-                    <Link href={`/app/contratos/${item.contrato_id}`}>
-                      <button className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-border/40 px-2 text-xs transition-colors hover:bg-white/5">
-                        <ExternalLink className="h-3 w-3" />
-                      </button>
-                    </Link>
+                    {showContratoLink && (
+                      <Link href={`/app/contratos/${item.contrato_id}`}>
+                        <button className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-border/40 px-2 text-xs transition-colors hover:bg-white/5">
+                          <ExternalLink className="h-3 w-3" />
+                        </button>
+                      </Link>
+                    )}
+                    {item.beneficiario_tipo === "empresa" && <LancamentoQuickActions item={item} />}
                     <LancamentoStatusDialog lancamento={item} refreshPath={refreshPath} />
                     <RepasseDialog lancamento={item} refreshPath={refreshPath} />
                   </div>
