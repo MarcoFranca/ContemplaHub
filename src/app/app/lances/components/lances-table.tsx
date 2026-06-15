@@ -9,11 +9,8 @@ import {
     Ban,
     Building2,
     CalendarDays,
-    CheckCircle2,
     ClipboardCheck,
-    ClipboardList,
     Clock3,
-    CircleDollarSign,
     FolderKanban,
     LayoutList,
     SendHorizonal,
@@ -29,6 +26,9 @@ import type { LanceCartaListItem } from "../types";
 import {
     filterByOperacaoView,
     getExecucaoLabel,
+    preferenciaLanceBadgeClass,
+    preferenciaLanceIcons,
+    resolvePreferenciaLance,
     statusMesOrder,
     type OperacaoView,
 } from "../lib/operacao";
@@ -202,6 +202,9 @@ function CartaCard({
     item: LanceCartaListItem;
     competencia: string;
 }) {
+    const preferencia = resolvePreferenciaLance(item);
+    const PreferenciaIcon = preferenciaLanceIcons[preferencia.value];
+
     return (
         <div
             className={`rounded-2xl border p-3 shadow-sm transition-all duration-200 hover:border-white/20 hover:bg-white/[0.06] sm:p-4 md:p-5 ${cardClass(item)}`}
@@ -209,9 +212,32 @@ function CartaCard({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-sm font-semibold text-white sm:text-base md:text-lg">
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white sm:text-base md:text-lg">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            {item.administradora_nome || "—"}
+                        </span>
+                        <span className="text-white/30">•</span>
+                        {item.lead_id ? (
+                            <Link
+                                href={`/app/leads/${item.lead_id}`}
+                                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-emerald-400 hover:underline sm:text-base"
+                            >
+                                <UserRound className="h-4 w-4" />
+                                {item.cliente_nome || "—"}
+                            </Link>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground sm:text-base">
+                                <UserRound className="h-4 w-4" />
+                                {item.cliente_nome || "—"}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="inline-flex items-center gap-1.5">
+                            <FolderKanban className="h-3.5 w-3.5" />
                             Grupo {item.grupo_codigo} • Cota {item.numero_cota}
-                        </h4>
+                        </Badge>
 
                         <Badge variant={statusVariant(item.status)}>{item.status}</Badge>
 
@@ -219,19 +245,6 @@ function CartaCard({
                             {getExecucaoLabel(item)}
                         </Badge>
                     </div>
-
-                    <p className="inline-flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                        <UserRound className="h-4 w-4" />
-                        {item.cliente_nome || "—"}
-                        <span className="text-white/30">•</span>
-                        <Building2 className="h-4 w-4" />
-                        {item.administradora_nome || "—"}
-                    </p>
-
-                    <p className="inline-flex items-center gap-2 text-sm text-muted-foreground capitalize">
-                        <CircleDollarSign className="h-4 w-4" />
-                        {item.produto} • {money(item.valor_carta)}
-                    </p>
                 </div>
 
                 <Link
@@ -243,68 +256,36 @@ function CartaCard({
                 </Link>
             </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.2fr_0.95fr]">
-                <div className="space-y-3">
-                    <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-                        <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-                            <CalendarDays className="h-3.5 w-3.5" />
-                            Assembleia
-                        </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <Badge className={`inline-flex items-center gap-1.5 border ${preferenciaLanceBadgeClass(preferencia.value)}`}>
+                    <PreferenciaIcon className="h-3.5 w-3.5" />
+                    {preferencia.label}
+                </Badge>
 
-                        {item.tem_pendencia_configuracao ? (
-                            <p className="mt-2 text-sm text-amber-500">Sem regra configurada</p>
-                        ) : (
-                            <>
-                                <p className="mt-2 font-medium">{fmtDate(item.assembleia_prevista)}</p>
-                                <p className="text-xs text-muted-foreground">
-                                    origem: {item.assembleia_dia_origem || "—"}
-                                </p>
-                            </>
-                        )}
-                    </div>
-
-                    <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-                        <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-                            <ClipboardList className="h-3.5 w-3.5" />
-                            Resumo operacional
-                        </p>
-
-                        <div className="mt-3 space-y-2 text-sm">
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <span className="inline-flex items-center gap-2 text-muted-foreground">
-                  <UserRound className="h-4 w-4" />
-                  Cliente
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                    <Wallet className="h-4 w-4" />
+                    {money(item.valor_carta)}
                 </span>
-                                <strong>{item.cliente_nome || "—"}</strong>
-                            </div>
 
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <span className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Building2 className="h-4 w-4" />
-                  Operadora
-                </span>
-                                <strong>{item.administradora_nome || "—"}</strong>
-                            </div>
+                <span className="capitalize text-muted-foreground">{item.produto}</span>
 
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <span className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Wallet className="h-4 w-4" />
-                  Valor carta
-                </span>
-                                <strong>{money(item.valor_carta)}</strong>
-                            </div>
+                <span className="text-white/30">•</span>
 
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <span className="inline-flex items-center gap-2 text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Status do mês
-                </span>
-                                <strong>{getExecucaoLabel(item)}</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {item.tem_pendencia_configuracao ? (
+                    <span className="inline-flex items-center gap-1.5 text-amber-500">
+                        <CalendarDays className="h-4 w-4" />
+                        Assembleia sem regra configurada
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                        <CalendarDays className="h-4 w-4" />
+                        Assembleia {fmtDate(item.assembleia_prevista)}
+                        {item.assembleia_dia_origem ? ` (${item.assembleia_dia_origem})` : ""}
+                    </span>
+                )}
+            </div>
 
+            <div className="mt-4 grid gap-4 xl:grid-cols-[1.4fr_1fr]">
                 <div className="space-y-3">
                     <LanceMesCard item={item} />
                     <StrategyPanel item={item} />

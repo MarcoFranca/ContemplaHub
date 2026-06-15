@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
     BadgePercent,
     Banknote,
-    CircleGauge,
     FileStack,
     Sparkles,
     Target,
@@ -64,15 +63,7 @@ export function LanceMesCard({ item }: Props) {
                     </Badge>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                        <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-                            <CircleGauge className="h-3.5 w-3.5"/>
-                            Tipo
-                        </p>
-                        <p className="mt-2 text-sm font-medium text-slate-100">{tipo}</p>
-                    </div>
-
+                <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-lg border border-white/10 bg-black/20 p-3">
                         <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
                             <BadgePercent className="h-3.5 w-3.5"/>

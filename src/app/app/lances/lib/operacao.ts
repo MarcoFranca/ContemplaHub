@@ -1,3 +1,5 @@
+import type { ComponentType } from "react";
+import { BadgePercent, Dice5, Goal, WalletCards } from "lucide-react";
 import type { LanceCartaListItem, StatusMes } from "../types";
 
 export type ExecucaoStatus =
@@ -96,18 +98,71 @@ export function filterByOperacaoView(
     return items;
 }
 
+export type PreferenciaLanceValue = "fixo" | "livre" | "embutido" | "sorteio";
+export type PreferenciaLanceSource = "carta" | "fixo_ativo" | "fallback";
+
+export type ResolvedPreferenciaLance = {
+    value: PreferenciaLanceValue;
+    label: string;
+    source: PreferenciaLanceSource;
+};
+
+function normalizePreferencial(value?: string | null): PreferenciaLanceValue | "" {
+    const v = (value ?? "").trim().toLowerCase();
+
+    if (v === "fixo") return "fixo";
+    if (v === "livre") return "livre";
+    if (v === "embutido") return "embutido";
+    if (v === "sorteio") return "sorteio";
+    return "";
+}
+
+export function preferenciaLanceLabel(value: PreferenciaLanceValue) {
+    switch (value) {
+        case "fixo": return "Lance fixo";
+        case "livre": return "Lance livre";
+        case "embutido": return "Lance embutido";
+        default: return "Sorteio";
+    }
+}
+
+export function resolvePreferenciaLance(item: LanceCartaListItem): ResolvedPreferenciaLance {
+    const fromCarta = normalizePreferencial(item.tipo_lance_preferencial);
+    if (fromCarta) {
+        return { value: fromCarta, label: preferenciaLanceLabel(fromCarta), source: "carta" };
+    }
+
+    const hasFixoAtivo = (item.opcoes_lance_fixo ?? []).some((op) => op.ativo);
+    if (hasFixoAtivo) {
+        return { value: "fixo", label: "Lance fixo", source: "fixo_ativo" };
+    }
+
+    return { value: "sorteio", label: "Sorteio", source: "fallback" };
+}
+
+export const preferenciaLanceIcons: Record<PreferenciaLanceValue, ComponentType<{ className?: string }>> = {
+    fixo: BadgePercent,
+    embutido: WalletCards,
+    livre: Goal,
+    sorteio: Dice5,
+};
+
+export function preferenciaLanceBadgeClass(value: PreferenciaLanceValue) {
+    switch (value) {
+        case "fixo": return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+        case "embutido": return "border-violet-500/30 bg-violet-500/10 text-violet-300";
+        case "livre": return "border-sky-500/30 bg-sky-500/10 text-sky-300";
+        default: return "border-slate-500/30 bg-slate-500/10 text-slate-300";
+    }
+}
+
 export function resolveSuggestedTipo(item: LanceCartaListItem) {
-    const preferencial = (item.tipo_lance_preferencial ?? "").trim().toLowerCase();
-
-    if (preferencial === "fixo") return "Fixo";
-    if (preferencial === "livre") return "Livre";
-    if (preferencial === "embutido") return "Embutido";
-    if (preferencial === "sorteio") return "Sorteio";
-
-    const fixoAtivo = (item.opcoes_lance_fixo ?? []).some((op) => op.ativo);
-    if (fixoAtivo) return "Fixo";
-
-    return "Sorteio";
+    switch (resolvePreferenciaLance(item).value) {
+        case "fixo": return "Fixo";
+        case "livre": return "Livre";
+        case "embutido": return "Embutido";
+        default: return "Sorteio";
+    }
 }
 
 export function resolveSuggestedPercent(item: LanceCartaListItem) {

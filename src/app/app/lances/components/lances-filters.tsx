@@ -241,7 +241,7 @@ export function LancesFilters({
                                 </Select>
 
                                 <Input
-                                    placeholder="Buscar grupo ou cota"
+                                    placeholder="Buscar cliente, grupo ou cota"
                                     value={draft.q}
                                     onChange={(e) =>
                                         setDraft((prev) => ({ ...prev, q: e.target.value }))
@@ -354,7 +354,7 @@ export function LancesFilters({
                 </Select>
 
                 <Input
-                    placeholder="Buscar grupo ou cota"
+                    placeholder="Buscar cliente, grupo ou cota"
                     defaultValue={q}
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {

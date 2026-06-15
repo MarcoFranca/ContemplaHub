@@ -4,24 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import {
     BadgePercent,
     CircleHelp,
-    Dice5,
     FileText,
     Goal,
     ShieldCheck,
     WalletCards,
 } from "lucide-react";
 import type { LanceCartaListItem } from "../types";
+import {
+    type PreferenciaLanceSource,
+    preferenciaLanceIcons,
+    resolvePreferenciaLance,
+} from "../lib/operacao";
 
 type Props = {
     item: LanceCartaListItem;
-};
-
-type PreferenciaSource = "carta" | "fixo_ativo" | "fallback";
-
-type ResolvedPreferencia = {
-    value: "fixo" | "livre" | "embutido" | "sorteio";
-    label: string;
-    source: PreferenciaSource;
 };
 
 function formatPercent(value?: number | null) {
@@ -31,29 +27,6 @@ function formatPercent(value?: number | null) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
     }).format(value) + "%";
-}
-
-function normalizePreferencial(
-    value?: string | null
-): "fixo" | "livre" | "embutido" | "sorteio" | "" {
-    const v = (value ?? "").trim().toLowerCase();
-
-    if (v === "fixo") return "fixo";
-    if (v === "livre") return "livre";
-    if (v === "embutido") return "embutido";
-    if (v === "sorteio") return "sorteio";
-    return "";
-}
-
-function preferencialLabel(value?: string | null) {
-    const normalized = normalizePreferencial(value);
-
-    if (normalized === "fixo") return "Lance fixo";
-    if (normalized === "livre") return "Lance livre";
-    if (normalized === "embutido") return "Lance embutido";
-    if (normalized === "sorteio") return "Sorteio";
-
-    return "";
 }
 
 function parseStrategyHighlights(text?: string | null): string[] {
@@ -66,44 +39,10 @@ function parseStrategyHighlights(text?: string | null): string[] {
         .slice(0, 4);
 }
 
-function resolvePreferencia(item: LanceCartaListItem): ResolvedPreferencia {
-    const fromCard = normalizePreferencial(item.tipo_lance_preferencial);
-
-    if (fromCard) {
-        return {
-            value: fromCard,
-            label: preferencialLabel(fromCard),
-            source: "carta",
-        };
-    }
-
-    const hasFixoAtivo = (item.opcoes_lance_fixo ?? []).some((op) => op.ativo);
-    if (hasFixoAtivo) {
-        return {
-            value: "fixo",
-            label: "Lance fixo",
-            source: "fixo_ativo",
-        };
-    }
-
-    return {
-        value: "sorteio",
-        label: "Sorteio",
-        source: "fallback",
-    };
-}
-
-function sourceLabel(source: PreferenciaSource) {
+function sourceLabel(source: PreferenciaLanceSource) {
     if (source === "carta") return "definido na carta";
     if (source === "fixo_ativo") return "sugerido por fixo ativo";
     return "fallback operacional";
-}
-
-function preferenciaIcon(value: ResolvedPreferencia["value"]) {
-    if (value === "fixo") return <BadgePercent className="h-4 w-4" />;
-    if (value === "embutido") return <WalletCards className="h-4 w-4" />;
-    if (value === "livre") return <Goal className="h-4 w-4" />;
-    return <Dice5 className="h-4 w-4" />;
 }
 
 export function StrategyPanel({ item }: Props) {
@@ -112,7 +51,8 @@ export function StrategyPanel({ item }: Props) {
         .sort((a, b) => a.ordem - b.ordem);
 
     const highlights = parseStrategyHighlights(item.estrategia);
-    const preferencia = resolvePreferencia(item);
+    const preferencia = resolvePreferenciaLance(item);
+    const PreferenciaIcon = preferenciaLanceIcons[preferencia.value];
 
     return (
         <div className="rounded-lg border border-white/10 p-3 space-y-3">
@@ -124,7 +64,7 @@ export function StrategyPanel({ item }: Props) {
 
                 <div className="mt-2 flex flex-wrap gap-2">
                     <Badge variant="secondary" className="inline-flex items-center gap-1.5">
-                        {preferenciaIcon(preferencia.value)}
+                        <PreferenciaIcon className="h-4 w-4" />
                         {preferencia.label}
                     </Badge>
 

@@ -21,6 +21,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+    Ban,
+    Banknote,
+    CheckCircle2,
+    RotateCcw,
+    SendHorizonal,
+    Trophy,
+    XCircle,
+} from "lucide-react";
+import {
     salvarControleMensalAction,
     registrarLanceAction,
     contemplarCotaAction,
@@ -62,7 +71,8 @@ function PrimaryControleButton({
                 <input type="hidden" name="competencia" value={competencia} />
                 <input type="hidden" name="status_mes" value="feito" />
                 <input type="hidden" name="observacoes" value="Baixa operacional realizada no módulo de lances." />
-                <Button type="submit" size="sm">
+                <Button type="submit" size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700">
+                    <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                     Dar baixa
                 </Button>
             </form>
@@ -71,7 +81,8 @@ function PrimaryControleButton({
 
     if (item.status_mes === "feito") {
         return (
-            <Button type="button" size="sm" disabled>
+            <Button type="button" size="sm" variant="outline" disabled className="text-muted-foreground">
+                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                 Baixado
             </Button>
         );
@@ -79,7 +90,8 @@ function PrimaryControleButton({
 
     if (item.status_mes === "sem_lance") {
         return (
-            <Button type="button" size="sm" variant="outline" disabled>
+            <Button type="button" size="sm" variant="outline" disabled className="text-muted-foreground">
+                <Ban className="mr-1.5 h-3.5 w-3.5" />
                 Sem lance no mês
             </Button>
         );
@@ -94,7 +106,8 @@ function PrimaryControleButton({
             <input type="hidden" name="competencia" value={competencia} />
             <input type="hidden" name="status_mes" value="planejado" />
             <input type="hidden" name="observacoes" value="Lance planejado no módulo de lances." />
-            <Button type="submit" size="sm">
+            <Button type="submit" size="sm" className="bg-sky-600 text-white hover:bg-sky-700">
+                <SendHorizonal className="mr-1.5 h-3.5 w-3.5" />
                 Planejar lance
             </Button>
         </form>
@@ -212,6 +225,7 @@ export function LanceActions({ item, competencia }: Props) {
                 >
                     <input type="hidden" name="cota_id" value={item.cota_id} />
                     <Button type="submit" variant="outline" size="sm" disabled={pending}>
+                        <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
                         Reativar
                     </Button>
                 </form>
@@ -242,7 +256,8 @@ function QuickControleButton({
             <input type="hidden" name="competencia" value={competencia} />
             <input type="hidden" name="status_mes" value={statusMes} />
             <input type="hidden" name="observacoes" value="" />
-            <Button type="submit" variant="outline" size="sm">
+            <Button type="submit" variant="outline" size="sm" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
+                <Ban className="mr-1.5 h-3.5 w-3.5" />
                 {label}
             </Button>
         </form>
@@ -346,7 +361,10 @@ function RegistrarLanceDialog({
     return (
         <Sheet open={open} onOpenChange={resetSuggestedState}>
             <SheetTrigger asChild>
-                <Button size="sm">Registrar lance</Button>
+                <Button size="sm" variant="outline">
+                    <Banknote className="mr-1.5 h-3.5 w-3.5" />
+                    Registrar lance
+                </Button>
             </SheetTrigger>
 
             <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
@@ -734,7 +752,8 @@ function ContemplarDialog({
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button size="sm" variant="secondary">
+                <Button size="sm" variant="outline" className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">
+                    <Trophy className="mr-1.5 h-3.5 w-3.5" />
                     Contemplar
                 </Button>
             </DialogTrigger>
@@ -795,7 +814,8 @@ function CancelarDialog({
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10">
+                    <XCircle className="mr-1.5 h-3.5 w-3.5" />
                     Cancelar cota
                 </Button>
             </DialogTrigger>
