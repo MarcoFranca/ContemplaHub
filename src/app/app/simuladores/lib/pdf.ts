@@ -165,10 +165,15 @@ export function buildComparativoHtml(
 
     const dados = [
         row("Bem / crédito", brl(input.valorBem), true),
-        row("Prazo", meses(input.prazo)),
         row("Contratação", tipo),
-        row("Produto (consórcio)", PRODUTO_LABEL[input.produto] ?? input.produto),
-        row("Financiamento", `${sistema} · ${pct(input.taxaMensal)} a.m. · entrada ${brl(input.entrada)}`),
+        row(
+            "Consórcio",
+            `${PRODUTO_LABEL[input.produto] ?? input.produto} · ${meses(input.prazo)} · taxa adm. ${pct(r.taxaAdminUsada)}`
+        ),
+        row(
+            "Financiamento",
+            `${sistema} · ${meses(input.prazoFinanciamento)} · ${pct(input.taxaMensal)} a.m. · entrada ${brl(input.entrada)}`
+        ),
     ].join("");
 
     const consorcio = [
@@ -189,6 +194,10 @@ export function buildComparativoHtml(
     const conclusao = ganhouConsorcio
         ? `No consórcio você desembolsa <strong>${brl(Math.abs(r.economia))}</strong> a menos (${pct(Math.abs(r.economiaPct))}) ao final do plano.`
         : `O financiamento sai <strong>${brl(Math.abs(r.economia))}</strong> mais barato no total, em troca do acesso imediato ao bem.`;
+
+    const projecao = input.reajusteAnual && input.reajusteAnual > 0
+        ? `<div class="destaque" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;">A ${pct(input.reajusteAnual)} a.a., o bem tende a valer <strong>${brl(r.valorBemCorrigido)}</strong> ao fim do prazo. No consórcio o crédito é reajustado pelo índice e acompanha essa valorização; no financiamento o preço de hoje fica travado.</div>`
+        : "";
 
     const cliente = meta.clienteNome
         ? `<p class="cliente">Cliente: <strong>${esc(meta.clienteNome)}</strong></p>`
@@ -227,6 +236,7 @@ export function buildComparativoHtml(
     ${section("Financiamento", fin)}
   </div>
   <div class="destaque">${conclusao}</div>
+  ${projecao}
   <footer>Valores de referência. Consórcio sem juros, com taxas de administração e fundo de reserva; financiamento com juros conforme a taxa informada. O consórcio não dá acesso imediato ao bem.</footer>
 </body></html>`;
 }
