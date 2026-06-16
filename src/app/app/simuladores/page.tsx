@@ -2,9 +2,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { getCurrentProfile } from "@/lib/auth/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calculator } from "lucide-react";
-import { ConsorcioSimulator } from "./components/ConsorcioSimulator";
+import { SimuladoresHub } from "./components/SimuladoresHub";
 
 export default async function SimuladoresPage() {
     const me = await getCurrentProfile();
@@ -25,14 +24,7 @@ export default async function SimuladoresPage() {
                 </p>
             </div>
 
-            <Card className="border-white/10 bg-white/5">
-                <CardHeader>
-                    <CardTitle className="text-base">Simulador de Consórcio — Lance</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ConsorcioSimulator />
-                </CardContent>
-            </Card>
+            <SimuladoresHub />
         </main>
     );
 }

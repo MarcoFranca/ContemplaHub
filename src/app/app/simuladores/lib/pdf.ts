@@ -1,4 +1,5 @@
 import { PRODUTOS, type SimuladorInput, type SimuladorResultado } from "./consorcio";
+import type { ComparativoInput, ComparativoResultado } from "./comparativo";
 import { brl, pct, meses } from "./format";
 
 type PdfMeta = {
@@ -135,19 +136,113 @@ export function buildSimulacaoHtml(
 </body></html>`;
 }
 
-export function abrirSimulacaoPdf(
-    input: SimuladorInput,
-    r: SimuladorResultado,
-    meta?: PdfMeta
-) {
-    const html = buildSimulacaoHtml(input, r, meta);
+function openHtml(html: string) {
     const win = window.open("", "_blank", "width=900,height=1000");
     if (!win) return false;
     win.document.open();
     win.document.write(html);
     win.document.close();
     win.focus();
-    // Aguarda render antes de chamar a impressão (usuário escolhe "Salvar como PDF").
     setTimeout(() => win.print(), 350);
     return true;
+}
+
+const PRODUTO_LABEL: Record<string, string> = {
+    imovel: "Imóvel",
+    auto: "Automóvel",
+    pesados: "Pesados",
+};
+
+export function buildComparativoHtml(
+    input: ComparativoInput,
+    r: ComparativoResultado,
+    meta: PdfMeta = {}
+): string {
+    const data = new Date().toLocaleDateString("pt-BR");
+    const tipo = input.tipoContratacao === "fisica" ? "Pessoa Física" : "Pessoa Jurídica";
+    const sistema = input.sistema === "price" ? "Price (parcela fixa)" : "SAC (decrescente)";
+    const ganhouConsorcio = r.economia > 0;
+
+    const dados = [
+        row("Bem / crédito", brl(input.valorBem), true),
+        row("Prazo", meses(input.prazo)),
+        row("Contratação", tipo),
+        row("Produto (consórcio)", PRODUTO_LABEL[input.produto] ?? input.produto),
+        row("Financiamento", `${sistema} · ${pct(input.taxaMensal)} a.m. · entrada ${brl(input.entrada)}`),
+    ].join("");
+
+    const consorcio = [
+        row("Parcela", brl(r.consorcio.parcela), true),
+        row("Custo total", brl(r.consorcio.custoTotal), true),
+        row("Custo extra sobre o bem", `${brl(r.consorcio.custoExtra)} (${pct(r.consorcio.custoExtraPct)})`),
+        row("Acesso ao bem", "Na contemplação (sorteio/lance)"),
+    ].join("");
+
+    const fin = [
+        row("Parcela inicial", brl(r.financiamento.parcelaInicial), true),
+        row("Parcela final", brl(r.financiamento.parcelaFinal)),
+        row("Custo total", brl(r.financiamento.totalPago), true),
+        row("Juros pagos", `${brl(r.financiamento.totalJuros)} (${pct(r.financiamento.custoExtraPct)})`),
+        row("Acesso ao bem", "Imediato"),
+    ].join("");
+
+    const conclusao = ganhouConsorcio
+        ? `No consórcio você desembolsa <strong>${brl(Math.abs(r.economia))}</strong> a menos (${pct(Math.abs(r.economiaPct))}) ao final do plano.`
+        : `O financiamento sai <strong>${brl(Math.abs(r.economia))}</strong> mais barato no total, em troca do acesso imediato ao bem.`;
+
+    const cliente = meta.clienteNome
+        ? `<p class="cliente">Cliente: <strong>${esc(meta.clienteNome)}</strong></p>`
+        : "";
+    const org = meta.organizacaoNome ? esc(meta.organizacaoNome) : "ContemplaHub";
+
+    return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8" />
+<title>Comparativo Consórcio x Financiamento</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #0f172a; margin: 32px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #059669; padding-bottom: 12px; margin-bottom: 18px; }
+  header .org { font-size: 18px; font-weight: 700; color: #059669; }
+  header .data { font-size: 12px; color: #64748b; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .cliente { margin: 2px 0 18px; font-size: 14px; color: #334155; }
+  section { margin-bottom: 18px; break-inside: avoid; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #059669; margin: 0 0 6px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 6px 8px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
+  td.lbl { color: #475569; }
+  td.val { text-align: right; }
+  td.strong, .strong { font-weight: 700; color: #0f172a; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .destaque { margin-top: 6px; padding: 12px 14px; border-radius: 10px; background: #ecfdf5; border: 1px solid #a7f3d0; font-size: 14px; color: #065f46; }
+  footer { margin-top: 24px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+  @media print { body { margin: 16px; } @page { margin: 14mm; } }
+</style></head>
+<body>
+  <header><span class="org">${org}</span><span class="data">${data}</span></header>
+  <h1>Comparativo: Consórcio x Financiamento</h1>
+  ${cliente}
+  ${section("Premissas", dados)}
+  <div class="cols">
+    ${section("Consórcio", consorcio)}
+    ${section("Financiamento", fin)}
+  </div>
+  <div class="destaque">${conclusao}</div>
+  <footer>Valores de referência. Consórcio sem juros, com taxas de administração e fundo de reserva; financiamento com juros conforme a taxa informada. O consórcio não dá acesso imediato ao bem.</footer>
+</body></html>`;
+}
+
+export function abrirComparativoPdf(
+    input: ComparativoInput,
+    r: ComparativoResultado,
+    meta?: PdfMeta
+) {
+    return openHtml(buildComparativoHtml(input, r, meta));
+}
+
+export function abrirSimulacaoPdf(
+    input: SimuladorInput,
+    r: SimuladorResultado,
+    meta?: PdfMeta
+) {
+    return openHtml(buildSimulacaoHtml(input, r, meta));
 }
