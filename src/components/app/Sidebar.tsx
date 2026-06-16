@@ -192,7 +192,7 @@ export function Sidebar({
               alt="ContemplaHub"
               width={160}
               height={32}
-              className="h-7 w-auto"
+              className="h-12 w-auto"
               priority
             />
             <p className="mt-0.5 text-[11px] text-slate-500">Gestão de Consórcios</p>
