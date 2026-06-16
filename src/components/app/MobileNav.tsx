@@ -14,6 +14,7 @@ const links = [
     { href: "/app/leads", label: "Leads" },
     { href: "/app/carteira", label: "Carteira" },
     { href: "/app/lances", label: "Lances" },
+    { href: "/app/simuladores", label: "Simuladores" },
     { href: "/app/comissoes", label: "Comissões" },
     { href: "/app/meta-integracoes", label: "Meta Ads" },
     { href: "/app/usuarios", label: "Usuários" },

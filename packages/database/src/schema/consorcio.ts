@@ -106,7 +106,10 @@ export const cotas = pgTable(
         furoMeses: integer("furo_meses"),
 
         // estratégia e andamento
-        tipoLancePreferencial: lanceTipo("tipo_lance_preferencial"),
+        // texto livre (validado no backend via Literal LancePreferencial: livre|fixo|embutido|sorteio).
+        // Era enum lance_tipo, mas o cache de schema do PostgREST não reconhecia novos valores do enum
+        // (erro 22P02 ao salvar embutido/sorteio); convertido para text na migration 0012.
+        tipoLancePreferencial: text("tipo_lance_preferencial"),
         dataUltimoLance: date("data_ultimo_lance"),
         aporte: numeric("aporte"),
         objetivo: text("objetivo"),

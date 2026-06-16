@@ -80,6 +80,22 @@ export async function updateCartaAction(formData: FormData): Promise<void> {
     revalidatePath("/app/lances");
 }
 
+export async function salvarEstrategiaCartaAction(formData: FormData): Promise<void> {
+    const cotaId = String(formData.get("cotaId") || "");
+    if (!cotaId) throw new Error("Cota inválida.");
+
+    await backendAuthed(`/lances/cartas/${cotaId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+            estrategia: formNullableString(formData, "estrategia"),
+            objetivo: formNullableString(formData, "objetivo"),
+        }),
+    });
+
+    revalidatePath("/app/lances");
+    revalidatePath(`/app/lances/${cotaId}`);
+}
+
 function readCotaIdFromPayload(payload: unknown): string | null {
     if (!payload || typeof payload !== "object") return null;
 

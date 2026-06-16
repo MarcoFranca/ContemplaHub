@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { MoneyInput } from "@/components/form/MoneyInput";
+import { parseMoneyBRCents } from "@/lib/masks";
 import { toast } from "sonner";
 import {
     BadgePercent,
@@ -131,6 +133,28 @@ function normalizeComissaoPayload(payload?: Partial<CotaComissaoPayload> | null)
 function toInputNumber(value?: number | string | null) {
     if (value === null || value === undefined) return "";
     return String(value);
+}
+
+function toMoneyDisplay(value?: number | string | null) {
+    if (value === null || value === undefined || value === "") return "";
+    const num = typeof value === "number" ? value : Number(String(value).replace(",", "."));
+    if (!Number.isFinite(num)) return "";
+    return new Intl.NumberFormat("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(num);
+}
+
+function maskPercentBR(raw: string): string {
+    let v = raw.replace(/[^\d,]/g, "");
+    const parts = v.split(",");
+    if (parts.length > 2) v = `${parts[0]},${parts.slice(1).join("")}`;
+    return v;
+}
+
+function toPercentDisplay(value?: number | string | null) {
+    if (value === null || value === undefined || value === "") return "";
+    return String(value).replace(".", ",");
 }
 
 function makeOpcao(ordem = 1): LanceFixoOpcaoForm {
@@ -312,16 +336,21 @@ async function submitCartaComissao(params: {
     formData.set("data_adesao", dataAdesao || "");
 
     await updateCartaAction(formData);
+
+    if (!(Number(comissaoPayload.percentual_total) > 0)) {
+        return { comissaoSalva: false, gerouLancamentos: false };
+    }
+
     await saveComissaoCotaAction(cotaId, comissaoPayload);
 
     const { contrato_id } = await getContratoByCotaAction(cotaId);
 
     if (contrato_id) {
         await gerarLancamentosContratoAction(contrato_id);
-        return { gerouLancamentos: true };
+        return { comissaoSalva: true, gerouLancamentos: true };
     }
 
-    return { gerouLancamentos: false };
+    return { comissaoSalva: true, gerouLancamentos: false };
 }
 
 export function EditCartaSheet({
@@ -336,8 +365,8 @@ export function EditCartaSheet({
     const [grupoCodigo, setGrupoCodigo] = React.useState(initialData.grupo_codigo ?? "");
     const [numeroCota, setNumeroCota] = React.useState(initialData.numero_cota ?? "");
     const [produto, setProduto] = React.useState(initialData.produto ?? "imobiliario");
-    const [valorCarta, setValorCarta] = React.useState(toInputNumber(initialData.valor_carta));
-    const [valorParcela, setValorParcela] = React.useState(toInputNumber(initialData.valor_parcela));
+    const [valorCarta, setValorCarta] = React.useState(toMoneyDisplay(initialData.valor_carta));
+    const [valorParcela, setValorParcela] = React.useState(toMoneyDisplay(initialData.valor_parcela));
     const [prazo, setPrazo] = React.useState(toInputNumber(initialData.prazo));
     const [assembleiaDia, setAssembleiaDia] = React.useState(toInputNumber(initialData.assembleia_dia));
     const [estrategia, setEstrategia] = React.useState(initialData.estrategia ?? "");
@@ -348,7 +377,7 @@ export function EditCartaSheet({
     const [dataAdesao, setDataAdesao] = React.useState(initialData.data_adesao ?? "");
     const [autorizacaoGestao, setAutorizacaoGestao] = React.useState(Boolean(initialData.autorizacao_gestao));
     const [embutidoPermitido, setEmbutidoPermitido] = React.useState(Boolean(initialData.embutido_permitido));
-    const [embutidoMaxPercent, setEmbutidoMaxPercent] = React.useState(toInputNumber(initialData.embutido_max_percent));
+    const [embutidoMaxPercent, setEmbutidoMaxPercent] = React.useState(toPercentDisplay(initialData.embutido_max_percent));
     const [fgtsPermitido, setFgtsPermitido] = React.useState(Boolean(initialData.fgts_permitido));
     const [usaLanceFixo, setUsaLanceFixo] = React.useState(opcoesLanceFixo.length > 0);
     const [fixos, setFixos] = React.useState<LanceFixoOpcaoForm[]>(
@@ -380,8 +409,8 @@ export function EditCartaSheet({
         setGrupoCodigo(initialData.grupo_codigo ?? "");
         setNumeroCota(initialData.numero_cota ?? "");
         setProduto(initialData.produto ?? "imobiliario");
-        setValorCarta(toInputNumber(initialData.valor_carta));
-        setValorParcela(toInputNumber(initialData.valor_parcela));
+        setValorCarta(toMoneyDisplay(initialData.valor_carta));
+        setValorParcela(toMoneyDisplay(initialData.valor_parcela));
         setPrazo(toInputNumber(initialData.prazo));
         setAssembleiaDia(toInputNumber(initialData.assembleia_dia));
         setEstrategia(initialData.estrategia ?? "");
@@ -389,7 +418,7 @@ export function EditCartaSheet({
         setTipoLancePreferencial(initialData.tipo_lance_preferencial ?? "");
         setAutorizacaoGestao(Boolean(initialData.autorizacao_gestao));
         setEmbutidoPermitido(Boolean(initialData.embutido_permitido));
-        setEmbutidoMaxPercent(toInputNumber(initialData.embutido_max_percent));
+        setEmbutidoMaxPercent(toPercentDisplay(initialData.embutido_max_percent));
         setFgtsPermitido(Boolean(initialData.fgts_permitido));
         setUsaLanceFixo(opcoesLanceFixo.length > 0);
         setFixos(
@@ -728,6 +757,13 @@ export function EditCartaSheet({
 
                         if (!validateFixos()) return;
 
+                        formData.set("valor_carta", String(parseMoneyBRCents(valorCarta) ?? ""));
+                        formData.set("valor_parcela", String(parseMoneyBRCents(valorParcela) ?? ""));
+                        formData.set(
+                            "embutido_max_percent",
+                            embutidoMaxPercent.trim() ? embutidoMaxPercent.replace(",", ".") : ""
+                        );
+
                         try {
                             toast.dismiss();
                             toast.loading("Salvando carta...");
@@ -743,10 +779,12 @@ export function EditCartaSheet({
 
                             if (result.gerouLancamentos) {
                                 toast.success("Carta, comissionamento e lançamentos atualizados com sucesso.");
-                            } else {
+                            } else if (result.comissaoSalva) {
                                 toast.success(
                                     "Carta e comissionamento atualizados com sucesso. Ainda não existe contrato para gerar lançamentos."
                                 );
+                            } else {
+                                toast.success("Carta atualizada com sucesso.");
                             }
 
                             onOpenChange(false);
@@ -757,7 +795,7 @@ export function EditCartaSheet({
                             toast.error("Erro ao atualizar carta.");
                         }
                     }}
-                    className="mt-6 space-y-6"
+                    className="mt-6 space-y-6 px-4 pb-4"
                 >
                     <input type="hidden" name="cotaId" value={cotaId} />
                     <input type="hidden" name="opcoesLanceFixoJson" value={fixosJson} />
@@ -919,20 +957,18 @@ export function EditCartaSheet({
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div className="grid gap-2">
                                         <Label>Valor da carta</Label>
-                                        <Input
-                                            name="valor_carta"
+                                        <MoneyInput
                                             value={valorCarta}
-                                            onChange={(e) => setValorCarta(e.target.value)}
+                                            onChange={setValorCarta}
                                             required
                                         />
                                     </div>
 
                                     <div className="grid gap-2">
                                         <Label>Valor da parcela</Label>
-                                        <Input
-                                            name="valor_parcela"
+                                        <MoneyInput
                                             value={valorParcela}
-                                            onChange={(e) => setValorParcela(e.target.value)}
+                                            onChange={setValorParcela}
                                         />
                                     </div>
 
@@ -964,12 +1000,19 @@ export function EditCartaSheet({
 
                                     <div className="grid gap-2">
                                         <Label>Embutido máximo (%)</Label>
-                                        <Input
-                                            name="embutido_max_percent"
-                                            value={embutidoMaxPercent}
-                                            onChange={(e) => setEmbutidoMaxPercent(e.target.value)}
-                                            disabled={!embutidoPermitido}
-                                        />
+                                        <div className="relative">
+                                            <Input
+                                                value={embutidoMaxPercent}
+                                                onChange={(e) => setEmbutidoMaxPercent(maskPercentBR(e.target.value))}
+                                                disabled={!embutidoPermitido}
+                                                inputMode="decimal"
+                                                placeholder="0,00"
+                                                className="pr-7"
+                                            />
+                                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                                %
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1082,11 +1125,20 @@ export function EditCartaSheet({
                                                 <div className="grid gap-3 md:grid-cols-2">
                                                     <div className="grid gap-2">
                                                         <Label>Percentual (%)</Label>
-                                                        <Input
-                                                            value={item.percentual}
-                                                            onChange={(e) => updateFixo(item.localId, { percentual: e.target.value })}
-                                                            placeholder="Ex.: 40"
-                                                        />
+                                                        <div className="relative">
+                                                            <Input
+                                                                value={item.percentual}
+                                                                onChange={(e) =>
+                                                                    updateFixo(item.localId, { percentual: maskPercentBR(e.target.value) })
+                                                                }
+                                                                inputMode="decimal"
+                                                                placeholder="Ex.: 40"
+                                                                className="pr-7"
+                                                            />
+                                                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                                                %
+                                                            </span>
+                                                        </div>
                                                     </div>
 
                                                     <div className="grid gap-2">
@@ -1134,7 +1186,7 @@ export function EditCartaSheet({
                                 value={comissaoPayload}
                                 onChange={setComissaoPayload}
                                 parceirosDisponiveis={parceirosDisponiveis}
-                                valorBase={Number(valorCarta || 0)}
+                                valorBase={parseMoneyBRCents(valorCarta) ?? 0}
                             />
 
                             {loadingComissao ? (

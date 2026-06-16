@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -9,6 +10,7 @@ import {
   BookOpen,
   Briefcase,
   Building2,
+  Calculator,
   CalendarDays,
   CircleDollarSign,
   Facebook,
@@ -61,6 +63,7 @@ const sections: NavSection[] = [
       { href: "/app/leads", icon: Trello, label: "Leads" },
       { href: "/app/carteira", icon: Briefcase, label: "Carteira" },
       { href: "/app/lances", icon: Target, label: "Lances" },
+      { href: "/app/simuladores", icon: Calculator, label: "Simuladores" },
     ],
   },
   {
@@ -173,11 +176,27 @@ export function Sidebar({
     >
       {/* Logo / toggle */}
       <div className="flex items-center justify-between border-b border-white/10 px-3 py-3">
-        {!collapsed && (
-          <div className="pl-1">
-            <h1 className="text-base font-bold tracking-tight text-emerald-400">Autentika</h1>
-            <p className="text-[11px] text-slate-500">Gestão de Consórcios</p>
-          </div>
+        {collapsed ? (
+          <Image
+            src="/icon.png"
+            alt="ContemplaHub"
+            width={28}
+            height={28}
+            className="mx-auto h-7 w-7"
+            priority
+          />
+        ) : (
+          <Link href="/app" className="pl-1">
+            <Image
+              src="/logo_horizontal_branca_verde.png"
+              alt="ContemplaHub"
+              width={160}
+              height={32}
+              className="h-7 w-auto"
+              priority
+            />
+            <p className="mt-0.5 text-[11px] text-slate-500">Gestão de Consórcios</p>
+          </Link>
         )}
         <button
           onClick={onToggle}

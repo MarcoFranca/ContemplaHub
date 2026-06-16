@@ -23,7 +23,6 @@ export function EditCartaQuickAction({ item, competencia }: Props) {
                 variant="outline"
                 size="sm"
                 onClick={() => setOpen(true)}
-                className="w-full justify-center"
             >
                 <PencilLine className="mr-2 h-4 w-4" />
                 Editar carta
@@ -49,6 +48,7 @@ export function EditCartaQuickAction({ item, competencia }: Props) {
                     tipo_lance_preferencial: item.tipo_lance_preferencial ?? null,
                     estrategia: item.estrategia ?? null,
                     assembleia_dia: item.assembleia_dia ?? null,
+                    data_adesao: item.data_adesao ?? null,
                 }}
                 opcoesLanceFixo={item.opcoes_lance_fixo ?? []}
                 onSuccess={() => {

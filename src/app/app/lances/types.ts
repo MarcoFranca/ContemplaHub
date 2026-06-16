@@ -101,6 +101,7 @@ export type LancesCartaDetalhe = {
         resultado?: string | null;
         pagamento?: Record<string, unknown> | null;
         created_at?: string | null;
+        observacoes?: string | null;
     }>;
     contemplacao?: {
         id: string;

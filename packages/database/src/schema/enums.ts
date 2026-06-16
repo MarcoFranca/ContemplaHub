@@ -35,7 +35,7 @@ export const atividadeTipo = pgEnum("atividade_tipo", [
     "whatsapp","ligacao","email","reuniao","anotacao","tarefa",
 ]);
 
-export const lanceTipo = pgEnum("lance_tipo", ["livre","embutido","fixo"]);
+export const lanceTipo = pgEnum("lance_tipo", ["livre","embutido","fixo","sorteio"]);
 
 export const pagamentoTipo = pgEnum("pagamento_tipo", [
     "parcela","taxa_adesao","taxa_admin","outro",

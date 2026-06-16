@@ -14,21 +14,26 @@ import {
     FolderKanban,
     LayoutList,
     SendHorizonal,
+    Target,
     UserRound,
     Wallet,
 } from "lucide-react";
 
 import { LanceActions } from "./lance-actions";
-import { StrategyPanel } from "./strategy-panel";
 import { EditCartaQuickAction } from "./edit-carta-quick-action";
-import { LanceMesCard } from "./LanceMesCard";
+import { CartaDetailsSheet } from "./CartaDetailsSheet";
 import type { LanceCartaListItem } from "../types";
 import {
     filterByOperacaoView,
+    formatPercent,
+    getExecucaoDescription,
     getExecucaoLabel,
     preferenciaLanceBadgeClass,
     preferenciaLanceIcons,
     resolvePreferenciaLance,
+    resolveSuggestedPercent,
+    resolveSuggestedTipo,
+    resolveSuggestedValue,
     statusMesOrder,
     type OperacaoView,
 } from "../lib/operacao";
@@ -204,6 +209,9 @@ function CartaCard({
 }) {
     const preferencia = resolvePreferenciaLance(item);
     const PreferenciaIcon = preferenciaLanceIcons[preferencia.value];
+    const sugestaoTipo = resolveSuggestedTipo(item);
+    const sugestaoPercent = resolveSuggestedPercent(item);
+    const sugestaoValor = resolveSuggestedValue(item);
 
     return (
         <div
@@ -285,23 +293,24 @@ function CartaCard({
                 )}
             </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-                <div className="space-y-3">
-                    <LanceMesCard item={item} />
-                    <StrategyPanel item={item} />
+            <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0 space-y-0.5">
+                    <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <Target className="h-3.5 w-3.5" />
+                        Lance sugerido
+                    </p>
+                    <p className="truncate text-sm font-medium text-white">
+                        {sugestaoTipo} · {formatPercent(sugestaoPercent)} · {money(sugestaoValor)}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                        {getExecucaoDescription(item)}
+                    </p>
                 </div>
 
-                <div className="space-y-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 md:border-white/10 md:bg-black/10">
-                    <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-                        <FolderKanban className="h-3.5 w-3.5" />
-                        Ações
-                    </p>
-
+                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <CartaDetailsSheet item={item} competencia={competencia} />
                     <EditCartaQuickAction item={item} competencia={competencia} />
-
-                    <div className="pt-1">
-                        <LanceActions item={item} competencia={competencia} />
-                    </div>
+                    <LanceActions item={item} competencia={competencia} />
                 </div>
             </div>
         </div>
