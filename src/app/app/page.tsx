@@ -1,9 +1,12 @@
 import { DashboardShell } from "./_components/dashboard/dashboard-shell";
 import { DashboardKpis } from "./_components/dashboard/dashboard-kpis";
+import { DashboardAnalyticsKpis } from "./_components/dashboard/dashboard-analytics-kpis";
 import { DashboardAttention } from "./_components/dashboard/dashboard-attention";
+import { DashboardEvolucao } from "./_components/dashboard/dashboard-evolucao";
+import { DashboardDistribuicao } from "./_components/dashboard/dashboard-distribuicao";
+import { DashboardComissaoChart } from "./_components/dashboard/dashboard-comissao-chart";
 import { DashboardCommercial } from "./_components/dashboard/dashboard-commercial";
 import { DashboardOperational } from "./_components/dashboard/dashboard-operational";
-import { DashboardFinancial } from "./_components/dashboard/dashboard-financial";
 import { DashboardShortcuts } from "./_components/dashboard/dashboard-shortcuts";
 import { DashboardActivities } from "./_components/dashboard/dashboard-activities";
 import { DashboardRanking } from "./_components/dashboard/dashboard-ranking";
@@ -45,7 +48,18 @@ export default async function AppHome() {
             </div>
 
             <DashboardKpis summary={data.summary} />
+            <DashboardAnalyticsKpis analytics={data.analytics} />
             <DashboardAttention items={data.attentionItems} />
+
+            <DashboardEvolucao data={data.monthlySeries} />
+
+            <section className="grid gap-6 xl:grid-cols-2">
+                <DashboardDistribuicao
+                    porStatus={data.cotasPorStatus}
+                    porProduto={data.cotasPorProduto}
+                />
+                <DashboardComissaoChart data={data.financialPreview} />
+            </section>
 
             <section className="grid gap-6 xl:grid-cols-2">
                 <DashboardCommercial items={data.commercialFunnel} />
@@ -57,10 +71,7 @@ export default async function AppHome() {
                 <DashboardRanking items={data.sellerRanking} />
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-                <DashboardFinancial data={data.financialPreview} />
-                <DashboardShortcuts />
-            </section>
+            <DashboardShortcuts />
 
             <DashboardPriorityList items={data.priorityItems} />
         </DashboardShell>

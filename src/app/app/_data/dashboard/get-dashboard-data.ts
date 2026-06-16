@@ -79,6 +79,20 @@ export type PriorityItem = {
     href: string;
 };
 
+export type MonthlyPoint = {
+    month: string;
+    leads: number;
+    contratos: number;
+    comissao: number;
+};
+
+export type DashboardAnalytics = {
+    taxaConversao: number; // contratos / leads (mês) em %
+    ticketMedioCarta: number;
+    carteiraSobGestao: number;
+    contratosNoMes: number;
+};
+
 export type DashboardData = {
     profile: Awaited<ReturnType<typeof getCurrentProfile>> | null;
     summary: DashboardSummary;
@@ -89,6 +103,10 @@ export type DashboardData = {
     activityItems: ActivityItem[];
     sellerRanking: SellerRankingItem[];
     priorityItems: PriorityItem[];
+    monthlySeries: MonthlyPoint[];
+    cotasPorStatus: FunnelItem[];
+    cotasPorProduto: FunnelItem[];
+    analytics: DashboardAnalytics;
 };
 
 type KanbanMetricRow = {
@@ -105,6 +123,8 @@ type CotaRow = {
     administradora_id: string | null;
     assembleia_dia: number | null;
     data_adesao: string | null;
+    produto: string | null;
+    valor_carta: number | string | null;
 };
 
 type ContratoRow = {
@@ -196,6 +216,23 @@ function startOfLast7Days(date = new Date()) {
     return new Date(date.getTime() - 7 * 24 * 60 * 60 * 1000);
 }
 
+function monthKey(date: Date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Últimos N meses (mais antigo → mais recente). */
+function lastMonths(n: number, ref = new Date()) {
+    const out: Array<{ key: string; label: string }> = [];
+    for (let i = n - 1; i >= 0; i--) {
+        const d = new Date(ref.getFullYear(), ref.getMonth() - i, 1);
+        out.push({
+            key: monthKey(d),
+            label: d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
+        });
+    }
+    return out;
+}
+
 function formatDelta(current: number, previous: number) {
     if (!previous && !current) return 0;
     if (!previous && current > 0) return 100;
@@ -266,6 +303,15 @@ export async function getDashboardData(): Promise<DashboardData> {
             activityItems: [],
             sellerRanking: [],
             priorityItems: [],
+            monthlySeries: [],
+            cotasPorStatus: [],
+            cotasPorProduto: [],
+            analytics: {
+                taxaConversao: 0,
+                ticketMedioCarta: 0,
+                carteiraSobGestao: 0,
+                contratosNoMes: 0,
+            },
         };
     }
 
@@ -300,6 +346,7 @@ export async function getDashboardData(): Promise<DashboardData> {
         profilesResp,
         leadsForRankingResp,
         dealsResp,
+        contratos6mResp,
     ] = await Promise.all([
         supa.rpc("get_kanban_metrics", { p_org: orgId }),
 
@@ -361,7 +408,7 @@ export async function getDashboardData(): Promise<DashboardData> {
 
         supa
             .from("cotas")
-            .select("id, status, grupo_codigo, numero_cota, administradora_id, assembleia_dia, data_adesao")
+            .select("id, status, grupo_codigo, numero_cota, administradora_id, assembleia_dia, data_adesao, produto, valor_carta")
             .eq("org_id", orgId),
 
         supa
@@ -410,6 +457,12 @@ export async function getDashboardData(): Promise<DashboardData> {
             .from("deals")
             .select("id, owner_id, status, lead_id")
             .eq("org_id", orgId),
+
+        supa
+            .from("contratos")
+            .select("id, created_at")
+            .eq("org_id", orgId)
+            .gte("created_at", startOfMonth(new Date(now.getFullYear(), now.getMonth() - 5, 1)).toISOString()),
     ]);
 
     const kanbanMetrics = (kanbanMetricsResp.data ?? []) as KanbanMetricRow[];
@@ -672,6 +725,86 @@ export async function getDashboardData(): Promise<DashboardData> {
             : [{ label: "Sem dados", value: 0 }],
     };
 
+    // --- Série mensal (últimos 6 meses): leads, contratos, comissão prevista ---
+    const meses = lastMonths(6, now);
+    const contratos6m = (contratos6mResp.data ?? []) as Array<{ id: string; created_at: string | null }>;
+
+    const leadsPorMes = new Map<string, number>();
+    for (const l of leadsForRanking) {
+        if (!l.created_at) continue;
+        const k = monthKey(new Date(l.created_at));
+        leadsPorMes.set(k, (leadsPorMes.get(k) ?? 0) + 1);
+    }
+
+    const contratosPorMes = new Map<string, number>();
+    for (const c of contratos6m) {
+        if (!c.created_at) continue;
+        const k = monthKey(new Date(c.created_at));
+        contratosPorMes.set(k, (contratosPorMes.get(k) ?? 0) + 1);
+    }
+
+    const comissaoPorMes = new Map<string, number>();
+    for (const lanc of lancamentos) {
+        if (!lanc.competencia_prevista) continue;
+        const k = monthKey(new Date(lanc.competencia_prevista));
+        comissaoPorMes.set(k, (comissaoPorMes.get(k) ?? 0) + toNumber(lanc.valor_bruto));
+    }
+
+    const monthlySeries: MonthlyPoint[] = meses.map((m) => ({
+        month: m.label,
+        leads: leadsPorMes.get(m.key) ?? 0,
+        contratos: contratosPorMes.get(m.key) ?? 0,
+        comissao: Math.round(comissaoPorMes.get(m.key) ?? 0),
+    }));
+
+    // --- Distribuição de cotas ---
+    const statusLabels: Record<string, string> = {
+        ativa: "Ativas",
+        contemplada: "Contempladas",
+        cancelada: "Canceladas",
+    };
+    const statusMap = new Map<string, number>();
+    for (const c of cotas) {
+        const label = statusLabels[c.status ?? ""] ?? "Outras";
+        statusMap.set(label, (statusMap.get(label) ?? 0) + 1);
+    }
+    const cotasPorStatus: FunnelItem[] = Array.from(statusMap.entries()).map(
+        ([label, value]) => ({ label, value })
+    );
+
+    const produtoLabels: Record<string, string> = {
+        imobiliario: "Imóvel",
+        auto: "Automóvel",
+    };
+    const cotasEmOperacaoRows = cotas.filter(
+        (c) => c.status !== "cancelada" && c.status !== "contemplada"
+    );
+    const produtoMap = new Map<string, number>();
+    for (const c of cotasEmOperacaoRows) {
+        const label = produtoLabels[c.produto ?? ""] ?? "Outros";
+        produtoMap.set(label, (produtoMap.get(label) ?? 0) + 1);
+    }
+    const cotasPorProduto: FunnelItem[] = Array.from(produtoMap.entries()).map(
+        ([label, value]) => ({ label, value })
+    );
+
+    // --- KPIs cruzados ---
+    const carteiraSobGestao = cotasEmOperacaoRows.reduce(
+        (acc, c) => acc + toNumber(c.valor_carta),
+        0
+    );
+    const ticketMedioCarta = cotasEmOperacaoRows.length
+        ? carteiraSobGestao / cotasEmOperacaoRows.length
+        : 0;
+    const taxaConversao = leadsNovos > 0 ? Math.round((contratosFechados / leadsNovos) * 100) : 0;
+
+    const analytics: DashboardAnalytics = {
+        taxaConversao,
+        ticketMedioCarta,
+        carteiraSobGestao,
+        contratosNoMes: contratosFechados,
+    };
+
     return {
         profile,
         summary,
@@ -682,5 +815,9 @@ export async function getDashboardData(): Promise<DashboardData> {
         activityItems,
         sellerRanking,
         priorityItems,
+        monthlySeries,
+        cotasPorStatus,
+        cotasPorProduto,
+        analytics,
     };
 }
