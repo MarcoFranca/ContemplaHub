@@ -131,9 +131,30 @@ export function ContratoFormShellV2({
     setIf("dataAdesao", d.data_adesao);
     setIf("assembleiaDia", d.assembleia_dia);
     setIf("numeroContrato", d.numero_contrato);
-    if (d.embutido_permitido) {
-      setIf("embutidoPermitido", true);
-      setIf("embutidoMaxPercent", d.embutido_max_percent);
+    setIf("taxaAdminPercentual", d.taxa_admin_percentual);
+    setIf("fundoReservaPercentual", d.fundo_reserva_percentual);
+
+    if (d.percentual_reducao) {
+      form.setValue("parcelaReduzida", true, { shouldDirty: true });
+      setIf("percentualReducao", d.percentual_reducao);
+    }
+
+    // Padrões comuns da operação (ajustáveis depois do preenchimento).
+    form.setValue("fgtsPermitido", true, { shouldDirty: true });
+    form.setValue("embutidoPermitido", true, { shouldDirty: true });
+    setIf("embutidoMaxPercent", d.embutido_max_percent ?? 30);
+
+    // Data de assinatura: usa a data de adesão quando o documento não trouxer outra.
+    if (d.data_adesao) setIf("dataAssinatura", d.data_adesao);
+
+    // Lance fixo padrão de 40% (apenas se ainda não houver opções cadastradas).
+    const fixosAtuais = form.getValues("opcoesLanceFixo");
+    if (!fixosAtuais || fixosAtuais.length === 0) {
+      form.setValue(
+        "opcoesLanceFixo",
+        [{ ordem: 1, percentual: 40, ativo: true }] as never,
+        { shouldDirty: true },
+      );
     }
 
     setImportedFile(file);
