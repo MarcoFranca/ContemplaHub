@@ -1,9 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, type Resolver, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   BadgeCheck,
   ChevronLeft,
@@ -42,6 +43,8 @@ import { FormalizacaoSection } from "./sections/formalizacao-section";
 import { IdentificacaoSection } from "./sections/identificacao-section";
 import { ParceiroSection } from "./sections/parceiro-section";
 import { StatusInicialSection } from "./sections/status-inicial-section";
+import { ImportarDocumentoButton } from "@/app/app/lances/components/ImportarDocumentoButton";
+import type { DocumentoImportado } from "@/app/app/lances/actions/importar-documento";
 
 type StepKey =
   | "identificacao"
@@ -103,6 +106,66 @@ export function ContratoFormShellV2({
 
   const contractId = existingContractId ?? createdContractId;
   const watched = useWatch({ control: form.control });
+
+  // Importação de PDF (extrato/apólice Porto) → pré-preenche + guarda o arquivo p/ anexar
+  const [importedFile, setImportedFile] = useState<File | null>(null);
+  const [importedAttached, setImportedAttached] = useState(false);
+
+  function handleDocumentoImportado(doc: DocumentoImportado, file: File) {
+    const d = doc.dados;
+    const setIf = (name: keyof ContratoFormValues, value: unknown) => {
+      if (value !== undefined && value !== null && value !== "") {
+        form.setValue(name as never, value as never, {
+          shouldDirty: true,
+          shouldValidate: false,
+        });
+      }
+    };
+
+    setIf("grupoCodigo", d.grupo_codigo);
+    setIf("numeroCota", d.numero_cota);
+    setIf("produto", d.produto);
+    setIf("valorCarta", d.valor_carta);
+    setIf("valorParcela", d.valor_parcela);
+    setIf("prazo", d.prazo);
+    setIf("dataAdesao", d.data_adesao);
+    setIf("assembleiaDia", d.assembleia_dia);
+    setIf("numeroContrato", d.numero_contrato);
+    if (d.embutido_permitido) {
+      setIf("embutidoPermitido", true);
+      setIf("embutidoMaxPercent", d.embutido_max_percent);
+    }
+
+    setImportedFile(file);
+    setImportedAttached(false);
+  }
+
+  // Após o contrato existir, anexa automaticamente o PDF importado (uma vez).
+  useEffect(() => {
+    if (!contractId || !importedFile || importedAttached) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const fd = new FormData();
+        fd.append("file", importedFile);
+        const res = await fetch(`/api/contracts/${contractId}/document`, {
+          method: "POST",
+          body: fd,
+        });
+        if (!cancelled && res.ok) {
+          setImportedAttached(true);
+          toast.success("PDF anexado ao contrato.");
+        }
+      } catch {
+        // silencioso: o usuário ainda pode anexar manualmente na seção de documento
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [contractId, importedFile, importedAttached]);
 
   const administradoraNome =
     administradoras.find((a) => a.id === watched.administradoraId)?.nome ?? "—";
@@ -348,6 +411,18 @@ export function ContratoFormShellV2({
                 />
               </div>
             </div>
+
+            {mode === "registerExisting" && (
+              <div className="flex flex-col gap-2 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-slate-200">
+                  <p className="font-medium text-white">Importar do PDF da Porto</p>
+                  <p className="text-slate-400">
+                    Tem o extrato ou a apólice? Importe para preencher os campos automaticamente e já anexar o documento.
+                  </p>
+                </div>
+                <ImportarDocumentoButton onImported={handleDocumentoImportado} />
+              </div>
+            )}
 
             {mode === "fromLead" ? (
               <Alert className="border-emerald-400/20 bg-emerald-500/10 text-slate-100">

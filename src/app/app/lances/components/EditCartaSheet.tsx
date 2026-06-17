@@ -44,6 +44,8 @@ import { deleteCartaAction } from "../actions/carta-actions";
 import type { CotaComissaoPayload, ParceiroSelectOption } from "../types";
 import { ComissaoConfigSection } from "./comissao/ComissaoConfigSection";
 import { SensitiveActionsSection } from "./comissao/SensitiveActionsSection";
+import { ImportarDocumentoButton } from "./ImportarDocumentoButton";
+import type { DocumentoImportado } from "../actions/importar-documento";
 import { gerarLancamentosContratoAction } from "@/app/app/comissoes/actions";
 
 type LanceFixoOpcaoForm = {
@@ -435,6 +437,22 @@ export function EditCartaSheet({
         setComissaoPayload(getDefaultComissaoPayload());
     }, [open, initialData, opcoesLanceFixo]);
 
+    function handleDocumentoImportado(doc: DocumentoImportado) {
+        const d = doc.dados;
+        if (d.grupo_codigo) setGrupoCodigo(d.grupo_codigo);
+        if (d.numero_cota) setNumeroCota(d.numero_cota);
+        if (d.produto) setProduto(d.produto);
+        if (d.valor_carta != null) setValorCarta(toMoneyDisplay(d.valor_carta));
+        if (d.valor_parcela != null) setValorParcela(toMoneyDisplay(d.valor_parcela));
+        if (d.prazo != null) setPrazo(String(d.prazo));
+        if (d.assembleia_dia != null) setAssembleiaDia(String(d.assembleia_dia));
+        if (d.data_adesao) setDataAdesao(d.data_adesao);
+        if (d.embutido_max_percent != null) {
+            setEmbutidoMaxPercent(toPercentDisplay(d.embutido_max_percent));
+            if (d.embutido_permitido) setEmbutidoPermitido(true);
+        }
+    }
+
     React.useEffect(() => {
         if (!open) return;
 
@@ -799,6 +817,13 @@ export function EditCartaSheet({
                 >
                     <input type="hidden" name="cotaId" value={cotaId} />
                     <input type="hidden" name="opcoesLanceFixoJson" value={fixosJson} />
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sky-500/20 bg-sky-500/5 p-3">
+                        <p className="text-sm text-muted-foreground">
+                            Tem o extrato ou a apólice da Porto? Importe e preencha automaticamente.
+                        </p>
+                        <ImportarDocumentoButton onImported={handleDocumentoImportado} />
+                    </div>
 
                     <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
                         <div className="space-y-6">
