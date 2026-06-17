@@ -53,7 +53,7 @@ function isMissingOptionalCotaFieldError(error: unknown) {
     return (
         maybeError.code === "42703" &&
         typeof maybeError.message === "string" &&
-        maybeError.message.includes("column cotas.situacao does not exist")
+        /column cotas\.\w+ does not exist/.test(maybeError.message)
     );
 }
 
@@ -195,7 +195,7 @@ export async function loadCarteiraUniverse(
                 const { data: cotasOptionalData, error: cotasOptionalError } = await s
                     .from("cotas")
                     .select(
-                        "id, situacao, fgts_permitido, embutido_permitido, embutido_max_percent, parcela_reduzida, data_ultimo_lance"
+                        "id, status, fgts_permitido, embutido_permitido, embutido_max_percent, parcela_reduzida, data_ultimo_lance"
                     )
                     .eq("org_id", me.orgId)
                     .in(
@@ -216,8 +216,18 @@ export async function loadCarteiraUniverse(
                         });
                     }
                 } else {
-                    const optionalById = new Map<string, Partial<CotaRow>>(
-                        ((cotasOptionalData ?? []) as Partial<CotaRow>[]).map((row) => [
+                    type CotaOptionalRow = {
+                        id: string;
+                        status?: string | null;
+                        fgts_permitido?: boolean | null;
+                        embutido_permitido?: boolean | null;
+                        embutido_max_percent?: number | null;
+                        parcela_reduzida?: boolean | null;
+                        data_ultimo_lance?: string | null;
+                    };
+
+                    const optionalById = new Map<string, CotaOptionalRow>(
+                        ((cotasOptionalData ?? []) as CotaOptionalRow[]).map((row) => [
                             String(row.id),
                             row,
                         ])
@@ -229,7 +239,7 @@ export async function loadCarteiraUniverse(
 
                         return {
                             ...cota,
-                            situacao: optional.situacao ?? null,
+                            situacao: optional.status ?? null,
                             fgts_permitido: optional.fgts_permitido ?? null,
                             embutido_permitido: optional.embutido_permitido ?? null,
                             embutido_max_percent: optional.embutido_max_percent ?? null,

@@ -70,5 +70,9 @@ export async function importarDocumentoCartaAction(
     }
 
     const data = (await res.json()) as DocumentoImportado;
+    console.log(
+        "[importar-documento] backend dados:",
+        JSON.stringify(data?.dados)
+    );
     return { ok: true, data };
 }
