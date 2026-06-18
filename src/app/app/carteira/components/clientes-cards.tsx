@@ -77,9 +77,18 @@ export function ClientesCards({
                                         </span>
 
                                         <div className="min-w-0">
-                                            <div className="break-words text-sm font-semibold text-foreground">
-                                                {clienteNome}
-                                            </div>
+                                            {clienteId ? (
+                                                <Link
+                                                    href={`/app/leads/${clienteId}`}
+                                                    className="break-words text-sm font-semibold text-foreground hover:text-emerald-300 hover:underline"
+                                                >
+                                                    {clienteNome}
+                                                </Link>
+                                            ) : (
+                                                <div className="break-words text-sm font-semibold text-foreground">
+                                                    {clienteNome}
+                                                </div>
+                                            )}
 
                                             <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
                                                 <span className="inline-flex min-w-0 items-center gap-1.5">

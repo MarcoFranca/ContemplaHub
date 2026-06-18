@@ -26,6 +26,7 @@ export type LanceCartaListItem = {
     embutido_permitido: boolean;
     embutido_max_percent?: number | null;
     fgts_permitido: boolean;
+    forma_pagamento?: string | null;
     tipo_lance_preferencial?: string | null;
     opcoes_lance_fixo?: CotaLanceFixoOpcao[];
     estrategia?: string | null;

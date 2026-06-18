@@ -91,6 +91,24 @@ Não há um schema Zod único do domínio de leads concentrado como em contratos
 - o detalhe do lead funciona como hub operacional de subfluxos
 - o componente `CreateLeadSheet` faz criação direta em Supabase via service role server-side na action
 
+## Panorama 360 do cliente (detalhe)
+
+`/app/leads/[leadId]` e tambem o **detalhe do cliente da carteira** — na carteira, clicar
+no nome do cliente (`clientes-cards`/`clientes-table`) navega para ca.
+
+A pagina agrega, no servidor (sempre por `org_id`):
+- **Resumo executivo** (`ClienteResumoExecutivo`): carteira sob gestao (soma do credito das
+  cotas em operacao), cartas ativas/total, comissao prevista e paga.
+- **Comissoes do cliente** (`ClienteComissoesCard`): previsto/disponivel/pago/repasse,
+  somando `comissao_lancamentos` das cotas do cliente.
+- **Linha do tempo** (`ClienteTimelineCard`): atividades + lances + contratos em ordem
+  cronologica.
+- Edicao: dados do cliente (`EditLeadSheet`), diagnostico (`LeadDiagnosticCard`) e cartas
+  (sheets em `LeadCotasCard`).
+
+Fase 2 prevista: bloco de **Estrategia & Oportunidades (upsell)** — sinais automaticos
+(cross-sell/reinvestimento) + notas manuais por cliente.
+
 ## Pendentes de confirmação
 
 - qual parte de propostas deve continuar acoplada a leads e qual parte deve migrar para feature própria

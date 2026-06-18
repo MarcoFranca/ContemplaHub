@@ -10,7 +10,7 @@ import {
     UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrencyBRL } from "./leadUtils";
+import { formatCurrencyBRL, formatPhoneBR } from "./leadUtils";
 import { EditLeadSheet } from "./EditLeadSheet";
 
 type LeadRow = {
@@ -71,7 +71,7 @@ export function LeadHeader({ lead }: { lead: LeadRow }) {
                                 className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground md:flex-row md:flex-wrap md:items-center md:gap-x-4 md:gap-y-2">
                 <span className="inline-flex items-center gap-2">
                   <Phone className="h-4 w-4 text-emerald-300"/>
-                    {lead.telefone ?? "Sem telefone"}
+                    {lead.telefone ? formatPhoneBR(lead.telefone) : "Sem telefone"}
                 </span>
 
                                 <span className="inline-flex items-center gap-2">

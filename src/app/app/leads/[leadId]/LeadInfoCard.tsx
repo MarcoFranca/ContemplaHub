@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { formatCurrencyBRL } from "./leadUtils";
+import { formatCurrencyBRL, formatPhoneBR } from "./leadUtils";
 
 type LeadRow = {
     nome?: string | null;
@@ -60,7 +60,7 @@ export function LeadInfoCard({ lead }: { lead: LeadRow }) {
                     <InfoItem
                         icon={<Phone className="h-3.5 w-3.5 text-emerald-300" />}
                         label="Telefone"
-                        value={lead.telefone ?? "—"}
+                        value={formatPhoneBR(lead.telefone)}
                     />
 
                     <InfoItem

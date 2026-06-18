@@ -45,6 +45,7 @@ export function EditCartaQuickAction({ item, competencia }: Props) {
                     embutido_permitido: item.embutido_permitido,
                     embutido_max_percent: item.embutido_max_percent ?? null,
                     fgts_permitido: item.fgts_permitido,
+                    forma_pagamento: item.forma_pagamento ?? null,
                     tipo_lance_preferencial: item.tipo_lance_preferencial ?? null,
                     estrategia: item.estrategia ?? null,
                     assembleia_dia: item.assembleia_dia ?? null,

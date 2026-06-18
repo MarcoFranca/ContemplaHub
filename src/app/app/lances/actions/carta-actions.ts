@@ -70,6 +70,7 @@ export async function updateCartaAction(formData: FormData): Promise<void> {
             embutido_permitido: Boolean(formData.get("embutido_permitido")),
             embutido_max_percent: formNullableNumber(formData, "embutido_max_percent"),
             fgts_permitido: Boolean(formData.get("fgts_permitido")),
+            forma_pagamento: formNullableString(formData, "forma_pagamento"),
             tipo_lance_preferencial: formNullableString(formData, "tipo_lance_preferencial"),
             estrategia: formNullableString(formData, "estrategia"),
             objetivo: formNullableString(formData, "objetivo"),

@@ -81,6 +81,7 @@ type Props = {
         embutido_permitido: boolean;
         embutido_max_percent?: number | string | null;
         fgts_permitido: boolean;
+        forma_pagamento?: string | null;
         tipo_lance_preferencial?: string | null;
         estrategia?: string | null;
         objetivo?: string | null;
@@ -381,6 +382,7 @@ export function EditCartaSheet({
     const [embutidoPermitido, setEmbutidoPermitido] = React.useState(Boolean(initialData.embutido_permitido));
     const [embutidoMaxPercent, setEmbutidoMaxPercent] = React.useState(toPercentDisplay(initialData.embutido_max_percent));
     const [fgtsPermitido, setFgtsPermitido] = React.useState(Boolean(initialData.fgts_permitido));
+    const [formaPagamento, setFormaPagamento] = React.useState(initialData.forma_pagamento ?? "");
     const [usaLanceFixo, setUsaLanceFixo] = React.useState(opcoesLanceFixo.length > 0);
     const [fixos, setFixos] = React.useState<LanceFixoOpcaoForm[]>(
         opcoesLanceFixo.map((op) => ({
@@ -422,6 +424,7 @@ export function EditCartaSheet({
         setEmbutidoPermitido(Boolean(initialData.embutido_permitido));
         setEmbutidoMaxPercent(toPercentDisplay(initialData.embutido_max_percent));
         setFgtsPermitido(Boolean(initialData.fgts_permitido));
+        setFormaPagamento(initialData.forma_pagamento ?? "");
         setUsaLanceFixo(opcoesLanceFixo.length > 0);
         setFixos(
             opcoesLanceFixo.map((op) => ({
@@ -969,6 +972,21 @@ export function EditCartaSheet({
                                             value={assembleiaDia}
                                             onChange={(e) => setAssembleiaDia(e.target.value)}
                                         />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label>Forma de pagamento</Label>
+                                        <select
+                                            name="forma_pagamento"
+                                            value={formaPagamento}
+                                            onChange={(e) => setFormaPagamento(e.target.value)}
+                                            className="h-10 rounded-md border bg-background px-3 text-sm"
+                                        >
+                                            <option value="">Selecione</option>
+                                            <option value="cartao">Cartão</option>
+                                            <option value="boleto">Boleto</option>
+                                            <option value="debito_conta">Débito em conta</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
