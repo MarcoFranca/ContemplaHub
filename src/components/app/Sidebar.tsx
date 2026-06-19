@@ -61,7 +61,15 @@ const sections: NavSection[] = [
     items: [
       { href: "/app", icon: Home, label: "Painel" },
       { href: "/app/leads", icon: Trello, label: "Leads" },
-      { href: "/app/carteira", icon: Briefcase, label: "Carteira" },
+      {
+        href: "/app/carteira",
+        icon: Briefcase,
+        label: "Carteira",
+        children: [
+          { href: "/app/carteira?view=clientes", label: "Clientes", icon: Users },
+          { href: "/app/carteira?view=cartas", label: "Cartas", icon: Wallet },
+        ],
+      },
       { href: "/app/lances", icon: Target, label: "Lances" },
       { href: "/app/simuladores", icon: Calculator, label: "Simuladores" },
     ],

@@ -142,6 +142,7 @@ export async function listFinanceiroContratoOptionsAction() {
             contrato_status: contrato?.status ?? null,
             cota_status: cota.status ?? null,
             cota_id: cota.id,
+            lead_id: (cota.lead_id as string | null) ?? null,
             numero_cota: cota.numero_cota ?? null,
             grupo_codigo: cota.grupo_codigo ?? null,
             valor_carta: cota.valor_carta ?? null,

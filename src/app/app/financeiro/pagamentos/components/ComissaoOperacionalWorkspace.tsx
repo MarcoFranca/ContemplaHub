@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ComissaoConfigSection } from "@/app/app/lances/components/comissao/ComissaoConfigSection";
+import { ContratoSearchSelect } from "./ContratoSearchSelect";
 import { ComissaoStatusBadge, RepasseStatusBadge } from "@/app/app/comissoes/components/status-badges";
 import type { CotaComissaoPayload, CotaComissaoResponse } from "@/app/app/lances/types";
 
@@ -72,7 +73,9 @@ export function ComissaoOperacionalWorkspace({
   timeline,
   lancamentos,
   pagamentos,
-}: Props) {
+  basePath = "/app/financeiro/pagamentos",
+  showCartaSelector = true,
+}: Props & { basePath?: string; showCartaSelector?: boolean }) {
   const initialPayload = normalizeComissaoPayload(comissaoAtual);
   const router = useRouter();
   const [isSaving, startSaving] = useTransition();
@@ -109,9 +112,6 @@ export function ComissaoOperacionalWorkspace({
   const distribuicaoValida = Math.abs(totalDistribuido - percentualTotal) < 0.0001;
   const parceirosValidos = saldoParceiro >= -0.0001;
   const numeroContratoPendente = !(contractNumber || "").trim();
-  const selectedActionHref = selectedContratoId
-    ? `/app/financeiro/pagamentos?item_id=${selectedContratoId}`
-    : "/app/financeiro/pagamentos";
 
   const updatePayload = (next: CotaComissaoPayload) => {
     setPayload(next);
@@ -287,37 +287,19 @@ export function ComissaoOperacionalWorkspace({
           </div>
         </div>
 
-        {/* Seletor de carta */}
-        <form action={selectedActionHref} className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-48">
+        {/* Seletor de carta (com busca) — oculto quando a tela já é de um cliente só */}
+        {showCartaSelector && (
+          <div className="max-w-xl">
             <label className="mb-1.5 block text-xs font-medium text-slate-400">
-              Carta / contrato
+              Carta / cliente
             </label>
-            <select
-              name="contrato_id"
-              defaultValue={selectedContratoId}
-              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none"
-            >
-              {contratos.map((c, i) => (
-                <option key={`${c.selection_id}-${i}`} value={c.selection_id}>
-                  {(c.tem_contrato ? c.contrato_numero || "Número pendente" : "Sem contrato") +
-                    " · " +
-                    (c.cliente_nome || "Cliente sem nome") +
-                    " · Cota " +
-                    (c.numero_cota || "—")}
-                </option>
-              ))}
-            </select>
+            <ContratoSearchSelect
+              contratos={contratos}
+              selectedId={selectedContratoId}
+              basePath={basePath}
+            />
           </div>
-          <Button
-            type="submit"
-            variant="outline"
-            size="sm"
-            className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
-          >
-            Carregar carta
-          </Button>
-        </form>
+        )}
 
         {/* Cards de contexto */}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

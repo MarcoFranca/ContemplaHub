@@ -21,6 +21,7 @@ export type FinanceiroContratoOption = {
     contrato_status?: string | null;
     cota_status?: string | null;
     cota_id?: string | null;
+    lead_id?: string | null;
     numero_cota?: string | null;
     grupo_codigo?: string | null;
     valor_carta?: string | number | null;

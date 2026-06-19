@@ -12,6 +12,7 @@ import { LeadCotasCard } from "@/app/app/leads/[leadId]/LeadCotasCard";
 import { LeadMetaAdsCard } from "@/app/app/leads/[leadId]/LeadMetaAdsCard";
 import { listContractOptions } from "@/app/app/leads/actions";
 import { ClienteResumoExecutivo, type ResumoExecutivo } from "./ClienteResumoExecutivo";
+import { getLeadCadastroPFByLead } from "./pf-cadastro";
 import { ClienteComissoesCard, type ComissoesResumo } from "./ClienteComissoesCard";
 import { ClienteTimelineCard, type TimelineEvento } from "./ClienteTimelineCard";
 
@@ -106,6 +107,20 @@ function toNum(v: number | string | null | undefined) {
     return Number(v) || 0;
 }
 
+async function loadInteresse(leadId: string, orgId: string) {
+    const supabase = await supabaseServer();
+    const { data, error } = await supabase
+        .from("lead_interesses")
+        .select("produto, perfil_desejado, objetivo, observacao")
+        .eq("org_id", orgId)
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    if (error) return null;
+    return data;
+}
+
 async function loadComissoes(orgId: string, cotasIds: string[]) {
     if (cotasIds.length === 0) return [];
     const supabase = await supabaseServer();
@@ -169,12 +184,15 @@ export default async function LeadDetailsPage({
         throw new Error("Org inválida");
     }
 
-    const [lead, diagnostic, cotas, contractOptions] = await Promise.all([
+    const [lead, diagnostic, cotas, contractOptions, interesse] = await Promise.all([
         loadLead(leadId, profile.orgId),
         loadDiagnostic(leadId, profile.orgId),
         loadCotas(leadId, profile.orgId),
         listContractOptions(),
+        loadInteresse(leadId, profile.orgId),
     ]);
+
+    const pfCadastro = await getLeadCadastroPFByLead(leadId, profile.orgId);
 
     const cotasIds = cotas.map((c: { id: string }) => c.id);
     const [contratos, comissoes, atividades, lancesCliente, opcoesFixo] = await Promise.all([
@@ -267,7 +285,7 @@ export default async function LeadDetailsPage({
     return (
         <div className="h-full overflow-auto">
             <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-                <LeadHeader lead={lead} />
+                <LeadHeader lead={lead} interesse={interesse} pf={pfCadastro} />
 
                 <ClienteResumoExecutivo resumo={resumo} />
 
@@ -285,7 +303,7 @@ export default async function LeadDetailsPage({
                             competencia={competencia}
                         />
 
-                        <ClienteComissoesCard resumo={comissoesResumo} />
+                        <ClienteComissoesCard resumo={comissoesResumo} leadId={leadId} />
 
                         <LeadDiagnosticCard
                             leadId={leadId}

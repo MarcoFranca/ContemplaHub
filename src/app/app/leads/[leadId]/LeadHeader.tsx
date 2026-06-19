@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrencyBRL, formatPhoneBR } from "./leadUtils";
-import { EditLeadSheet } from "./EditLeadSheet";
+import { EditLeadSheet, type LeadInteresseData } from "./EditLeadSheet";
+import type { LeadCadastroPF } from "./pf-cadastro";
 
 type LeadRow = {
     id: string;
@@ -24,7 +25,15 @@ type LeadRow = {
     readiness_score?: number | null;
 };
 
-export function LeadHeader({ lead }: { lead: LeadRow }) {
+export function LeadHeader({
+    lead,
+    interesse,
+    pf,
+}: {
+    lead: LeadRow;
+    interesse?: LeadInteresseData | null;
+    pf?: LeadCadastroPF | null;
+}) {
     const readiness = lead.readiness_score ?? null;
     const valorInteresse = lead.valor_interesse ?? null;
     const initial =
@@ -100,6 +109,8 @@ export function LeadHeader({ lead }: { lead: LeadRow }) {
                                 valor_interesse: lead.valor_interesse ?? null,
                                 prazo_meses: lead.prazo_meses ?? null,
                             }}
+                            interesse={interesse}
+                            pf={pf}
                         />
                     </div>
 
