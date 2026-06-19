@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Bell, BellOff, CheckCircle2, CircleSlash, Loader2, RotateCcw } from "lucide-react";
+import { Bell, BellOff, CheckCircle2, CircleSlash, CornerDownRight, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { ComissaoLancamento } from "../types";
@@ -12,6 +12,7 @@ import {
   reverterPrevistoAction,
   marcarParaCobrancaAction,
   removerFlagCobrancaAction,
+  skipComissaoLancamentoAction,
 } from "../actions";
 
 const isInadimplente = (item: ComissaoLancamento) =>
@@ -92,6 +93,50 @@ function ConfirmCancelModal({
   );
 }
 
+function ConfirmSkipModal({
+  open,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+        <CornerDownRight className="mx-auto mb-3 h-8 w-8 text-sky-400" />
+        <h3 className="text-center text-sm font-semibold text-white">Pular esta competência?</h3>
+        <p className="mt-2 text-center text-xs text-slate-400">
+          Use quando <strong className="text-slate-200">não houve pagamento neste mês</strong> (ex.:
+          assembleia ainda não iniciada). <br />
+          Este mês e <strong className="text-slate-200">todas as parcelas futuras</strong> serão
+          empurrados <strong className="text-slate-200">+1 mês</strong>. <br />
+          Você pode reverter depois se precisar.
+        </p>
+        <div className="mt-5 flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 border-white/10 text-slate-300 hover:bg-white/10"
+            onClick={onClose}
+          >
+            Voltar
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 border border-sky-500/20 bg-sky-500/20 text-sky-300 hover:bg-sky-500/30"
+            onClick={onConfirm}
+          >
+            <CornerDownRight className="mr-1.5 h-3.5 w-3.5" /> Pular competência
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CobrancaModal({
   open,
   onConfirm,
@@ -154,6 +199,7 @@ export function LancamentoQuickActions({ item }: { item: ComissaoLancamento }) {
   const [busy, setBusy] = React.useState(false);
   const [confirmCancel, setConfirmCancel] = React.useState(false);
   const [confirmCobranca, setConfirmCobranca] = React.useState(false);
+  const [confirmSkip, setConfirmSkip] = React.useState(false);
 
   const isPago = item.status === "pago";
   const isCancelado = item.status === "cancelado";
@@ -191,6 +237,17 @@ export function LancamentoQuickActions({ item }: { item: ComissaoLancamento }) {
         }}
         onClose={() => setConfirmCobranca(false)}
       />
+      <ConfirmSkipModal
+        open={confirmSkip}
+        onConfirm={async () => {
+          setConfirmSkip(false);
+          await run(async () => {
+            const res = await skipComissaoLancamentoAction(item.id);
+            toast.success(res?.message || "Competência pulada e parcelas futuras reprogramadas.");
+          });
+        }}
+        onClose={() => setConfirmSkip(false)}
+      />
 
       {busy && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
 
@@ -204,6 +261,14 @@ export function LancamentoQuickActions({ item }: { item: ComissaoLancamento }) {
           </ActionBtn>
           <ActionBtn onClick={() => setConfirmCancel(true)} disabled={busy} variant="red" title="Não vai receber — cancela apenas este lançamento, não a cota">
             <CircleSlash className="h-3.5 w-3.5" />
+          </ActionBtn>
+          <ActionBtn
+            onClick={() => setConfirmSkip(true)}
+            disabled={busy}
+            variant="ghost"
+            title="Pular competência — não houve pagamento neste mês (ex.: assembleia não iniciada). Empurra as parcelas futuras +1 mês."
+          >
+            <CornerDownRight className="h-3.5 w-3.5" />
           </ActionBtn>
         </>
       )}

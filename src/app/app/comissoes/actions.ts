@@ -219,6 +219,19 @@ export async function reverterPrevistoAction(lancamentoId: string) {
 }
 
 /**
+ * Pula a competência a partir de um lançamento de comissão: marca o mês como
+ * sem pagamento (ex.: assembleia ainda não iniciada) e empurra as competências
+ * futuras +1 mês, reprocessando o cronograma de comissões.
+ */
+export async function skipComissaoLancamentoAction(lancamentoId: string) {
+  const data = await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/pular`, {
+    method: "POST",
+  });
+  revalidatePath("/app/comissoes");
+  return data as { ok?: boolean; message?: string; pagamentos_afetados?: number };
+}
+
+/**
  * Marca o lançamento para cobrança ativa (cliente em atraso no boleto).
  * Mantém o lançamento como "previsto" mas sinaliza com flag de inadimplência.
  */

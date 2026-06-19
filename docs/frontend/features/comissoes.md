@@ -168,9 +168,11 @@ Na 2ª linha da célula "Assembleia" (`CompetenciasTable`), quando `participou_a
 
 Novo componente `LancamentoQuickActions` (`src/app/app/comissoes/components/LancamentoQuickActions.tsx`) replica, dentro de `LancamentosTable`, o padrão de botões de ícone usado em `OperacaoMensal` ("AÇÕES": ✓ verde, 🔔 laranja, ⊘ vermelho/rosa, ↺ cinza), para lançamentos `beneficiario_tipo: "empresa"`:
 
-- **Previsto (sem cobrança)**: ✓ dar baixa (`marcarPagoAction`), 🔔 marcar para cobrança (`marcarParaCobrancaAction`, com modal de motivo), ⊘ cancelar este lançamento (`marcarCanceladoAction`, com modal de confirmação).
+- **Previsto (sem cobrança)**: ✓ dar baixa (`marcarPagoAction`), 🔔 marcar para cobrança (`marcarParaCobrancaAction`, com modal de motivo), ↳ **pular competência** (`skipComissaoLancamentoAction`), ⊘ cancelar este lançamento (`marcarCanceladoAction`, com modal de confirmação).
 - **Previsto + inadimplente**: ✓ dar baixa, 🔕 remover alerta de cobrança (`removerFlagCobrancaAction`).
 - **Pago/Cancelado**: ↺ reverter para previsto (`reverterPrevistoAction`).
+
+> **Pular competência** (ícone ↳ `CornerDownRight`): marca o mês como sem pagamento (ex.: assembleia ainda não iniciada) e **empurra as competências futuras +1 mês**. Disponível em todos os ambientes de gestão dos lançamentos — `OperacaoMensal` (aba Operação), `LancamentoQuickActions` (aba Lançamentos e detalhes do contrato) e no cronograma de `/app/financeiro/pagamentos` (que já tinha "Pular competência"). Chama `POST /comissoes/lancamentos/{id}/pular`, que resolve o pagamento correspondente e reaproveita o mesmo deslocamento/reprocessamento do Financeiro. Retorna `409` (com toast explicativo) quando o cronograma de pagamentos ainda não foi gerado para aquela competência.
 
 Após cada ação, chama `router.refresh()` (não depende de `revalidatePath` adicional). Renderizado ao lado do `LancamentoStatusDialog`/`RepasseDialog` existentes — não os substitui, apenas adiciona o atalho de 1 clique também presente em `/app/comissoes`. Como `LancamentosTable` é compartilhada, esse atalho aparece tanto em `/app/comissoes` (aba "Todos os lançamentos") quanto na aba "Lançamentos" da página de detalhes do contrato — mantendo a mesma UX de avaliação/alteração rápida da cota nos dois lugares.
 

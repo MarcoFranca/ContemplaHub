@@ -14,6 +14,7 @@ import {
   CircleDollarSign,
   CircleSlash,
   Clock,
+  CornerDownRight,
   ExternalLink,
   Loader2,
   RotateCcw,
@@ -30,6 +31,7 @@ import {
   reverterPrevistoAction,
   marcarParaCobrancaAction,
   removerFlagCobrancaAction,
+  skipComissaoLancamentoAction,
 } from "../actions";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -161,6 +163,52 @@ function ConfirmCancelModal({
   );
 }
 
+// ── Diálogo de confirmação de pular competência ───────────────────────────────
+
+function ConfirmSkipModal({
+  open,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+        <CornerDownRight className="mx-auto mb-3 h-8 w-8 text-sky-400" />
+        <h3 className="text-center text-sm font-semibold text-white">Pular esta competência?</h3>
+        <p className="mt-2 text-center text-xs text-slate-400">
+          Use quando <strong className="text-slate-200">não houve pagamento neste mês</strong> (ex.:
+          assembleia ainda não iniciada). <br />
+          Este mês e <strong className="text-slate-200">todas as parcelas futuras</strong> serão
+          empurrados <strong className="text-slate-200">+1 mês</strong>. <br />
+          Você pode reverter depois se precisar.
+        </p>
+        <div className="mt-5 flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 border-white/10 text-slate-300 hover:bg-white/10"
+            onClick={onClose}
+          >
+            Voltar
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 border border-sky-500/20 bg-sky-500/20 text-sky-300 hover:bg-sky-500/30"
+            onClick={onConfirm}
+          >
+            <CornerDownRight className="mr-1.5 h-3.5 w-3.5" /> Pular competência
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Modal de flagging de inadimplência ────────────────────────────────────────
 
 function CobrancaModal({
@@ -226,6 +274,7 @@ function LancamentoRow({
   onReverter,
   onCobranca,
   onRemoverCobranca,
+  onSkip,
 }: {
   item: ComissaoLancamento;
   busy: boolean;
@@ -234,6 +283,7 @@ function LancamentoRow({
   onReverter: () => void;
   onCobranca: () => void;
   onRemoverCobranca: () => void;
+  onSkip: () => void;
 }) {
   const isPago = item.status === "pago";
   const isCancelado = item.status === "cancelado";
@@ -322,6 +372,9 @@ function LancamentoRow({
             <ActionBtn onClick={onCancelado} disabled={busy} variant="red" title="Não vai receber — cancela apenas este lançamento, não a cota">
               <CircleSlash className="h-3.5 w-3.5" />
             </ActionBtn>
+            <ActionBtn onClick={onSkip} disabled={busy} variant="ghost" title="Pular competência — não houve pagamento neste mês (ex.: assembleia não iniciada). Empurra as parcelas futuras +1 mês.">
+              <CornerDownRight className="h-3.5 w-3.5" />
+            </ActionBtn>
           </>
         )}
 
@@ -393,6 +446,7 @@ function GrupoMes({
   const [busyLote, setBusyLote] = React.useState(false);
   const [confirmCancel, setConfirmCancel] = React.useState<string | null>(null);
   const [confirmCobranca, setConfirmCobranca] = React.useState<string | null>(null);
+  const [confirmSkip, setConfirmSkip] = React.useState<string | null>(null);
   const [collapsed, setCollapsed] = React.useState(grupo.isFuturo);
 
   const run = async (id: string, fn: () => Promise<void>) => {
@@ -445,6 +499,19 @@ function GrupoMes({
           toast.success("Lançamento marcado para cobrança. Aparecerá nos alertas.");
         }}
         onClose={() => setConfirmCobranca(null)}
+      />
+
+      <ConfirmSkipModal
+        open={Boolean(confirmSkip)}
+        onConfirm={async () => {
+          const id = confirmSkip!;
+          setConfirmSkip(null);
+          await run(id, async () => {
+            const res = await skipComissaoLancamentoAction(id);
+            toast.success(res?.message || "Competência pulada e parcelas futuras reprogramadas.");
+          });
+        }}
+        onClose={() => setConfirmSkip(null)}
       />
 
       <div className={`overflow-hidden rounded-2xl border ${borderCls}`}>
@@ -522,6 +589,7 @@ function GrupoMes({
                 onReverter={() => run(item.id, () => reverterPrevistoAction(item.id))}
                 onCobranca={() => setConfirmCobranca(item.id)}
                 onRemoverCobranca={() => run(item.id, () => removerFlagCobrancaAction(item.id))}
+                onSkip={() => setConfirmSkip(item.id)}
               />
             ))}
           </div>
