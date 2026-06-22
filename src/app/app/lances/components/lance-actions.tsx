@@ -21,9 +21,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-    Ban,
     Banknote,
     CheckCircle2,
+    Dice5,
     RotateCcw,
     SendHorizonal,
     Trophy,
@@ -41,7 +41,14 @@ import type { LanceCartaListItem } from "../types";
 type Props = {
     item: LanceCartaListItem;
     competencia: string;
+    /** Modo enxuto: botões apenas com ícone (usado na visão Lista). */
+    compact?: boolean;
 };
+
+/** Classe do ícone conforme o modo (com/sem rótulo ao lado). */
+function iconClass(compact?: boolean) {
+    return compact ? "h-4 w-4" : "mr-1.5 h-3.5 w-3.5";
+}
 
 function formatBrl(value: number) {
     return new Intl.NumberFormat("pt-BR", {
@@ -54,12 +61,15 @@ function PrimaryControleButton({
                                    item,
                                    competencia,
                                    onSubmit,
+                                   compact,
                                }: {
     item: LanceCartaListItem;
     competencia: string;
     onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
+    compact?: boolean;
 }) {
     if (item.status !== "ativa") return null;
+    const size = compact ? "icon" : "sm";
 
     if (item.status_mes === "planejado") {
         return (
@@ -71,9 +81,9 @@ function PrimaryControleButton({
                 <input type="hidden" name="competencia" value={competencia} />
                 <input type="hidden" name="status_mes" value="feito" />
                 <input type="hidden" name="observacoes" value="Baixa operacional realizada no módulo de lances." />
-                <Button type="submit" size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700">
-                    <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                    Dar baixa
+                <Button type="submit" size={size} title="Dar baixa" className="bg-emerald-600 text-white hover:bg-emerald-700">
+                    <CheckCircle2 className={iconClass(compact)} />
+                    {!compact && "Dar baixa"}
                 </Button>
             </form>
         );
@@ -81,18 +91,18 @@ function PrimaryControleButton({
 
     if (item.status_mes === "feito") {
         return (
-            <Button type="button" size="sm" variant="outline" disabled className="text-muted-foreground">
-                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                Baixado
+            <Button type="button" size={size} variant="outline" disabled title="Baixado" className="text-muted-foreground">
+                <CheckCircle2 className={iconClass(compact)} />
+                {!compact && "Baixado"}
             </Button>
         );
     }
 
     if (item.status_mes === "sem_lance") {
         return (
-            <Button type="button" size="sm" variant="outline" disabled className="text-muted-foreground">
-                <Ban className="mr-1.5 h-3.5 w-3.5" />
-                Sem lance no mês
+            <Button type="button" size={size} variant="outline" disabled title="Sorteio (sem lance no mês)" className="text-muted-foreground">
+                <Dice5 className={iconClass(compact)} />
+                {!compact && "Sorteio"}
             </Button>
         );
     }
@@ -106,9 +116,9 @@ function PrimaryControleButton({
             <input type="hidden" name="competencia" value={competencia} />
             <input type="hidden" name="status_mes" value="planejado" />
             <input type="hidden" name="observacoes" value="Lance planejado no módulo de lances." />
-            <Button type="submit" size="sm" className="bg-sky-600 text-white hover:bg-sky-700">
-                <SendHorizonal className="mr-1.5 h-3.5 w-3.5" />
-                Planejar lance
+            <Button type="submit" size={size} title="Planejar lance" className="bg-sky-600 text-white hover:bg-sky-700">
+                <SendHorizonal className={iconClass(compact)} />
+                {!compact && "Planejar lance"}
             </Button>
         </form>
     );
@@ -158,7 +168,7 @@ function CurrencyInput({
     );
 }
 
-export function LanceActions({ item, competencia }: Props) {
+export function LanceActions({ item, competencia, compact }: Props) {
     const router = useRouter();
     const [pending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
@@ -185,14 +195,17 @@ export function LanceActions({ item, competencia }: Props) {
                         item={item}
                         competencia={competencia}
                         onSubmit={runAction}
+                        compact={compact}
                     />
 
                     <QuickControleButton
-                        label="Sem lance"
+                        label="Sorteio"
+                        title="Sorteio — participa sem lance neste mês"
                         cotaId={item.cota_id}
                         competencia={competencia}
                         statusMes="sem_lance"
                         onSubmit={runAction}
+                        compact={compact}
                     />
 
                     <RegistrarLanceDialog
@@ -200,6 +213,7 @@ export function LanceActions({ item, competencia }: Props) {
                         competencia={competencia}
                         onSubmit={runAction}
                         pending={pending}
+                        compact={compact}
                     />
 
                     <ContemplarDialog
@@ -207,6 +221,7 @@ export function LanceActions({ item, competencia }: Props) {
                         competencia={competencia}
                         onSubmit={runAction}
                         pending={pending}
+                        compact={compact}
                     />
 
                     <CancelarDialog
@@ -214,6 +229,7 @@ export function LanceActions({ item, competencia }: Props) {
                         competencia={competencia}
                         onSubmit={runAction}
                         pending={pending}
+                        compact={compact}
                     />
                 </>
             )}
@@ -224,9 +240,9 @@ export function LanceActions({ item, competencia }: Props) {
                     className="inline-flex"
                 >
                     <input type="hidden" name="cota_id" value={item.cota_id} />
-                    <Button type="submit" variant="outline" size="sm" disabled={pending}>
-                        <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                        Reativar
+                    <Button type="submit" variant="outline" size={compact ? "icon" : "sm"} disabled={pending} title="Reativar">
+                        <RotateCcw className={iconClass(compact)} />
+                        {!compact && "Reativar"}
                     </Button>
                 </form>
             )}
@@ -236,16 +252,20 @@ export function LanceActions({ item, competencia }: Props) {
 
 function QuickControleButton({
                                  label,
+                                 title,
                                  cotaId,
                                  competencia,
                                  statusMes,
                                  onSubmit,
+                                 compact,
                              }: {
     label: string;
+    title?: string;
     cotaId: string;
     competencia: string;
     statusMes: "planejado" | "sem_lance";
     onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
+    compact?: boolean;
 }) {
     return (
         <form
@@ -256,9 +276,9 @@ function QuickControleButton({
             <input type="hidden" name="competencia" value={competencia} />
             <input type="hidden" name="status_mes" value={statusMes} />
             <input type="hidden" name="observacoes" value="" />
-            <Button type="submit" variant="outline" size="sm" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
-                <Ban className="mr-1.5 h-3.5 w-3.5" />
-                {label}
+            <Button type="submit" variant="outline" size={compact ? "icon" : "sm"} title={title ?? label} className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
+                <Dice5 className={iconClass(compact)} />
+                {!compact && label}
             </Button>
         </form>
     );
@@ -269,11 +289,13 @@ function RegistrarLanceDialog({
                                   competencia,
                                   onSubmit,
                                   pending,
+                                  compact,
                               }: {
     item: LanceCartaListItem;
     competencia: string;
     onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
     pending: boolean;
+    compact?: boolean;
 }) {
     const [open, setOpen] = useState(false);
 
@@ -361,9 +383,9 @@ function RegistrarLanceDialog({
     return (
         <Sheet open={open} onOpenChange={resetSuggestedState}>
             <SheetTrigger asChild>
-                <Button size="sm" variant="outline">
-                    <Banknote className="mr-1.5 h-3.5 w-3.5" />
-                    Registrar lance
+                <Button size={compact ? "icon" : "sm"} variant="outline" title="Registrar lance">
+                    <Banknote className={iconClass(compact)} />
+                    {!compact && "Registrar lance"}
                 </Button>
             </SheetTrigger>
 
@@ -743,18 +765,20 @@ function ContemplarDialog({
                               competencia,
                               onSubmit,
                               pending,
+                              compact,
                           }: {
     cotaId: string;
     competencia: string;
     onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
     pending: boolean;
+    compact?: boolean;
 }) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">
-                    <Trophy className="mr-1.5 h-3.5 w-3.5" />
-                    Contemplar
+                <Button size={compact ? "icon" : "sm"} variant="outline" title="Contemplar" className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">
+                    <Trophy className={iconClass(compact)} />
+                    {!compact && "Contemplar"}
                 </Button>
             </DialogTrigger>
             <DialogContent>
@@ -805,18 +829,20 @@ function CancelarDialog({
                             competencia,
                             onSubmit,
                             pending,
+                            compact,
                         }: {
     cotaId: string;
     competencia: string;
     onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
     pending: boolean;
+    compact?: boolean;
 }) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10">
-                    <XCircle className="mr-1.5 h-3.5 w-3.5" />
-                    Cancelar cota
+                <Button size={compact ? "icon" : "sm"} variant="outline" title="Cancelar cota" className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10">
+                    <XCircle className={iconClass(compact)} />
+                    {!compact && "Cancelar cota"}
                 </Button>
             </DialogTrigger>
             <DialogContent>

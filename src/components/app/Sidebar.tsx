@@ -121,6 +121,14 @@ const sections: NavSection[] = [
         href: "/app/parceiros",
         icon: Handshake,
         label: "Parceiros",
+        children: [
+          { href: "/app/parceiros", label: "Cadastro", icon: Users },
+          {
+            href: "/app/parceiros/gerencial",
+            label: "Gerencial",
+            icon: BarChart3,
+          },
+        ],
       },
     ],
   },

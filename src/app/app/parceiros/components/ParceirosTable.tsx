@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import {
     Building2,
+    Eye,
     Mail,
     PenSquare,
     Phone,
@@ -111,6 +113,13 @@ export function ParceirosTable({ data }: Props) {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
+                            <Button asChild variant="default" className="gap-2">
+                                <Link href={`/app/parceiros/${p.id}`}>
+                                    <Eye className="h-4 w-4" />
+                                    Ver detalhes
+                                </Link>
+                            </Button>
+
                             <ParceiroSheet
                                 initialData={p}
                                 trigger={

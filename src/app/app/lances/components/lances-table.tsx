@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     ArrowUpRight,
-    Ban,
     Building2,
     CalendarDays,
     ClipboardCheck,
     Clock3,
+    Dice5,
     FolderKanban,
+    LayoutGrid,
     LayoutList,
     SendHorizonal,
     Target,
@@ -22,6 +23,7 @@ import {
 import { LanceActions } from "./lance-actions";
 import { EditCartaQuickAction } from "./edit-carta-quick-action";
 import { CartaDetailsSheet } from "./CartaDetailsSheet";
+import { LancesCompactList } from "./LancesCompactList";
 import type { LanceCartaListItem } from "../types";
 import {
     filterByOperacaoView,
@@ -171,13 +173,13 @@ function OperacaoTabs({
         { value: "pendentes", label: "Pendentes", icon: Clock3 },
         { value: "planejados", label: "Planejados", icon: SendHorizonal },
         { value: "baixados", label: "Baixados", icon: ClipboardCheck },
-        { value: "sem_lance", label: "Sem lance", icon: Ban },
+        { value: "sem_lance", label: "Sorteio", icon: Dice5 },
         { value: "todas", label: "Todas", icon: LayoutList },
     ];
 
     return (
         <div className="-mx-1 overflow-x-auto px-1">
-            <div className="flex w-max gap-2">
+            <div className="flex w-max gap-1.5">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
 
@@ -188,9 +190,9 @@ function OperacaoTabs({
                             size="sm"
                             variant={value === tab.value ? "default" : "outline"}
                             onClick={() => onChange(tab.value)}
-                            className="inline-flex items-center gap-2 whitespace-nowrap"
+                            className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap px-2.5 text-xs"
                         >
-                            <Icon className="h-4 w-4" />
+                            <Icon className="h-3.5 w-3.5" />
                             {tab.label}
                         </Button>
                     );
@@ -320,6 +322,7 @@ function CartaCard({
 export function LancesTable({ items, competencia }: Props) {
     const [view, setView] = React.useState<OperacaoView>("pendentes");
     const [hideBaixados, setHideBaixados] = React.useState(false);
+    const [layout, setLayout] = React.useState<"cards" | "lista">("cards");
 
     const filteredItems = React.useMemo(() => {
         const base = filterByOperacaoView(items, view);
@@ -340,21 +343,45 @@ export function LancesTable({ items, competencia }: Props) {
 
     return (
         <div className="space-y-4 pb-4">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-sm text-muted-foreground">
-                        Gestão operacional do lance do mês por operadora e cliente.
-                    </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 px-2.5 py-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <OperacaoTabs value={view} onChange={setView} />
 
-                    <div className="flex flex-col gap-2 sm:items-end">
-                        <OperacaoTabs value={view} onChange={setView} />
+                    <div className="ml-auto flex flex-wrap items-center gap-2">
+                        {/* Alternância de layout: cards x lista resumida */}
+                        <div className="inline-flex rounded-lg border border-white/10 bg-white/5 p-0.5">
+                            <button
+                                type="button"
+                                onClick={() => setLayout("cards")}
+                                title="Visão em cards"
+                                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors ${
+                                    layout === "cards"
+                                        ? "bg-emerald-500/15 text-emerald-200"
+                                        : "text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                                <LayoutGrid className="h-3.5 w-3.5" /> Cards
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setLayout("lista")}
+                                title="Visão em lista"
+                                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors ${
+                                    layout === "lista"
+                                        ? "bg-emerald-500/15 text-emerald-200"
+                                        : "text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                                <LayoutList className="h-3.5 w-3.5" /> Lista
+                            </button>
+                        </div>
 
                         <Button
                             type="button"
                             variant={hideBaixados ? "default" : "outline"}
                             size="sm"
                             onClick={() => setHideBaixados((prev) => !prev)}
-                            className="w-full sm:w-auto"
+                            className="h-8"
                         >
                             {hideBaixados ? "Ocultando baixados" : "Ocultar baixados"}
                         </Button>
@@ -362,6 +389,10 @@ export function LancesTable({ items, competencia }: Props) {
                 </div>
             </div>
 
+            {layout === "lista" ? (
+                <LancesCompactList items={filteredItems} competencia={competencia} />
+            ) : (
+              <>
             {!groups.length && (
                 <div className="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
                     Nenhuma carta restante após aplicar a visualização atual.
@@ -429,6 +460,8 @@ export function LancesTable({ items, competencia }: Props) {
                     </div>
                 </section>
             ))}
+              </>
+            )}
         </div>
     );
 }

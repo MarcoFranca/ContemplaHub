@@ -1,3 +1,5 @@
+import type { ComissaoLancamento, ComissaoResumo } from "../comissoes/types";
+
 export type Parceiro = {
   id: string;
   nome: string;
@@ -32,4 +34,30 @@ export type PartnerUser = {
 
 export type ParceiroWithAccess = Parceiro & {
   partner_user?: PartnerUser;
+};
+
+export type ParceiroExtratoResponse = {
+  ok: boolean;
+  parceiro: Parceiro;
+  items: ComissaoLancamento[];
+  resumo: ComissaoResumo | null;
+};
+
+export type ParceiroRankingItem = {
+  parceiro_id: string;
+  nome: string;
+  vendas: number;
+  volume_cartas: string;
+  total_cotas: number;
+  cotas_canceladas: number;
+  taxa_cancelamento: string;
+  repasse_pago: string;
+  repasse_pendente: string;
+};
+
+export type ParceirosRankingResponse = {
+  ok: boolean;
+  items: ParceiroRankingItem[];
+  competencia_de: string | null;
+  competencia_ate: string | null;
 };

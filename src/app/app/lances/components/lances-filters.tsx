@@ -296,18 +296,19 @@ export function LancesFilters({
                 </div>
             </div>
 
-            <div className="hidden gap-3 md:grid md:grid-cols-[minmax(140px,0.95fr)_minmax(140px,0.8fr)_minmax(190px,1fr)_minmax(180px,0.9fr)_minmax(220px,1.2fr)_minmax(180px,0.9fr)]">
+            <div className="hidden gap-2 md:grid md:grid-cols-[minmax(140px,0.95fr)_minmax(140px,0.8fr)_minmax(190px,1fr)_minmax(180px,0.9fr)_minmax(220px,1.2fr)_minmax(180px,0.9fr)]">
                 <Input
                     type="date"
                     value={competencia}
                     onChange={(e) => updateParam("competencia", e.target.value)}
+                    className="h-9 text-sm"
                 />
 
                 <Select
                     value={statusCota}
                     onValueChange={(value) => updateParam("status_cota", value)}
                 >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                         <SelectValue placeholder="Status da carta" />
                     </SelectTrigger>
                     <SelectContent>
@@ -324,7 +325,7 @@ export function LancesFilters({
                         updateParam("administradora_id", value === "__all__" ? "" : value)
                     }
                 >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                         <SelectValue placeholder="Operadora" />
                     </SelectTrigger>
                     <SelectContent>
@@ -343,7 +344,7 @@ export function LancesFilters({
                         updateParam("produto", value === "__all__" ? "" : value)
                     }
                 >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                         <SelectValue placeholder="Produto" />
                     </SelectTrigger>
                     <SelectContent>
@@ -356,6 +357,7 @@ export function LancesFilters({
                 <Input
                     placeholder="Buscar cliente, grupo ou cota"
                     defaultValue={q}
+                    className="h-9 text-sm"
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
                             updateParam("q", (e.currentTarget as HTMLInputElement).value);
@@ -366,8 +368,9 @@ export function LancesFilters({
                 <div className="flex min-w-0 gap-2">
                     <Button
                         type="button"
+                        size="sm"
                         variant={somenteAutorizadas ? "default" : "outline"}
-                        className="min-w-0 flex-1"
+                        className="h-9 min-w-0 flex-1"
                         onClick={() =>
                             updateParam("somente_autorizadas", somenteAutorizadas ? "" : "1")
                         }
@@ -377,9 +380,10 @@ export function LancesFilters({
 
                     <Button
                         type="button"
+                        size="sm"
                         variant="ghost"
                         onClick={resetAllDesktop}
-                        className="shrink-0 px-3"
+                        className="h-9 shrink-0 px-3"
                     >
                         Limpar
                     </Button>

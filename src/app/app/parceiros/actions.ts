@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { getBackendAuthContext } from "@/lib/backend-auth";
-import type { Parceiro, PartnerUser } from "./types";
+import type {
+  Parceiro,
+  PartnerUser,
+  ParceiroExtratoResponse,
+  ParceirosRankingResponse,
+} from "./types";
 
 const PARCEIROS_BASE = "/comissoes/parceiros";
 const PARTNER_USERS_BASE = "/partner-users";
@@ -40,6 +45,44 @@ export async function listParceirosAction(): Promise<Parceiro[]> {
   );
 
   return Array.isArray(data.items) ? data.items : [];
+}
+
+export async function getParceiroExtratoAction(parceiroId: string): Promise<ParceiroExtratoResponse> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const res = await fetch(`${backendUrl}${PARCEIROS_BASE}/${parceiroId}/extrato`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  return getJsonOrThrow<ParceiroExtratoResponse>(res, "Erro ao carregar o extrato do parceiro");
+}
+
+export async function getParceirosRankingAction(
+  competenciaDe?: string,
+  competenciaAte?: string
+): Promise<ParceirosRankingResponse> {
+  const { backendUrl, token } = await getBackendAuthContext();
+
+  const qs = new URLSearchParams();
+  if (competenciaDe) qs.set("competencia_de", competenciaDe);
+  if (competenciaAte) qs.set("competencia_ate", competenciaAte);
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+
+  const res = await fetch(`${backendUrl}${PARCEIROS_BASE}/ranking${suffix}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  return getJsonOrThrow<ParceirosRankingResponse>(res, "Erro ao carregar o ranking de parceiros");
 }
 
 export async function listPartnerUsersAction(): Promise<PartnerUser[]> {
