@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeftRight,
   BarChart3,
+  Bell,
   ChevronDown,
   ChevronRight,
   BookOpen,
@@ -25,7 +26,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Scale,
-  Settings,
   Target,
   Trello,
   Users,
@@ -64,6 +64,18 @@ const sections: NavSection[] = [
     label: "Operação",
     items: [
       { href: "/app", icon: Home, label: "Painel" },
+      {
+        href: "/app/pendencias",
+        icon: Bell,
+        label: "Pendências",
+        children: [
+          { href: "/app/pendencias?cat=comissao_config", label: "Sem comissão", icon: CircleDollarSign },
+          { href: "/app/pendencias?cat=contrato_sem_lancamento", label: "Sem lançamentos", icon: BookOpen },
+          { href: "/app/pendencias?cat=comissao_inadimplente", label: "Em cobrança", icon: Wallet },
+          { href: "/app/pendencias?cat=repasse_pendente", label: "Repasses", icon: ArrowLeftRight },
+          { href: "/app/pendencias?cat=carta_sem_assembleia", label: "Sem assembleia", icon: CalendarDays },
+        ],
+      },
       { href: "/app/leads", icon: Trello, label: "Leads" },
       {
         href: "/app/carteira",
@@ -182,13 +194,23 @@ function isParentActive(path: string, item: NavItem): boolean {
 
 // ── Componente ────────────────────────────────────────────────────────────────
 
+function NavBadge({ count }: { count: number }) {
+  return (
+    <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500/90 px-1.5 text-[10px] font-semibold text-white">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 export function Sidebar({
   collapsed,
   hasOrg,
+  badges = {},
   onToggle,
 }: {
   collapsed: boolean;
   hasOrg: boolean;
+  badges?: Record<string, number>;
   onToggle: () => void;
 }) {
   const path = usePathname();
@@ -261,6 +283,7 @@ export function Sidebar({
                 const Icon = item.icon;
                 const hasChildren = !collapsed && Boolean(item.children?.length);
                 const childrenOpen = expanded[item.href] ?? parentActive;
+                const parentCount = badges[item.href] ?? 0;
 
                 return (
                   <div key={item.href}>
@@ -275,10 +298,16 @@ export function Sidebar({
                     >
                       <Link
                         href={item.href}
-                        className="flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium"
+                        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium"
                       >
-                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="relative shrink-0">
+                          <Icon className="h-4 w-4" />
+                          {collapsed && parentCount > 0 && (
+                            <span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-rose-500" />
+                          )}
+                        </span>
                         {!collapsed && <span className="truncate">{item.label}</span>}
+                        {!collapsed && parentCount > 0 && <NavBadge count={parentCount} />}
                       </Link>
 
                       {hasChildren && (
@@ -304,6 +333,7 @@ export function Sidebar({
                         {item.children.map((child) => {
                           const childActive = isChildActive(path, child);
                           const ChildIcon = child.icon;
+                          const childCount = badges[child.href] ?? 0;
                           return (
                             <Link
                               key={child.href}
@@ -317,6 +347,7 @@ export function Sidebar({
                             >
                               <ChildIcon className="h-3.5 w-3.5 shrink-0" />
                               <span className="truncate">{child.label}</span>
+                              {childCount > 0 && <NavBadge count={childCount} />}
                             </Link>
                           );
                         })}

@@ -15,6 +15,7 @@ import { DashboardRanking } from "./_components/dashboard/dashboard-ranking";
 import { DashboardPriorityList } from "./_components/dashboard/dashboard-priority-list";
 import { getDashboardData } from "./_data/dashboard/get-dashboard-data";
 import { getVendasAnalytics } from "./_data/dashboard/get-vendas-analytics";
+import { getPendencias } from "./_data/dashboard/get-pendencias";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -38,10 +39,15 @@ export default async function AppHome({
     const de = firstParam(sp, "de") || `${anoAtual}-01`;
     const ate = firstParam(sp, "ate") || `${anoAtual}-12`;
 
-    const [data, vendas] = await Promise.all([
+    const [data, vendas, pendencias] = await Promise.all([
         getDashboardData(),
         getVendasAnalytics(de, ate),
+        getPendencias(),
     ]);
+
+    const pendGrupos = pendencias?.grupos ?? [];
+    const pendHigh = pendencias?.high ?? 0;
+    const pendMedium = pendencias?.medium ?? 0;
 
     if (!data.profile?.orgId) {
         return (
@@ -73,7 +79,7 @@ export default async function AppHome({
                         </p>
                     </div>
 
-                    <DashboardAttentionBell items={data.attentionItems} />
+                    <DashboardAttentionBell high={pendHigh} medium={pendMedium} />
                 </div>
 
                 <DashboardShortcuts />
@@ -83,7 +89,7 @@ export default async function AppHome({
 
             <DashboardKpis summary={data.summary} />
             <DashboardAnalyticsKpis analytics={data.analytics} />
-            <DashboardAttention items={data.attentionItems} />
+            <DashboardAttention grupos={pendGrupos} />
 
             <DashboardEvolucao data={data.monthlySeries} />
 

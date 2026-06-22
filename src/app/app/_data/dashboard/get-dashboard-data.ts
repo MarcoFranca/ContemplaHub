@@ -624,7 +624,7 @@ export async function getDashboardData(): Promise<DashboardData> {
             id: "cotas-sem-comissao",
             title: "Cartas sem comissão configurada",
             description: `${cotasSemComissao} carta(s) precisam de parametrização antes da operação.`,
-            href: "/app/lances",
+            href: "/app/pendencias?cat=comissao_config",
             severity: "high",
         });
     }
@@ -634,7 +634,7 @@ export async function getDashboardData(): Promise<DashboardData> {
             id: "contratos-sem-lancamento",
             title: "Contratos sem geração de lançamentos",
             description: `${contratosSemLancamentos.length} contrato(s) ainda não geraram financeiro de comissão.`,
-            href: "/app/comissoes",
+            href: "/app/pendencias?cat=contrato_sem_lancamento",
             severity: "high",
         });
     }
@@ -644,7 +644,7 @@ export async function getDashboardData(): Promise<DashboardData> {
             id: "repasse-pendente",
             title: "Repasses pendentes",
             description: "Existem repasses de parceiro aguardando baixa financeira.",
-            href: "/app/comissoes",
+            href: "/app/pendencias?cat=repasse_pendente",
             severity: "medium",
         });
     }

@@ -47,13 +47,14 @@ export async function getPendencias(): Promise<PendenciasData | null> {
     const orgId = profile.orgId;
 
     const [cotasRes, configRes, contratosRes, lancamentosRes, leadsRes] = await Promise.all([
-        supa.from("cotas").select("id, numero_cota, grupo_codigo, status, lead_id").eq("org_id", orgId),
+        supa.from("cotas").select("id, numero_cota, grupo_codigo, status, lead_id, assembleia_dia").eq("org_id", orgId),
         supa.from("cota_comissao_config").select("cota_id").eq("org_id", orgId),
         supa.from("contratos").select("id, numero, cota_id, status").eq("org_id", orgId),
         supa
             .from("comissao_lancamentos")
             .select(
                 "id, contrato_id, cota_id, parceiro_id, beneficiario_tipo, repasse_status, valor_liquido,"
+                + " competencia_prevista, status, observacoes,"
                 + " parceiros_corretores(nome), contratos(numero), cotas(numero_cota, grupo_codigo)"
             )
             .eq("org_id", orgId),
@@ -68,6 +69,9 @@ export async function getPendencias(): Promise<PendenciasData | null> {
         beneficiario_tipo: string | null;
         repasse_status: string | null;
         valor_liquido: number | string | null;
+        competencia_prevista: string | null;
+        status: string | null;
+        observacoes: string | null;
         parceiros_corretores: { nome?: string | null } | null;
         contratos: { numero?: string | null } | null;
         cotas: { numero_cota?: string | null; grupo_codigo?: string | null } | null;
@@ -109,9 +113,16 @@ export async function getPendencias(): Promise<PendenciasData | null> {
             href: `/app/contratos/${c.id}`,
         }));
 
-    // 3) Repasses de parceiro pendentes de baixa
+    // 3) Repasses de parceiro pendentes de baixa.
+    // Só conta como pendência até o mês vigente; competências futuras são provisão (ainda não venceram).
+    const mesVigente = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
     const repassesPendentes: PendenciaItem[] = lancamentos
-        .filter((l) => l.beneficiario_tipo === "parceiro" && l.repasse_status === "pendente")
+        .filter(
+            (l) =>
+                l.beneficiario_tipo === "parceiro" &&
+                l.repasse_status === "pendente" &&
+                (!l.competencia_prevista || l.competencia_prevista.slice(0, 7) <= mesVigente)
+        )
         .map((l) => {
             const parceiro = (l.parceiros_corretores as { nome?: string | null } | null)?.nome || "Parceiro";
             const cota = (l.cotas as { numero_cota?: string | null; grupo_codigo?: string | null } | null) ?? {};
@@ -126,6 +137,40 @@ export async function getPendencias(): Promise<PendenciasData | null> {
                 href: l.contrato_id ? `/app/contratos/${l.contrato_id}` : "/app/comissoes?tab=repasses",
             };
         });
+
+    // 4) Comissões em cobrança (cliente inadimplente)
+    const comissoesInadimplentes: PendenciaItem[] = lancamentos
+        .filter(
+            (l) =>
+                l.status === "previsto" &&
+                (l.observacoes ?? "").toUpperCase().includes("INADIMPLENTE")
+        )
+        .map((l) => {
+            const cota = l.cotas ?? {};
+            const contratoNum = l.contratos?.numero;
+            return {
+                id: `inadimplente-${l.id}`,
+                categoria: "comissao_inadimplente",
+                severity: "high" as const,
+                title: contratoNum ? `Contrato ${contratoNum}` : cotaLabel(cota.numero_cota, cota.grupo_codigo),
+                subtitle: `${cotaLabel(cota.numero_cota, cota.grupo_codigo)} · cliente em atraso no boleto`,
+                acaoLabel: "Resolver cobrança",
+                href: l.contrato_id ? `/app/contratos/${l.contrato_id}` : "/app/comissoes?tab=lancamentos",
+            };
+        });
+
+    // 5) Cartas ativas sem dia de assembleia (pendência de configuração de lance)
+    const cartasSemAssembleia: PendenciaItem[] = cotas
+        .filter((c) => (c.status ?? "").toLowerCase() === "ativa" && c.assembleia_dia == null)
+        .map((c) => ({
+            id: `assembleia-${c.id}`,
+            categoria: "carta_sem_assembleia",
+            severity: "medium" as const,
+            title: c.lead_id ? leadNome.get(c.lead_id) || "Cliente sem nome" : "Cliente sem nome",
+            subtitle: `${cotaLabel(c.numero_cota, c.grupo_codigo)} · sem dia de assembleia definido`,
+            acaoLabel: "Definir assembleia",
+            href: `/app/lances/${c.id}`,
+        }));
 
     const grupos: PendenciaGrupo[] = [
         {
@@ -143,11 +188,25 @@ export async function getPendencias(): Promise<PendenciasData | null> {
             items: contratosSemLanc,
         },
         {
+            categoria: "comissao_inadimplente",
+            label: "Comissões em cobrança",
+            descricao: "Clientes inadimplentes no boleto; comissão travada até regularizar.",
+            severity: "high" as const,
+            items: comissoesInadimplentes,
+        },
+        {
             categoria: "repasse_pendente",
             label: "Repasses pendentes",
-            descricao: "Repasses de parceiro aguardando baixa.",
+            descricao: "Repasses de parceiro aguardando baixa (competência até o mês vigente).",
             severity: "medium" as const,
             items: repassesPendentes,
+        },
+        {
+            categoria: "carta_sem_assembleia",
+            label: "Cartas sem dia de assembleia",
+            descricao: "Defina o dia de assembleia para operar os lances.",
+            severity: "medium" as const,
+            items: cartasSemAssembleia,
         },
     ].filter((g) => g.items.length > 0);
 

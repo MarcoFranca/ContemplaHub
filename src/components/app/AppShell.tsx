@@ -14,10 +14,12 @@ export function AppShell({
     children,
     hasOrg = true,
     isManager = false,
+    badges = {},
 }: {
     children: React.ReactNode;
     hasOrg?: boolean;
     isManager?: boolean;
+    badges?: Record<string, number>;
 }) {
     const [collapsed, setCollapsed] = React.useState(false);
     const pathname = usePathname();
@@ -40,6 +42,7 @@ export function AppShell({
             <Sidebar
                 collapsed={collapsed}
                 hasOrg={hasOrg}
+                badges={badges}
                 onToggle={() => setCollapsed((v) => !v)}
             />
 

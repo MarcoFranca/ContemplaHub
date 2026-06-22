@@ -1,14 +1,7 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
 
-type AttentionItem = {
-    id: string;
-    severity: "high" | "medium";
-};
-
-export function DashboardAttentionBell({ items }: { items: AttentionItem[] }) {
-    const high = items.filter((i) => i.severity === "high").length;
-    const medium = items.filter((i) => i.severity === "medium").length;
+export function DashboardAttentionBell({ high, medium }: { high: number; medium: number }) {
     const total = high + medium;
 
     return (

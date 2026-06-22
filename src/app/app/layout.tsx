@@ -5,6 +5,7 @@ import { SectionFX } from "@/components/marketing/SectionFX";
 import { AppShell } from "@/components/app/AppShell";
 import { getCurrentPartnerAccess } from "@/lib/auth/partner-server";
 import { getCurrentProfile } from "@/lib/auth/server";
+import { getSidebarBadges } from "./_data/dashboard/get-sidebar-badges";
 
 export default async function AppLayout({
                                             children,
@@ -28,6 +29,7 @@ export default async function AppLayout({
     const profile = await getCurrentProfile();
     const hasOrg = Boolean(profile?.orgId);
     const isManager = Boolean(profile?.isManager);
+    const sidebarBadges = hasOrg ? await getSidebarBadges() : {};
 
     return (
         <div
@@ -48,7 +50,7 @@ export default async function AppLayout({
                     backgroundSize: "300px 300px",
                 }}
             />
-            <AppShell hasOrg={hasOrg} isManager={isManager}>{children}</AppShell>
+            <AppShell hasOrg={hasOrg} isManager={isManager} badges={sidebarBadges}>{children}</AppShell>
         </div>
     );
 }

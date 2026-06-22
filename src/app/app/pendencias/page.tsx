@@ -20,17 +20,26 @@ export default async function PendenciasPage({
 }) {
     const sp = (await searchParams) ?? {};
     const sev = firstParam(sp, "sev") ?? "all"; // all | high | medium
+    const cat = firstParam(sp, "cat") ?? "all"; // all | <categoria>
 
     const data = await getPendencias();
     if (!data) return <main className="p-6">Vincule-se a uma organização.</main>;
 
     const grupos = data.grupos
+        .filter((g) => cat === "all" || g.categoria === cat)
         .map((g) => ({
             ...g,
             items: sev === "all" ? g.items : g.items.filter((i) => i.severity === sev),
         }))
         .filter((g) => g.items.length > 0);
 
+    const sevQS = sev === "all" ? "" : `&sev=${sev}`;
+    const categorias = [
+        { key: "all", label: `Todas (${data.total})` },
+        ...data.grupos.map((g) => ({ key: g.categoria, label: `${g.label} (${g.items.length})` })),
+    ];
+
+    const catQS = cat === "all" ? "" : `&cat=${cat}`;
     const filtros = [
         { key: "all", label: `Todas (${data.total})` },
         { key: "high", label: `Alta (${data.high})` },
@@ -58,12 +67,30 @@ export default async function PendenciasPage({
                     </p>
                 </div>
 
-                {/* Filtros de severidade */}
+                {/* Subcategorias (tipo de pendência) */}
                 <div className="flex flex-wrap gap-2">
+                    {categorias.map((c) => (
+                        <Link
+                            key={c.key}
+                            href={`/app/pendencias?cat=${c.key}${sevQS}`}
+                            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                                cat === c.key
+                                    ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200"
+                                    : "border-white/10 bg-white/5 text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                            {c.label}
+                        </Link>
+                    ))}
+                </div>
+
+                {/* Filtros de severidade */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Severidade:</span>
                     {filtros.map((f) => (
                         <Link
                             key={f.key}
-                            href={`/app/pendencias?sev=${f.key}`}
+                            href={`/app/pendencias?sev=${f.key}${catQS}`}
                             className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                                 sev === f.key
                                     ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200"
