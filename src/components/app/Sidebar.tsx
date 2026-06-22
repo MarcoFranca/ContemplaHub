@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -7,6 +8,8 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeftRight,
   BarChart3,
+  ChevronDown,
+  ChevronRight,
   BookOpen,
   Briefcase,
   Building2,
@@ -21,6 +24,7 @@ import {
   List,
   PanelLeftClose,
   PanelLeftOpen,
+  Scale,
   Settings,
   Target,
   Trello,
@@ -71,7 +75,15 @@ const sections: NavSection[] = [
         ],
       },
       { href: "/app/lances", icon: Target, label: "Lances" },
-      { href: "/app/simuladores", icon: Calculator, label: "Simuladores" },
+      {
+        href: "/app/simuladores",
+        icon: Calculator,
+        label: "Simuladores",
+        children: [
+          { href: "/app/simuladores?sim=consorcio", label: "Consórcio (lance)", icon: Calculator },
+          { href: "/app/simuladores?sim=comparativo", label: "Consórcio × Financiamento", icon: Scale },
+        ],
+      },
     ],
   },
   {
@@ -181,6 +193,12 @@ export function Sidebar({
 }) {
   const path = usePathname();
 
+  // Expansão manual dos submenus (independe de navegar até a categoria).
+  // undefined = segue o estado ativo; true/false = escolha explícita do usuário.
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const toggleExpanded = (href: string) =>
+    setExpanded((prev) => ({ ...prev, [href]: !(prev[href] ?? false) }));
+
   const items = hasOrg ? sections : [{ label: "Menu", items: onboardingItems }];
 
   return (
@@ -241,25 +259,47 @@ export function Sidebar({
               {section.items.map((item) => {
                 const parentActive = isParentActive(path, item);
                 const Icon = item.icon;
+                const hasChildren = !collapsed && Boolean(item.children?.length);
+                const childrenOpen = expanded[item.href] ?? parentActive;
 
                 return (
                   <div key={item.href}>
                     {/* Parent item */}
-                    <Link
-                      href={item.href}
+                    <div
                       className={cn(
-                        "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                        "flex items-center rounded-lg pr-1 transition-colors",
                         parentActive
                           ? "bg-emerald-500/12 text-emerald-300"
                           : "text-slate-400 hover:bg-white/8 hover:text-slate-100",
                       )}
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
+                      <Link
+                        href={item.href}
+                        className="flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium"
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && <span className="truncate">{item.label}</span>}
+                      </Link>
 
-                    {/* Children — show only when parent section is active */}
-                    {!collapsed && item.children && parentActive && (
+                      {hasChildren && (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(item.href)}
+                          aria-label={childrenOpen ? "Recolher submenu" : "Expandir submenu"}
+                          aria-expanded={childrenOpen}
+                          className="rounded-md p-1 text-slate-400 transition hover:bg-white/10 hover:text-slate-100"
+                        >
+                          {childrenOpen ? (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Children — visíveis quando a categoria está ativa OU expandida manualmente */}
+                    {hasChildren && childrenOpen && item.children && (
                       <div className="ml-3 mt-0.5 space-y-0.5 border-l border-white/10 pl-3">
                         {item.children.map((child) => {
                           const childActive = isChildActive(path, child);

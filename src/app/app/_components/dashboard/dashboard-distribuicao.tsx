@@ -34,13 +34,13 @@ function Donut({
     const total = items.reduce((acc, i) => acc + i.value, 0);
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-3">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             {total === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">Sem dados.</p>
             ) : (
-                <div className="flex items-center gap-3">
-                    <div className="h-36 w-36 shrink-0">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative h-36 w-36 shrink-0">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Tooltip contentStyle={tooltipStyle} />
@@ -48,8 +48,8 @@ function Donut({
                                     data={items}
                                     dataKey="value"
                                     nameKey="label"
-                                    innerRadius={42}
-                                    outerRadius={66}
+                                    innerRadius={46}
+                                    outerRadius={68}
                                     paddingAngle={2}
                                     stroke="none"
                                 >
@@ -59,18 +59,24 @@ function Donut({
                                 </Pie>
                             </PieChart>
                         </ResponsiveContainer>
+                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-2xl font-semibold leading-none tabular-nums">{total}</span>
+                            <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                total
+                            </span>
+                        </div>
                     </div>
-                    <ul className="flex-1 space-y-1.5">
+                    <ul className="w-full space-y-1.5">
                         {items.map((it, idx) => (
                             <li key={it.label} className="flex items-center justify-between gap-2 text-sm">
-                                <span className="inline-flex items-center gap-2">
+                                <span className="inline-flex min-w-0 items-center gap-2">
                                     <span
-                                        className="h-2.5 w-2.5 rounded-full"
+                                        className="h-2.5 w-2.5 shrink-0 rounded-full"
                                         style={{ background: colorFor(it.label, idx) }}
                                     />
-                                    {it.label}
+                                    <span className="truncate">{it.label}</span>
                                 </span>
-                                <span className="font-medium">
+                                <span className="shrink-0 font-medium tabular-nums">
                                     {it.value}
                                     <span className="ml-1 text-xs text-muted-foreground">
                                         ({Math.round((it.value / total) * 100)}%)

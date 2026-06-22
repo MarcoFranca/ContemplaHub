@@ -11,7 +11,7 @@ type AttentionItem = {
 
 export function DashboardAttention({ items }: { items: AttentionItem[] }) {
     return (
-        <section className="space-y-4">
+        <section id="pendencias" className="scroll-mt-6 space-y-4">
             <div className="space-y-1">
                 <h2 className="text-lg font-semibold tracking-tight">Precisa da sua atenção</h2>
                 <p className="text-sm text-muted-foreground">

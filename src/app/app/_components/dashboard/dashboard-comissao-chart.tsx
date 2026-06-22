@@ -54,7 +54,7 @@ export function DashboardComissaoChart({ data }: { data: FinancialData }) {
             <div className="space-y-1">
                 <h2 className="inline-flex items-center gap-2 text-lg font-semibold tracking-tight">
                     <CircleDollarSign className="h-5 w-5 text-emerald-400" />
-                    Comissão — fluxo e operadoras
+                    Comissão · fluxo e operadoras
                 </h2>
                 <p className="text-sm text-muted-foreground">
                     Do previsto ao pago, e a concentração por administradora.
