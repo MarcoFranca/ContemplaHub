@@ -29,8 +29,20 @@ export async function getSidebarBadges(): Promise<SidebarBadges> {
     const pend = await getPendencias();
     if (pend) {
         badges["/app/pendencias"] = pend.total;
+        const countByCat: Record<string, number> = {};
         for (const g of pend.grupos) {
             badges[`/app/pendencias?cat=${g.categoria}`] = g.items.length;
+            countByCat[g.categoria] = g.items.length;
+        }
+
+        // Pendências de comissões no item Comissões (e no subitem Repasses)
+        const comissoes =
+            (countByCat["contrato_sem_lancamento"] ?? 0) +
+            (countByCat["comissao_inadimplente"] ?? 0) +
+            (countByCat["repasse_pendente"] ?? 0);
+        if (comissoes > 0) badges["/app/comissoes"] = comissoes;
+        if ((countByCat["repasse_pendente"] ?? 0) > 0) {
+            badges["/app/comissoes?tab=repasses"] = countByCat["repasse_pendente"];
         }
     }
 

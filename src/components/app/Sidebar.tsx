@@ -26,6 +26,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Scale,
+  Settings,
   Target,
   Trello,
   Users,
@@ -159,10 +160,18 @@ const sections: NavSection[] = [
   {
     label: "Plataforma",
     items: [
-      { href: "/app/meta-integracoes", icon: Facebook, label: "Meta Ads" },
-      { href: "/app/usuarios", icon: Users, label: "Usuários" },
-      { href: "/app/organizacao", icon: Building2, label: "Organização" },
-      { href: "/app/landing-pages", icon: Globe2, label: "Landing Pages" },
+      {
+        href: "/app/organizacao",
+        icon: Settings,
+        label: "Configurações",
+        alsoActiveFor: ["/app/meta-integracoes", "/app/usuarios", "/app/landing-pages"],
+        children: [
+          { href: "/app/organizacao", label: "Organização", icon: Building2 },
+          { href: "/app/usuarios", label: "Usuários", icon: Users },
+          { href: "/app/meta-integracoes", label: "Meta Ads", icon: Facebook },
+          { href: "/app/landing-pages", label: "Landing Pages", icon: Globe2 },
+        ],
+      },
     ],
   },
 ];

@@ -55,8 +55,8 @@ O Financeiro agora aparece como categoria propria no menu lateral:
 1. O usuario seleciona a carta/contrato.
    A lista nasce da cota/carta e pode mostrar:
    - carta com contrato completo;
-   - carta com numero de contrato pendente;
-   - carta sem contrato ainda cadastrado.
+   - carta com numero de contrato pendente (mostra input inline para salvar o numero, via `updateFinanceiroContratoNumeroAction`);
+   - carta sem contrato ainda cadastrado (o alerta "Numero de contrato pendente" oferece o botao "Cadastrar contrato da carta" que leva a `/app/cartas/{cotaId}`, onde o contrato e registrado em `completar-cadastro-carta` com `mode="registerExisting"`). Observacao: a carta ja existe; "cadastrar" aqui significa editar a carta para vincular o numero do contrato.
 2. A tela mostra o contexto operacional:
    - cliente;
    - cota;

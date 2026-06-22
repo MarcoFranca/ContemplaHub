@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  FilePlus2,
   ArrowRightLeft,
   BadgePercent,
   CircleDollarSign,
@@ -370,6 +371,18 @@ export function ComissaoOperacionalWorkspace({
                     Salvar
                   </Button>
                 </div>
+              )}
+              {!contratoSelecionado.tem_contrato && contratoSelecionado.cota_id && (
+                <Button
+                  asChild
+                  type="button"
+                  className="h-10 shrink-0 bg-white text-slate-950 hover:bg-white/90"
+                >
+                  <Link href={`/app/cartas/${contratoSelecionado.cota_id}`}>
+                    <FilePlus2 className="mr-2 h-4 w-4" />
+                    Cadastrar contrato da carta
+                  </Link>
+                </Button>
               )}
             </div>
           </div>

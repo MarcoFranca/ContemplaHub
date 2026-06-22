@@ -86,6 +86,14 @@ export async function getPendencias(): Promise<PendenciasData | null> {
     const cotaLabel = (numero?: string | null, grupo?: string | null) =>
         `Grupo ${grupo || "?"} · Cota ${numero || "?"}`;
 
+    // Mapa cota -> contrato (mesma regra de selection_id do Financeiro/Pagamentos).
+    const contratoIdByCota = new Map<string, string>();
+    for (const c of contratos) {
+        if (c.cota_id && !contratoIdByCota.has(c.cota_id)) contratoIdByCota.set(c.cota_id, c.id);
+    }
+    const financeiroSelection = (cotaId: string) =>
+        encodeURIComponent(contratoIdByCota.get(cotaId) ?? `cota:${cotaId}`);
+
     // 1) Cartas ativas sem comissão configurada
     const cotasSemConfig: PendenciaItem[] = cotas
         .filter((c) => (c.status ?? "").toLowerCase() === "ativa" && !configIds.has(c.id))
@@ -96,7 +104,7 @@ export async function getPendencias(): Promise<PendenciasData | null> {
             title: c.lead_id ? leadNome.get(c.lead_id) || "Cliente sem nome" : "Cliente sem nome",
             subtitle: `${cotaLabel(c.numero_cota, c.grupo_codigo)} · sem comissão configurada`,
             acaoLabel: "Configurar comissão",
-            href: `/app/lances/${c.id}`,
+            href: `/app/financeiro/pagamentos?item_id=${financeiroSelection(c.id)}`,
         }));
 
     // 2) Contratos sem geração de lançamentos
@@ -172,6 +180,28 @@ export async function getPendencias(): Promise<PendenciasData | null> {
             href: `/app/lances/${c.id}`,
         }));
 
+    // 6) Clientes da carteira com cartas mas sem contrato cadastrado
+    const contratoCotaIds = new Set(contratos.map((c) => c.cota_id).filter(Boolean));
+    const porLead = new Map<string, { total: number; comContrato: boolean }>();
+    for (const c of cotas) {
+        if (!c.lead_id || (c.status ?? "").toLowerCase() === "cancelada") continue;
+        const e = porLead.get(c.lead_id) ?? { total: 0, comContrato: false };
+        e.total += 1;
+        if (contratoCotaIds.has(c.id)) e.comContrato = true;
+        porLead.set(c.lead_id, e);
+    }
+    const clientesSemContrato: PendenciaItem[] = [...porLead.entries()]
+        .filter(([, e]) => !e.comContrato)
+        .map(([leadId, e]) => ({
+            id: `cliente-${leadId}`,
+            categoria: "cliente_sem_contrato",
+            severity: "medium" as const,
+            title: leadNome.get(leadId) || "Cliente sem nome",
+            subtitle: `${e.total} carta(s) sem contrato cadastrado`,
+            acaoLabel: "Cadastrar contrato",
+            href: `/app/leads/${leadId}`,
+        }));
+
     const grupos: PendenciaGrupo[] = [
         {
             categoria: "comissao_config",
@@ -207,6 +237,13 @@ export async function getPendencias(): Promise<PendenciasData | null> {
             descricao: "Defina o dia de assembleia para operar os lances.",
             severity: "medium" as const,
             items: cartasSemAssembleia,
+        },
+        {
+            categoria: "cliente_sem_contrato",
+            label: "Clientes sem contrato",
+            descricao: "Clientes com cartas mas sem contrato cadastrado.",
+            severity: "medium" as const,
+            items: clientesSemContrato,
         },
     ].filter((g) => g.items.length > 0);
 
