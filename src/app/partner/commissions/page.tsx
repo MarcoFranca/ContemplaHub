@@ -21,6 +21,10 @@ type SearchParams = Promise<{
 type PartnerCommissionRow = {
     id: string;
     contrato_id?: string | null;
+    contrato_numero?: string | null;
+    cliente_nome?: string | null;
+    numero_cota?: string | null;
+    grupo_codigo?: string | null;
     competencia_prevista?: string | null;
     status?: string | null;
     repasse_status?: string | null;
@@ -29,6 +33,35 @@ type PartnerCommissionRow = {
     valor_liquido?: number | string | null;
     repasse_previsto_em?: string | null;
 };
+
+const EVENTO_LABEL: Record<string, string> = {
+    adesao: "Adesão",
+    primeira_cobranca_valida: "1ª cobrança",
+    proxima_cobranca: "Cobrança",
+    contemplacao: "Contemplação",
+    manual: "Manual",
+};
+
+const REPASSE_LABEL: Record<string, { label: string; cls: string }> = {
+    pendente: { label: "A receber", cls: "border-amber-500/30 bg-amber-500/10 text-amber-300" },
+    pago: { label: "Recebido", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
+    cancelado: { label: "Cancelado", cls: "border-rose-500/30 bg-rose-500/10 text-rose-300" },
+};
+
+function mesLabel(iso?: string | null) {
+    if (!iso) return "Sem competência";
+    const [y, m] = iso.slice(0, 10).split("-").map(Number);
+    return new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1));
+}
+
+function dataLabel(iso?: string | null) {
+    if (!iso) return "Não informado";
+    const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+    return new Intl.DateTimeFormat("pt-BR").format(new Date(y, m - 1, d));
+}
+
+const brl = (v: number | string | null | undefined) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v || 0));
 
 type PartnerCommissionsResponse = {
     ok: boolean;
@@ -45,6 +78,8 @@ type PartnerCommissionsResponse = {
         total_lancamentos?: number;
         valor_bruto_total?: number;
         valor_liquido_total?: number;
+        valor_liquido_pendente?: number;
+        valor_liquido_pago?: number;
         pagos?: number;
         pendentes?: number;
     } | null;
@@ -108,22 +143,10 @@ export default async function PartnerCommissionsPage({
 
             {resumo && (
                 <div className="grid gap-4 md:grid-cols-4">
-                    <Metric
-                        label="Bruto total"
-                        value={`R$ ${Number(resumo.valor_bruto_total || 0).toLocaleString("pt-BR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                        })}`}
-                    />
-                    <Metric
-                        label="Líquido total"
-                        value={`R$ ${Number(resumo.valor_liquido_total || 0).toLocaleString("pt-BR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                        })}`}
-                    />
-                    <Metric label="Pagos" value={String(resumo.pagos || 0)} />
-                    <Metric label="Pendentes" value={String(resumo.pendentes || 0)} />
+                    <Metric label="A receber" value={brl(resumo.valor_liquido_pendente)} />
+                    <Metric label="Recebido" value={brl(resumo.valor_liquido_pago)} />
+                    <Metric label="Líquido total" value={brl(resumo.valor_liquido_total)} />
+                    <Metric label="Lançamentos" value={String(resumo.total_lancamentos || 0)} />
                 </div>
             )}
 
@@ -145,46 +168,37 @@ export default async function PartnerCommissionsPage({
                                     className="rounded-xl border border-border/60 p-4"
                                 >
                                     <div className="flex flex-wrap items-center justify-between gap-3">
-                                        <div>
+                                        <div className="min-w-0">
                                             <div className="font-medium">
-                                                Contrato {row.contrato_id || "—"}
+                                                {row.cliente_nome
+                                                    || (row.contrato_numero
+                                                        ? `Contrato ${row.contrato_numero}`
+                                                        : "Cliente sem nome")}
                                             </div>
                                             <div className="text-sm text-muted-foreground">
-                                                Competência prevista:{" "}
-                                                {row.competencia_prevista || "—"}
+                                                {row.contrato_numero ? `Contrato ${row.contrato_numero}` : "Contrato pendente"}
+                                                {row.grupo_codigo ? ` · Grupo ${row.grupo_codigo}` : ""}
+                                                {row.numero_cota ? ` · Cota ${row.numero_cota}` : ""}
                                             </div>
                                         </div>
 
                                         <div className="flex flex-wrap gap-2">
-                                            <Badge variant="secondary">
-                                                {row.status || "—"}
-                                            </Badge>
-                                            <Badge variant="outline">
-                                                {row.repasse_status || "—"}
-                                            </Badge>
+                                            {(() => {
+                                                const r = REPASSE_LABEL[row.repasse_status ?? ""];
+                                                return r ? (
+                                                    <Badge variant="outline" className={r.cls}>{r.label}</Badge>
+                                                ) : (
+                                                    <Badge variant="outline">{row.repasse_status || "Sem repasse"}</Badge>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
 
                                     <div className="mt-3 grid gap-3 md:grid-cols-4 text-sm">
-                                        <Info label="Evento" value={row.tipo_evento || "—"} />
-                                        <Info
-                                            label="Valor bruto"
-                                            value={`R$ ${Number(row.valor_bruto || 0).toLocaleString("pt-BR", {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}`}
-                                        />
-                                        <Info
-                                            label="Valor líquido"
-                                            value={`R$ ${Number(row.valor_liquido || 0).toLocaleString("pt-BR", {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}`}
-                                        />
-                                        <Info
-                                            label="Repasse previsto"
-                                            value={row.repasse_previsto_em || "—"}
-                                        />
+                                        <Info label="Competência" value={mesLabel(row.competencia_prevista)} />
+                                        <Info label="Evento" value={EVENTO_LABEL[row.tipo_evento ?? ""] || row.tipo_evento || "Não informado"} />
+                                        <Info label="Valor líquido" value={brl(row.valor_liquido)} />
+                                        <Info label="Repasse previsto" value={dataLabel(row.repasse_previsto_em)} />
                                     </div>
                                 </div>
                             ))}
@@ -194,7 +208,7 @@ export default async function PartnerCommissionsPage({
                     {meta && (
                         <div className="flex flex-wrap items-center justify-between gap-3 pt-4 text-sm text-muted-foreground">
                             <div>
-                                Página {meta.page} de {meta.total_pages} • {meta.total} registro(s)
+                                Página {meta.page} de {meta.total_pages} · {meta.total} registro(s)
                             </div>
                         </div>
                     )}

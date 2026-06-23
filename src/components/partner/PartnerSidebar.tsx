@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+    Calculator,
     FileText,
     LayoutDashboard,
     Wallet,
@@ -25,6 +26,11 @@ const items = [
         href: "/partner/commissions",
         label: "Comissões",
         icon: Wallet,
+    },
+    {
+        href: "/partner/simuladores",
+        label: "Simuladores",
+        icon: Calculator,
     },
     {
         href: "/partner/me",
@@ -55,7 +61,9 @@ export function PartnerSidebar() {
                     {items.map((item) => {
                         const Icon = item.icon;
                         const active =
-                            pathname === item.href || pathname.startsWith(`${item.href}/`);
+                            item.href === "/partner"
+                                ? pathname === "/partner"
+                                : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
                         return (
                             <Link

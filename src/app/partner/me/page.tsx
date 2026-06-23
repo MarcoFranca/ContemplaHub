@@ -44,9 +44,9 @@ export default async function PartnerMePage() {
                         <CardTitle>Acesso</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
-                        <Info label="Nome" value={me?.nome || "—"} />
-                        <Info label="Email" value={me?.email || "—"} />
-                        <Info label="Telefone" value={me?.telefone || "—"} />
+                        <Info label="Nome" value={me?.nome || "Não informado"} />
+                        <Info label="Email" value={me?.email || "Não informado"} />
+                        <Info label="Telefone" value={me?.telefone || "Não informado"} />
                         <Info label="Ativo" value={me?.ativo ? "Sim" : "Não"} />
                         <Info
                             label="Ver contratos"
@@ -68,11 +68,11 @@ export default async function PartnerMePage() {
                         <CardTitle>Cadastro do parceiro</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
-                        <Info label="Nome" value={parceiro?.nome || "—"} />
-                        <Info label="Email" value={parceiro?.email || "—"} />
-                        <Info label="Telefone" value={parceiro?.telefone || "—"} />
-                        <Info label="PIX tipo" value={parceiro?.pix_tipo || "—"} />
-                        <Info label="PIX chave" value={parceiro?.pix_chave || "—"} />
+                        <Info label="Nome" value={parceiro?.nome || "Não informado"} />
+                        <Info label="Email" value={parceiro?.email || "Não informado"} />
+                        <Info label="Telefone" value={parceiro?.telefone || "Não informado"} />
+                        <Info label="PIX tipo" value={parceiro?.pix_tipo || "Não informado"} />
+                        <Info label="PIX chave" value={parceiro?.pix_chave || "Não informado"} />
                         <Info label="Ativo" value={parceiro?.ativo ? "Sim" : "Não"} />
                     </CardContent>
                 </Card>

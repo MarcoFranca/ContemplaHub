@@ -59,6 +59,17 @@ type PartnerContractsResponse = {
     } | null;
 };
 
+const brl = (v: number | string | null | undefined) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v || 0));
+
+function statusBadgeClass(status?: string | null) {
+    const s = (status || "").toLowerCase();
+    if (s.includes("ativ")) return "border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
+    if (s.includes("cancel")) return "border-rose-500/30 bg-rose-500/10 text-rose-400";
+    if (s.includes("pend")) return "border-amber-500/30 bg-amber-500/10 text-amber-400";
+    return "border-border/60 bg-muted/40 text-muted-foreground";
+}
+
 export default async function PartnerContractsPage({
                                                        searchParams,
                                                    }: {
@@ -138,9 +149,10 @@ export default async function PartnerContractsPage({
                                             <div className="space-y-2">
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <span className="text-base font-medium">
-                                                        Contrato {contrato.numero || "—"}
+                                                        {cliente?.nome
+                                                            || `Contrato ${contrato.numero || "sem número"}`}
                                                     </span>
-                                                    <Badge variant="secondary">
+                                                    <Badge variant="outline" className={statusBadgeClass(contrato.status)}>
                                                         {contrato.status || "sem status"}
                                                     </Badge>
                                                     {contrato.pdf_status && (
@@ -151,12 +163,9 @@ export default async function PartnerContractsPage({
                                                 </div>
 
                                                 <div className="text-sm text-muted-foreground">
-                                                    Cota {cota?.numero_cota || "—"} • Grupo{" "}
-                                                    {cota?.grupo_codigo || "—"}
-                                                </div>
-
-                                                <div className="text-sm text-muted-foreground">
-                                                    Cliente: {cliente?.nome || "Não disponível"}
+                                                    Contrato {contrato.numero || "pendente"}
+                                                    {cota?.grupo_codigo ? ` · Grupo ${cota.grupo_codigo}` : ""}
+                                                    {cota?.numero_cota ? ` · Cota ${cota.numero_cota}` : ""}
                                                 </div>
                                             </div>
 
@@ -166,13 +175,7 @@ export default async function PartnerContractsPage({
                                                         Valor líquido
                                                     </div>
                                                     <div className="font-medium">
-                                                        R${" "}
-                                                        {Number(
-                                                            summary?.valor_liquido_total || 0
-                                                        ).toLocaleString("pt-BR", {
-                                                            minimumFractionDigits: 2,
-                                                            maximumFractionDigits: 2,
-                                                        })}
+                                                        {brl(summary?.valor_liquido_total)}
                                                     </div>
                                                 </div>
 
@@ -195,7 +198,7 @@ export default async function PartnerContractsPage({
                     {meta && (
                         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-sm text-muted-foreground">
                             <div>
-                                Página {meta.page} de {meta.total_pages} • {meta.total} registro(s)
+                                Página {meta.page} de {meta.total_pages} · {meta.total} registro(s)
                             </div>
                             <div className="flex items-center gap-2">
                                 {meta.has_prev && (
