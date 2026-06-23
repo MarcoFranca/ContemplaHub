@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   FilePlus2,
+  Layers,
   ArrowRightLeft,
   BadgePercent,
   CircleDollarSign,
@@ -30,6 +31,8 @@ import { ComissaoConfigSection } from "@/app/app/lances/components/comissao/Comi
 import { ContratoSearchSelect } from "./ContratoSearchSelect";
 import { ComissaoStatusBadge, RepasseStatusBadge } from "@/app/app/comissoes/components/status-badges";
 import type { CotaComissaoPayload, CotaComissaoResponse } from "@/app/app/lances/types";
+import type { ComissaoModelo } from "@/app/app/comissoes/types";
+import { listModelosComissaoAction } from "@/app/app/comissoes/actions";
 
 import {
   cancelFinanceiroFuturePaymentsAction,
@@ -88,6 +91,47 @@ export function ComissaoOperacionalWorkspace({
   const [projection, setProjection] = useState<FinanceiroProjectionResponse | null>(null);
   const [contractNumber, setContractNumber] = useState(contratoSelecionado?.contrato_numero ?? "");
   const [busyPagamentoId, setBusyPagamentoId] = useState<string | null>(null);
+
+  // Modelos de comissão (campanhas) para pré-preencher a regra
+  const [modelos, setModelos] = useState<ComissaoModelo[]>([]);
+  useEffect(() => {
+    listModelosComissaoAction()
+      .then((items) => setModelos(items.filter((m) => m.ativo)))
+      .catch(() => setModelos([]));
+  }, []);
+
+  const aplicarModelo = (modeloId: string) => {
+    const modelo = modelos.find((m) => m.id === modeloId);
+    if (!modelo) return;
+
+    // Usa o total já informado na config; se vazio, cai no total padrão do modelo.
+    const totalAtual = Number(payload.percentual_total) || Number(modelo.percentual_total) || 0;
+    const sorted = [...modelo.regras].sort((a, b) => a.offset_meses - b.offset_meses);
+
+    const regras = sorted.map((r, idx) => ({
+      ordem: idx + 1,
+      tipo_evento: r.tipo_evento,
+      offset_meses: Number(r.offset_meses) || 0,
+      // proporção (% da comissão) -> % da carta = total * proporcao / 100
+      percentual_comissao: Number(((totalAtual * (Number(r.proporcao) || 0)) / 100).toFixed(4)),
+      descricao: r.descricao ?? "",
+    }));
+
+    // Ajusta a última parcela para somar exatamente o total (evita resíduo de arredondamento).
+    if (regras.length > 0) {
+      const soma = regras.reduce((s, r) => s + r.percentual_comissao, 0);
+      const ultima = regras[regras.length - 1];
+      ultima.percentual_comissao = Number((ultima.percentual_comissao + (totalAtual - soma)).toFixed(4));
+    }
+
+    setPayload((prev) => ({
+      ...prev,
+      percentual_total: totalAtual,
+      modo: regras.length > 1 ? "parcelado" : "avista",
+      regras,
+    }));
+    toast.success(`Modelo "${modelo.nome}" aplicado sobre ${totalAtual}% de comissão. Revise e salve.`);
+  };
 
   const valorCarta = Number(contratoSelecionado?.valor_carta || 0);
   const percentualTotal = Number(payload.percentual_total || 0);
@@ -434,6 +478,32 @@ export function ComissaoOperacionalWorkspace({
               </Button>
             </div>
           </div>
+
+          {/* Aplicar modelo de comissão (campanha) */}
+          {modelos.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+              <span className="inline-flex items-center gap-1.5 text-sm text-slate-300">
+                <Layers className="h-4 w-4 text-emerald-400" />
+                Aplicar modelo
+              </span>
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) aplicarModelo(e.target.value);
+                  e.target.value = "";
+                }}
+                className="h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none"
+              >
+                <option value="">Selecione uma campanha…</option>
+                {modelos.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nome} ({Number(m.percentual_total).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%)
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-slate-500">Distribui sobre o total (usa o padrão do modelo se em branco). Revise e salve.</span>
+            </div>
+          )}
 
           {/* Métricas resumo */}
           <div className="grid gap-3 md:grid-cols-3">

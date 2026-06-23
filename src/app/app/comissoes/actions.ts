@@ -15,6 +15,8 @@ import type {
   CompetenciasContratoResponse,
   ResumoFinanceiroContratoResponse,
   TimelineContratoResponse,
+  ComissaoModelo,
+  ComissaoModeloInput,
 } from "./types";
 import type { FinanceiroProjectionResponse } from "@/app/app/financeiro/pagamentos/types";
 
@@ -216,6 +218,36 @@ export async function reverterPrevistoAction(lancamentoId: string) {
     }),
   });
   revalidatePath("/app/comissoes");
+}
+
+// ── Modelos de comissão (campanhas reutilizáveis) ─────────────────────────────
+
+export async function listModelosComissaoAction(): Promise<ComissaoModelo[]> {
+  const data = await backendAuthed<{ items?: ComissaoModelo[] }>(`/comissoes/modelos`, {
+    method: "GET",
+  });
+  return data.items ?? [];
+}
+
+export async function createModeloComissaoAction(input: ComissaoModeloInput) {
+  await backendAuthed(`/comissoes/modelos`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  revalidatePath("/app/comissoes/modelos");
+}
+
+export async function updateModeloComissaoAction(id: string, input: ComissaoModeloInput) {
+  await backendAuthed(`/comissoes/modelos/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  revalidatePath("/app/comissoes/modelos");
+}
+
+export async function deleteModeloComissaoAction(id: string) {
+  await backendAuthed(`/comissoes/modelos/${id}`, { method: "DELETE" });
+  revalidatePath("/app/comissoes/modelos");
 }
 
 /**

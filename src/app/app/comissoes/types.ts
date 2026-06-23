@@ -55,6 +55,34 @@ export type ComissaoResumo = {
   repasses_pagos: number;
 };
 
+export type ComissaoModeloRegra = {
+  ordem: number;
+  tipo_evento: ComissaoEvento;
+  offset_meses: number;
+  /** proporção da parcela sobre a comissão (somam 100%) */
+  proporcao: number | string;
+  descricao?: string | null;
+};
+
+export type ComissaoModelo = {
+  id: string;
+  nome: string;
+  descricao?: string | null;
+  percentual_total: number | string;
+  ativo: boolean;
+  regras: ComissaoModeloRegra[];
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ComissaoModeloInput = {
+  nome: string;
+  descricao?: string | null;
+  percentual_total: number;
+  ativo: boolean;
+  regras: ComissaoModeloRegra[];
+};
+
 export type ComissaoFilters = {
   parceiro_id?: string;
   contrato_id?: string;

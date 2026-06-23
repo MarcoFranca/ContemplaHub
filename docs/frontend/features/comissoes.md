@@ -176,6 +176,23 @@ Novo componente `LancamentoQuickActions` (`src/app/app/comissoes/components/Lanc
 
 Após cada ação, chama `router.refresh()` (não depende de `revalidatePath` adicional). Renderizado ao lado do `LancamentoStatusDialog`/`RepasseDialog` existentes — não os substitui, apenas adiciona o atalho de 1 clique também presente em `/app/comissoes`. Como `LancamentosTable` é compartilhada, esse atalho aparece tanto em `/app/comissoes` (aba "Todos os lançamentos") quanto na aba "Lançamentos" da página de detalhes do contrato — mantendo a mesma UX de avaliação/alteração rápida da cota nos dois lugares.
 
+## Modelos de comissão / campanhas (`/app/comissoes/modelos`)
+
+Cadastro de campanhas reutilizáveis (ex.: "Porto Aniversário"). Cada parcela guarda a **proporção
+da comissão** (% da comissão, igual à tabela da operadora — somam **100%**), não o % da carta. Assim
+o mesmo modelo vale para qualquer total (4%, 3%, etc.). O modelo também tem um **total padrão** e um
+botão **"Gerar parcelas iguais"** (parcelado em N → cria N parcelas de 100/N% para ajustar depois).
+
+Página dedicada no Sidebar (Comissões → Modelos). `ModelosManager` faz o CRUD via
+`listModelosComissaoAction`/`createModeloComissaoAction`/`updateModeloComissaoAction`/
+`deleteModeloComissaoAction` → `/comissoes/modelos`. Modelos são **desacoplados**: editar/excluir não
+mexe em comissões já configuradas.
+
+Na config da carta (`ComissaoOperacionalWorkspace`), o seletor **"Aplicar modelo"** converte cada
+proporção em **% da carta = total × proporcao / 100** (usando o total já informado, ou o padrão do
+modelo), ajusta a última parcela para fechar o total exato e define `modo` avista/parcelado conforme
+o nº de parcelas. O usuário revisa e salva normalmente.
+
 ## Pendentes de confirmação
 
 - se o resumo financeiro do contrato deve evoluir para um submódulo próprio
