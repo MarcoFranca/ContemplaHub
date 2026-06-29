@@ -85,7 +85,25 @@ As actions são o principal contrato do frontend:
 Cada `ComissaoLancamento` retornado por `listComissaoLancamentosAction` (via `GET /comissoes/lancamentos`) traz também `cliente_nome`, `numero_cota`, `grupo_codigo` e `contrato_numero` (enriquecidos no backend via join em `contratos`/`cotas`/`leads`). Exibidos em:
 
 - **OperacaoMensal** (`components/OperacaoMensal.tsx`): linha do lançamento mostra cliente + grupo/cota acima do evento.
-- **RepassesGestao** (`components/RepassesGestao.tsx`): cabeçalho de cada lançamento por parceiro mostra cliente + grupo/cota acima do evento/parcela.
+- **RepassesGestao** (`components/RepassesGestao.tsx`): redesenhado com foco em gestão financeira.
+  KPIs por **urgência** (Em atraso/vermelho, Vence neste mês/âmbar, Pago/verde, A vencer-futuro/azul).
+  Abas de foco: **A pagar agora** (vencidos + mês atual, default), **A vencer (futuro)**, **Pagos** —
+  começa pelo que precisa pagar, não pelos futuros. Dentro da aba, agrupado por parceiro, com
+  **seleção (checkbox) e "Dar baixa em lote"** (`marcarRepassesPagosLoteAction`, que itera o endpoint
+  `marcar-repasse-pago`), além de baixa individual rápida. Cada linha tem borda colorida por urgência
+  e tags "Vencido"/"Este mês". O mês de referência usa `repasse_previsto_em` (senão `competencia_prevista`).
+  Dentro de cada parceiro, os repasses são **subagrupados por mês com subtotal** ("quanto repassar
+  naquele mês") e seleção do mês inteiro com um clique.
+- **PagarParceiroDialog** (`components/PagarParceiroDialog.tsx`): botão "Pagar tudo" no cabeçalho do
+  parceiro abre um modal de **lote de repasse** — total, **forma de pagamento** (Pix/TED/…),
+  observações e **comprovante** (PDF/imagem, opcional). Confirma via `createRepasseLoteAction`
+  (marca os repasses pagos + cria o lote) e, se houver arquivo, `uploadRepasseComprovanteAction`.
+  É o caminho "formal" com auditoria; a barra "Dar baixa em lote" continua como atalho rápido.
+- **HistoricoLotesDialog** (`components/HistoricoLotesDialog.tsx`): botão "Histórico" no parceiro lista
+  os lotes pagos (`listRepasseLotesAction`) com data, total, forma e link do **comprovante** (URL
+  assinada via `getRepasseComprovanteUrlAction`).
+- **Minimizar**: cada **parceiro** e cada **mês** podem ser recolhidos (chevron) para focar no que
+  importa (estado local `collapsed`).
 
 Em ambos, o trecho cliente/grupo/cota é um `Link` para `/app/contratos/{item.contrato_id}` (detalhes da carta/contrato), com ícone `ExternalLink` indicando navegação.
 

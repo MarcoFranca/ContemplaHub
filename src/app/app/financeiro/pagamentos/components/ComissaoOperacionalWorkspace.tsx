@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  CornerDownRight,
   FilePlus2,
   Layers,
   ArrowRightLeft,
@@ -15,10 +16,12 @@ import {
   Landmark,
   Loader2,
   ReceiptText,
+  RotateCcw,
   Settings2,
   ShieldCheck,
   UserRound,
   WalletCards,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,7 +39,9 @@ import { listModelosComissaoAction } from "@/app/app/comissoes/actions";
 
 import {
   cancelFinanceiroFuturePaymentsAction,
+  desfazerPuloAction,
   generateFinanceiroProjectionAction,
+  listFinanceiroPulosAction,
   persistFinanceiroCronogramaAction,
   saveFinanceiroComissaoConfigAction,
   skipFinanceiroPagamentoAction,
@@ -44,9 +49,11 @@ import {
   updateFinanceiroPagamentoStatusAction,
 } from "../actions";
 import type {
+  DivergenciaPaga,
   FinanceiroComissaoWorkspaceData,
   FinanceiroCronogramaPreviewItem,
   FinanceiroProjectionResponse,
+  FinanceiroPulo,
   PagamentoItem,
   PagamentoStatus,
 } from "../types";
@@ -57,6 +64,12 @@ type Props = FinanceiroComissaoWorkspaceData;
 
 const fmt = (v?: string | number | null) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v || 0));
+
+const fmtMesPulo = (iso?: string | null) => {
+  if (!iso) return "—";
+  const [y, m] = iso.slice(0, 10).split("-").map(Number);
+  return new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric" }).format(new Date(y, m - 1, 1));
+};
 
 const fmtDate = (v?: string | null) => {
   if (!v) return "—";
@@ -91,6 +104,58 @@ export function ComissaoOperacionalWorkspace({
   const [projection, setProjection] = useState<FinanceiroProjectionResponse | null>(null);
   const [contractNumber, setContractNumber] = useState(contratoSelecionado?.contrato_numero ?? "");
   const [busyPagamentoId, setBusyPagamentoId] = useState<string | null>(null);
+
+  // Pulos persistidos + divergências de parcelas pagas (após reprocesso)
+  const [pulos, setPulos] = useState<FinanceiroPulo[]>([]);
+  const [divergencias, setDivergencias] = useState<DivergenciaPaga[]>([]);
+  const [busyPulo, setBusyPulo] = useState<string | null>(null);
+
+  const contratoIdAtual = contratoSelecionado?.contrato_id;
+  useEffect(() => {
+    if (!contratoIdAtual) return;
+    let active = true;
+    listFinanceiroPulosAction(contratoIdAtual)
+      .then((items) => {
+        if (active) setPulos(items);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [contratoIdAtual]);
+
+  const handleDesfazerPulo = (competencia: string) => {
+    if (!contratoIdAtual) return;
+    setBusyPulo(competencia);
+    startProjecting(async () => {
+      const res = await desfazerPuloAction(contratoIdAtual, competencia);
+      setBusyPulo(null);
+      if (!res.ok) {
+        toast.error(res.error || "Não foi possível desfazer o pulo.");
+        return;
+      }
+      toast.success(res.message || "Pulo desfeito.");
+      router.refresh();
+    });
+  };
+
+  const handleReverterBaixa = (pagamentoId: string) => {
+    const item = pagamentos.find((p) => p.id === pagamentoId);
+    if (!item) {
+      toast.error("Parcela não encontrada na lista atual.");
+      return;
+    }
+    startOperating(async () => {
+      const res = await updateFinanceiroPagamentoStatusAction(item, "previsto" as PagamentoStatus);
+      if (!res.ok) {
+        toast.error(res.error || "Não foi possível reverter a baixa.");
+        return;
+      }
+      toast.success("Baixa revertida. Reprocesse o cronograma para recalcular a parcela.");
+      setDivergencias((prev) => prev.filter((d) => d.pagamento_id !== pagamentoId));
+      router.refresh();
+    });
+  };
 
   // Modelos de comissão (campanhas) para pré-preencher a regra
   const [modelos, setModelos] = useState<ComissaoModelo[]>([]);
@@ -215,10 +280,19 @@ export function ComissaoOperacionalWorkspace({
       }
       const result = await generateFinanceiroProjectionAction(contratoSelecionado.contrato_id);
       if (result.ok) setProjection(result.projection ?? null);
+
+      // Surfacing de parcelas pagas mantidas + divergências (não alteramos o pago).
+      setDivergencias(persist.divergencias_pagas ?? []);
+      const mantidas = persist.parcelas_pagas_mantidas ?? 0;
+      if ((persist.divergencias_pagas ?? []).length > 0) {
+        toast.warning(
+          `${persist.divergencias_pagas!.length} parcela(s) paga(s) com valor divergente do recálculo. Revise abaixo.`
+        );
+      }
       toast.success(
-        persist.message ||
-          `Cronograma persistido com ${persist.pagamentos_processados || 0} parcelas operacionais.`
+        `${persist.message || "Cronograma confirmado."}${mantidas ? ` ${mantidas} parcela(s) paga(s) mantida(s).` : ""}`
       );
+      if (contratoIdAtual) listFinanceiroPulosAction(contratoIdAtual).then(setPulos).catch(() => {});
       router.refresh();
     });
   };
@@ -432,6 +506,72 @@ export function ComissaoOperacionalWorkspace({
           </div>
         )}
       </section>
+
+      {/* Competências puladas (decisões persistidas) + desfazer */}
+      {pulos.length > 0 && (
+        <section className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4">
+          <p className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-sky-100">
+            <CornerDownRight className="h-4 w-4" />
+            Competências puladas
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {pulos.map((p) => (
+              <span
+                key={p.id}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200"
+              >
+                {fmtMesPulo(p.competencia)}
+                <button
+                  type="button"
+                  onClick={() => handleDesfazerPulo(p.competencia)}
+                  disabled={busyPulo === p.competencia}
+                  title="Desfazer pulo e regerar o cronograma"
+                  className="text-slate-400 transition hover:text-rose-300 disabled:opacity-50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Divergências de parcelas pagas após reprocesso (não alteramos o pago) */}
+      {divergencias.length > 0 && (
+        <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-100">
+            <AlertTriangle className="h-4 w-4" />
+            Parcelas pagas com valor divergente do recálculo
+          </p>
+          <p className="mt-0.5 text-xs text-amber-100/80">
+            O valor pago foi mantido (não alteramos o realizado). Para corrigir, reverta a baixa e
+            reprocesse o cronograma; depois dê baixa com o valor correto.
+          </p>
+          <div className="mt-3 space-y-2">
+            {divergencias.map((d) => (
+              <div
+                key={d.pagamento_id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/20 bg-black/20 px-3 py-2 text-sm"
+              >
+                <span className="text-amber-50">
+                  {fmtMesPulo(d.competencia)} · pago {fmt(Number(d.valor_pago))} · correto{" "}
+                  {fmt(Number(d.valor_recalculado))}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 border-amber-300/30 text-amber-100 hover:bg-amber-500/15"
+                  onClick={() => handleReverterBaixa(d.pagamento_id)}
+                >
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                  Reverter baixa
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Corpo: Configuração (esq) + Visualização (dir) ── */}
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">

@@ -60,7 +60,8 @@ configurada (→ `/app/financeiro/pagamentos?item_id=…` já com a carta do cli
 usa o contrato quando existe, senão `cota:{cotaId}`, mesma regra de `selection_id` do módulo),
 contratos sem lançamentos (→ `/app/contratos/{id}`),
 **comissões em cobrança** (lançamentos com `observacoes` contendo "INADIMPLENTE" → contrato),
-repasses de parceiro pendentes (→ contrato do repasse), **cartas sem dia de assembleia**
+**repasses vencidos** (competência anterior ao mês vigente → alta/vermelho) e **repasses do mês**
+(→ `/app/comissoes?tab=repasses`), **cartas sem dia de assembleia**
 (cota ativa com `assembleia_dia` nulo → `/app/lances/{cotaId}`) e **clientes sem contrato**
 (lead com cartas não canceladas e nenhum contrato → `/app/leads/{leadId}`).
 

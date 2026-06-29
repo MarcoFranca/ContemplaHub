@@ -1,9 +1,28 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
-import { Users, Clock, CheckCircle2, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertTriangle,
+  Banknote,
+  CalendarClock,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  ExternalLink,
+  History,
+  Loader2,
+  Users,
+  Wallet,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { RepasseDialog } from "./RepasseDialog";
-import { RepasseStatusBadge } from "./status-badges";
+import { PagarParceiroDialog } from "./PagarParceiroDialog";
+import { HistoricoLotesDialog } from "./HistoricoLotesDialog";
+import { marcarRepassesPagosLoteAction } from "../actions";
 import type { ComissaoLancamento } from "../types";
 
 type Props = {
@@ -19,194 +38,465 @@ const EVENTO_LABELS: Record<string, string> = {
   manual: "Manual",
 };
 
+const money = (v: number | string | null | undefined) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v || 0));
+
+const nowYM = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+})();
+
+/** Mês de referência do repasse: usa a previsão de repasse, senão a competência. */
+function dueYM(item: ComissaoLancamento): string {
+  const ref = item.repasse_previsto_em || item.competencia_prevista || "";
+  return ref.slice(0, 7);
+}
+
+type Bucket = "atraso" | "mes" | "futuro";
+function bucketOf(item: ComissaoLancamento): Bucket {
+  const ym = dueYM(item);
+  if (!ym || ym > nowYM) return "futuro";
+  if (ym < nowYM) return "atraso";
+  return "mes";
+}
+
+const dataLabel = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : null);
+
+const ymLabel = (ym: string) => {
+  if (!ym) return "Sem competência";
+  const [y, m] = ym.split("-").map(Number);
+  return new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1));
+};
+
+/** Agrupa lançamentos por mês de repasse (asc), com subtotal e ids do mês. */
+function groupByMonth(items: ComissaoLancamento[]) {
+  const map = new Map<string, ComissaoLancamento[]>();
+  for (const it of items) {
+    const ym = dueYM(it);
+    (map.get(ym) ?? (map.set(ym, []), map.get(ym)!)).push(it);
+  }
+  return [...map.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([ym, list]) => ({
+      ym,
+      label: ymLabel(ym),
+      total: list.reduce((s, i) => s + Number(i.valor_liquido || 0), 0),
+      ids: list.map((i) => i.id),
+      items: list,
+    }));
+}
+
+type Tab = "agora" | "futuros" | "pagos";
+
 export function RepassesGestao({ items, refreshPath }: Props) {
-  const money = (v: number | string | null | undefined) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v || 0));
+  const [tab, setTab] = React.useState<Tab>("agora");
+  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = React.useState<Set<string>>(new Set());
+  const [pending, startTransition] = React.useTransition();
 
-  const parcItems = items.filter((i) => i.beneficiario_tipo === "parceiro");
+  const isCollapsed = (key: string) => collapsed.has(key);
+  const toggleCollapse = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
-  // Group by parceiro, sorted by pending value desc
-  const grouped: Record<string, { nome: string; items: ComissaoLancamento[] }> = {};
-  parcItems.forEach((item) => {
-    const pid = item.parceiro_id ?? "unknown";
-    if (!grouped[pid]) {
-      grouped[pid] = { nome: item.parceiros_corretores?.nome ?? "Parceiro", items: [] };
-    }
-    grouped[pid].items.push(item);
-  });
+  const parc = items.filter((i) => i.beneficiario_tipo === "parceiro");
 
-  const parceiros = Object.entries(grouped).sort(([, a], [, b]) => {
-    const pendA = a.items
-      .filter((i) => i.repasse_status === "pendente")
-      .reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
-    const pendB = b.items
-      .filter((i) => i.repasse_status === "pendente")
-      .reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
-    return pendB - pendA;
-  });
+  const pendentes = parc.filter((i) => i.repasse_status === "pendente");
+  const pagos = parc.filter((i) => i.repasse_status === "pago");
 
-  const totPendente = parcItems
-    .filter((i) => i.repasse_status === "pendente")
-    .reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
-  const totPago = parcItems
-    .filter((i) => i.repasse_status === "pago")
-    .reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
-  const countPendente = parcItems.filter((i) => i.repasse_status === "pendente").length;
-  const countPago = parcItems.filter((i) => i.repasse_status === "pago").length;
+  const atraso = pendentes.filter((i) => bucketOf(i) === "atraso");
+  const mes = pendentes.filter((i) => bucketOf(i) === "mes");
+  const futuro = pendentes.filter((i) => bucketOf(i) === "futuro");
+
+  const sum = (arr: ComissaoLancamento[]) => arr.reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
+
+  // Itens da aba ativa
+  const visible = tab === "agora" ? [...atraso, ...mes] : tab === "futuros" ? futuro : pagos;
+  const selectable = tab !== "pagos";
+
+  // Agrupa por parceiro dentro da aba
+  const gruposMap = new Map<string, { nome: string; items: ComissaoLancamento[] }>();
+  for (const it of visible) {
+    const pid = it.parceiro_id ?? "—";
+    const g = gruposMap.get(pid) ?? { nome: it.parceiros_corretores?.nome ?? "Parceiro", items: [] };
+    g.items.push(it);
+    gruposMap.set(pid, g);
+  }
+  const grupos = [...gruposMap.entries()].sort((a, b) => sum(b[1].items) - sum(a[1].items));
+
+  const selectedItems = visible.filter((i) => selected.has(i.id));
+  const selectedTotal = sum(selectedItems);
+
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleMany = (ids: string[], on: boolean) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => (on ? next.add(id) : next.delete(id)));
+      return next;
+    });
+
+  const baixarLote = (ids: string[]) => {
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      const res = await marcarRepassesPagosLoteAction(ids, refreshPath);
+      if (res.falhas > 0) {
+        toast.error(`${res.count} baixado(s), ${res.falhas} falharam.`);
+      } else {
+        toast.success(`${res.count} repasse(s) baixado(s).`);
+      }
+      setSelected(new Set());
+    });
+  };
+
+  const renderRow = (item: ComissaoLancamento) => {
+    const b = item.repasse_status === "pago" ? "pago" : bucketOf(item);
+    const accent =
+      b === "atraso"
+        ? "border-l-rose-500"
+        : b === "mes"
+          ? "border-l-amber-500"
+          : b === "pago"
+            ? "border-l-emerald-500"
+            : "border-l-sky-500/60";
+    return (
+      <div
+        key={item.id}
+        className={`flex items-center gap-3 border-l-2 ${accent} px-4 py-3 transition-colors hover:bg-white/2`}
+      >
+        {selectable && (
+          <input
+            type="checkbox"
+            checked={selected.has(item.id)}
+            onChange={() => toggle(item.id)}
+            className="h-4 w-4 shrink-0 accent-emerald-500"
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/app/contratos/${item.contrato_id}`}
+            className="group flex items-center gap-2 hover:underline"
+          >
+            <span className="truncate text-sm font-medium group-hover:text-emerald-300">
+              {item.cliente_nome ?? "Cliente sem nome"}
+            </span>
+            {item.grupo_codigo && (
+              <span className="text-xs text-muted-foreground">· Grupo {item.grupo_codigo}</span>
+            )}
+            {item.numero_cota && (
+              <span className="text-xs text-muted-foreground">· Cota {item.numero_cota}</span>
+            )}
+            <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
+          </Link>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+            <span>{EVENTO_LABELS[item.tipo_evento] ?? item.tipo_evento} · Parc. {item.ordem}</span>
+            {b === "atraso" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-1.5 text-[10px] font-medium text-rose-300">
+                <AlertTriangle className="h-3 w-3" /> Vencido
+              </span>
+            )}
+            {item.repasse_pago_em && (
+              <span className="text-emerald-400/80">· Pago {dataLabel(item.repasse_pago_em)}</span>
+            )}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-sm font-semibold tabular-nums">{money(item.valor_liquido)}</div>
+          <div className="text-[10px] text-muted-foreground">líquido</div>
+        </div>
+        {item.repasse_status === "pendente" ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+            onClick={() => baixarLote([item.id])}
+            disabled={pending}
+            title="Dar baixa neste repasse"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </Button>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs text-emerald-400">
+            <CheckCircle2 className="h-3.5 w-3.5" /> Pago
+          </span>
+        )}
+        <RepasseDialog lancamento={item} refreshPath={refreshPath} />
+      </div>
+    );
+  };
+
+  const TABS: { key: Tab; label: string; count: number; icon: typeof Clock; cls: string }[] = [
+    { key: "agora", label: "A pagar agora", count: atraso.length + mes.length, icon: Clock, cls: "text-amber-300" },
+    { key: "futuros", label: "A vencer (futuro)", count: futuro.length, icon: CalendarClock, cls: "text-sky-300" },
+    { key: "pagos", label: "Pagos", count: pagos.length, icon: CheckCircle2, cls: "text-emerald-300" },
+  ];
 
   return (
     <div className="space-y-5 p-6">
-      {/* ── Summary bar ── */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-border/40 bg-card/20 p-5">
-          <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-            <Users className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Parceiros Ativos</span>
-          </div>
-          <div className="text-3xl font-bold">{parceiros.length}</div>
-          <div className="mt-1 text-xs text-muted-foreground">com lançamentos no período</div>
-        </div>
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
-          <div className="mb-2 flex items-center gap-2 text-amber-400">
-            <Clock className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Pendente de Repasse</span>
-          </div>
-          <div className="text-3xl font-bold text-amber-300">{money(totPendente)}</div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            {countPendente} lançamento{countPendente !== 1 ? "s" : ""} aguardando
-          </div>
-        </div>
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-          <div className="mb-2 flex items-center gap-2 text-emerald-400">
-            <CheckCircle2 className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Repasses Pagos</span>
-          </div>
-          <div className="text-3xl font-bold text-emerald-300">{money(totPago)}</div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            {countPago} lançamento{countPago !== 1 ? "s" : ""} liquidados
-          </div>
-        </div>
+      {/* KPIs por urgência */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Kpi
+          icon={AlertTriangle}
+          label="Em atraso"
+          value={money(sum(atraso))}
+          hint={`${atraso.length} repasse(s) vencido(s)`}
+          tone="rose"
+        />
+        <Kpi
+          icon={Clock}
+          label="Vence neste mês"
+          value={money(sum(mes))}
+          hint={`${mes.length} a pagar este mês`}
+          tone="amber"
+        />
+        <Kpi
+          icon={CheckCircle2}
+          label="Pago"
+          value={money(sum(pagos))}
+          hint={`${pagos.length} liquidado(s)`}
+          tone="emerald"
+        />
+        <Kpi
+          icon={CalendarClock}
+          label="A vencer (futuro)"
+          value={money(sum(futuro))}
+          hint={`${futuro.length} provisionado(s)`}
+          tone="slate"
+        />
       </div>
 
-      {/* ── Per-partner accordion ── */}
-      {parceiros.length === 0 ? (
+      {/* Abas de foco */}
+      <div className="flex flex-wrap gap-2">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => {
+                setTab(t.key);
+                setSelected(new Set());
+              }}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${
+                active
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-white"
+                  : "border-white/10 bg-white/5 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className={`h-4 w-4 ${active ? t.cls : ""}`} />
+              {t.label}
+              <span className="rounded-full bg-white/10 px-1.5 text-xs">{t.count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Barra de baixa em lote */}
+      {selectable && selectedItems.length > 0 && (
+        <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 backdrop-blur">
+          <span className="text-sm">
+            <strong>{selectedItems.length}</strong> selecionado(s) ·{" "}
+            <strong className="tabular-nums">{money(selectedTotal)}</strong>
+          </span>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())} disabled={pending}>
+              Limpar
+            </Button>
+            <Button
+              size="sm"
+              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+              onClick={() => baixarLote([...selected])}
+              disabled={pending}
+            >
+              {pending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1.5 h-3.5 w-3.5" />}
+              Dar baixa em lote ({selectedItems.length})
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Lista agrupada por parceiro */}
+      {visible.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/40 py-16">
-          <Users className="mb-3 h-10 w-10 text-muted-foreground/25" />
-          <p className="text-sm text-muted-foreground">Nenhum repasse a parceiros no período atual.</p>
+          <Wallet className="mb-3 h-10 w-10 text-muted-foreground/25" />
+          <p className="text-sm text-muted-foreground">
+            {tab === "agora"
+              ? "Nenhum repasse a pagar agora. Tudo em dia! 🎉"
+              : tab === "futuros"
+                ? "Nenhum repasse futuro provisionado."
+                : "Nenhum repasse pago no período."}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {parceiros.map(([pid, { nome, items: pItems }]) => {
-            const pendentes = pItems.filter((i) => i.repasse_status === "pendente");
-            const pagos = pItems.filter((i) => i.repasse_status === "pago");
-            const totalBruto = pItems.reduce((s, i) => s + Number(i.valor_bruto || 0), 0);
-            const totalLiq = pItems.reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
-            const totalPend = pendentes.reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
-
+          {grupos.map(([pid, g]) => {
+            const ids = g.items.map((i) => i.id);
+            const allSel = selectable && ids.every((id) => selected.has(id));
             return (
-              <div
-                key={pid}
-                className="overflow-hidden rounded-2xl border border-border/35 bg-card/15"
-              >
-                {/* Partner header */}
-                <div className="flex items-center justify-between border-b border-border/25 bg-card/25 px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+              <div key={pid} className="overflow-hidden rounded-2xl border border-border/35 bg-card/15">
+                <div className="flex items-center justify-between gap-3 border-b border-border/25 bg-card/25 px-4 py-3">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleCollapse(pid)}
+                      className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                      title={isCollapsed(pid) ? "Expandir" : "Minimizar"}
+                    >
+                      {isCollapsed(pid) ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </button>
+                    {selectable && (
+                      <input
+                        type="checkbox"
+                        checked={allSel}
+                        onChange={(e) => toggleMany(ids, e.target.checked)}
+                        className="h-4 w-4 accent-emerald-500"
+                        title="Selecionar todos deste parceiro"
+                      />
+                    )}
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
                       <Users className="h-4 w-4" />
                     </div>
-                    <div>
-                      <div className="font-semibold">{nome}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {pItems.length} lançamento{pItems.length !== 1 ? "s" : ""} ·{" "}
-                        {pendentes.length > 0 ? (
-                          <span className="text-amber-400">{pendentes.length} pendente{pendentes.length !== 1 ? "s" : ""}</span>
-                        ) : (
-                          <span className="text-emerald-400">em dia</span>
-                        )}
-                      </div>
+                    <div className="min-w-0">
+                      {pid !== "—" ? (
+                        <Link
+                          href={`/app/parceiros/${pid}`}
+                          className="truncate text-sm font-semibold hover:text-emerald-300 hover:underline"
+                          title="Ver detalhes do parceiro"
+                        >
+                          {g.nome}
+                        </Link>
+                      ) : (
+                        <div className="truncate text-sm font-semibold">{g.nome}</div>
+                      )}
+                      <div className="text-xs text-muted-foreground">{g.items.length} repasse(s)</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Bruto</div>
-                      <div className="text-sm font-semibold">{money(totalBruto)}</div>
+                      <div className="text-xs text-muted-foreground">Total {tab === "pagos" ? "pago" : "a pagar"}</div>
+                      <div className="text-sm font-bold tabular-nums">{money(sum(g.items))}</div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Líquido</div>
-                      <div className="text-sm font-semibold text-emerald-300">{money(totalLiq)}</div>
-                    </div>
-                    {totalPend > 0 && (
-                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-right">
-                        <div className="text-xs text-amber-400/80">Pendente</div>
-                        <div className="text-sm font-bold text-amber-300">{money(totalPend)}</div>
-                      </div>
+                    <HistoricoLotesDialog
+                      parceiroId={pid}
+                      nome={g.nome}
+                      trigger={
+                        <Button variant="outline" size="sm" className="h-8 gap-1.5 border-white/10" title="Histórico de repasses">
+                          <History className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Histórico</span>
+                        </Button>
+                      }
+                    />
+                    {selectable && g.items.some((i) => i.repasse_status === "pendente") && (
+                      <PagarParceiroDialog
+                        parceiroId={pid}
+                        nome={g.nome}
+                        items={g.items.filter((i) => i.repasse_status === "pendente")}
+                        refreshPath={refreshPath}
+                        trigger={
+                          <Button size="sm" className="h-8 bg-emerald-500 text-slate-950 hover:bg-emerald-400">
+                            <Banknote className="mr-1.5 h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Pagar tudo</span>
+                            <span className="sm:hidden">Pagar</span>
+                          </Button>
+                        }
+                      />
                     )}
                   </div>
                 </div>
 
-                {/* Launch rows */}
-                <div className="divide-y divide-border/20">
-                  {pItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-white/2"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <Link
-                          href={`/app/contratos/${item.contrato_id}`}
-                          className="group flex items-center gap-2 hover:underline"
-                          title="Ver detalhes da carta/contrato"
-                        >
-                          <span className="truncate text-sm font-medium group-hover:text-emerald-300">
-                            {item.cliente_nome ?? "Cliente sem nome"}
+                {!isCollapsed(pid) && (
+                <div>
+                  {groupByMonth(g.items).map((mg) => {
+                    const allSelMonth = selectable && mg.ids.every((id) => selected.has(id));
+                    const mKey = `${pid}:${mg.ym}`;
+                    const mClosed = isCollapsed(mKey);
+                    return (
+                      <div key={mg.ym}>
+                        {/* Subtotal do mês — "quanto repassar neste mês" */}
+                        <div className="flex items-center justify-between gap-2 border-b border-white/5 bg-white/[0.02] px-4 py-1.5">
+                          <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium capitalize text-muted-foreground">
+                            {selectable && (
+                              <input
+                                type="checkbox"
+                                checked={allSelMonth}
+                                onChange={(e) => toggleMany(mg.ids, e.target.checked)}
+                                className="h-3.5 w-3.5 accent-emerald-500"
+                                title="Selecionar todo o mês"
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => toggleCollapse(mKey)}
+                              className="inline-flex items-center gap-1.5 hover:text-foreground"
+                            >
+                              {mClosed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                              <CalendarClock className="h-3.5 w-3.5" />
+                              {mg.label}
+                            </button>
                           </span>
-                          {item.grupo_codigo && (
-                            <span className="text-xs text-muted-foreground">· Grupo {item.grupo_codigo}</span>
-                          )}
-                          {item.numero_cota && (
-                            <span className="text-xs text-muted-foreground">· Cota {item.numero_cota}</span>
-                          )}
-                          <ExternalLink className="h-3 w-3 flex-shrink-0 opacity-50" />
-                        </Link>
-                        <div className="mt-0.5 text-xs text-muted-foreground">
-                          {EVENTO_LABELS[item.tipo_evento] ?? item.tipo_evento} · Parcela {item.ordem}
+                          <span className="text-sm font-bold tabular-nums">
+                            {money(mg.total)}
+                            <span className="ml-1 text-[11px] font-normal text-muted-foreground">· {mg.items.length}</span>
+                          </span>
                         </div>
-                        <div className="mt-0.5 text-xs text-muted-foreground/70">
-                          Competência:{" "}
-                          {item.competencia_prevista
-                            ? new Date(item.competencia_prevista).toLocaleDateString("pt-BR", {
-                                month: "short",
-                                year: "numeric",
-                              })
-                            : "—"}
-                          {item.repasse_previsto_em && (
-                            <>
-                              {" · "}Previsto em{" "}
-                              {new Date(item.repasse_previsto_em).toLocaleDateString("pt-BR")}
-                            </>
-                          )}
-                          {item.repasse_pago_em && (
-                            <>
-                              {" · "}Pago em{" "}
-                              {new Date(item.repasse_pago_em).toLocaleDateString("pt-BR")}
-                            </>
-                          )}
-                        </div>
+                        {!mClosed && <div className="divide-y divide-border/20">{mg.items.map(renderRow)}</div>}
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-semibold">{money(item.valor_liquido)}</div>
-                        <div className="text-xs text-muted-foreground">líquido</div>
-                      </div>
-                      <RepasseStatusBadge status={item.repasse_status} />
-                      <RepasseDialog lancamento={item} refreshPath={refreshPath} />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function Kpi({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  icon: typeof Clock;
+  label: string;
+  value: string;
+  hint: string;
+  tone: "rose" | "amber" | "emerald" | "slate";
+}) {
+  const tones: Record<string, string> = {
+    rose: "border-rose-500/25 bg-rose-500/5 text-rose-400",
+    amber: "border-amber-500/25 bg-amber-500/5 text-amber-400",
+    emerald: "border-emerald-500/25 bg-emerald-500/5 text-emerald-400",
+    slate: "border-border/40 bg-card/20 text-muted-foreground",
+  };
+  const valueTone: Record<string, string> = {
+    rose: "text-rose-300",
+    amber: "text-amber-300",
+    emerald: "text-emerald-300",
+    slate: "text-foreground",
+  };
+  return (
+    <div className={`rounded-2xl border p-4 ${tones[tone]}`}>
+      <div className="mb-1 flex items-center gap-2">
+        <Icon className="h-4 w-4" />
+        <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
+      </div>
+      <div className={`text-2xl font-bold tabular-nums ${valueTone[tone]}`}>{value}</div>
+      <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>
     </div>
   );
 }

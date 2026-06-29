@@ -43,6 +43,18 @@ Query params relevantes:
 - `CronogramaPreviewTable`
 - `CronogramaOperacionalTable`
 
+### Pulos de competência + divergências de parcela paga
+
+O `ComissaoOperacionalWorkspace` exibe:
+- **"Competências puladas"**: lista os pulos persistidos (`listFinanceiroPulosAction` →
+  `GET /financeiro/contratos/{id}/pulos`) com botão **desfazer** (`desfazerPuloAction` →
+  `DELETE .../pulos/{competencia}`, que regenera o cronograma).
+- **"Parcelas pagas com valor divergente"**: após confirmar/reprocessar, o resultado traz
+  `parcelas_pagas_mantidas` e `divergencias_pagas`. As divergências (parcela paga cujo valor difere
+  do recálculo) aparecem num aviso âmbar com botão **"Reverter baixa"**
+  (`updateFinanceiroPagamentoStatusAction(item, "previsto")`). O valor pago nunca é alterado pelo
+  sistema; a correção é manual (reverter baixa → reprocessar → dar baixa com o valor certo).
+
 ## Navegacao
 
 O Financeiro agora aparece como categoria propria no menu lateral:

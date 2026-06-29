@@ -75,6 +75,19 @@ export type ComissaoModelo = {
   updated_at?: string;
 };
 
+export type RepasseLote = {
+  id: string;
+  parceiro_id: string;
+  total: number | string;
+  quantidade: number;
+  forma_pagamento?: string | null;
+  observacoes?: string | null;
+  comprovante_path?: string | null;
+  comprovante_filename?: string | null;
+  pago_em?: string | null;
+  created_at?: string | null;
+};
+
 export type ComissaoModeloInput = {
   nome: string;
   descricao?: string | null;

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
     Calculator,
     FileText,
+    HandCoins,
     LayoutDashboard,
     Wallet,
     UserCircle2,
@@ -26,6 +27,11 @@ const items = [
         href: "/partner/commissions",
         label: "Comissões",
         icon: Wallet,
+    },
+    {
+        href: "/partner/repasses",
+        label: "Repasses",
+        icon: HandCoins,
     },
     {
         href: "/partner/simuladores",

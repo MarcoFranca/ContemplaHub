@@ -17,6 +17,7 @@ import type {
   TimelineContratoResponse,
   ComissaoModelo,
   ComissaoModeloInput,
+  RepasseLote,
 } from "./types";
 import type { FinanceiroProjectionResponse } from "@/app/app/financeiro/pagamentos/types";
 
@@ -342,6 +343,102 @@ export async function marcarLotePagoAction(lancamentoIds: string[]) {
     )
   );
   revalidatePath("/app/comissoes");
+}
+
+export async function marcarRepassesPagosLoteAction(
+  ids: string[],
+  refreshPath = "/app/comissoes",
+): Promise<{ ok: boolean; count: number; falhas: number }> {
+  const pagoEm = new Date().toISOString();
+  const results = await Promise.allSettled(
+    ids.map((id) =>
+      backendAuthed(`/comissoes/lancamentos/${id}/marcar-repasse-pago`, {
+        method: "POST",
+        body: JSON.stringify({ pago_em: pagoEm, observacoes: null }),
+      }),
+    ),
+  );
+  const falhas = results.filter((r) => r.status === "rejected").length;
+  revalidatePath("/app/comissoes");
+  revalidatePath(refreshPath);
+  return { ok: falhas === 0, count: ids.length - falhas, falhas };
+}
+
+export async function createRepasseLoteAction(
+  parceiroId: string,
+  lancamentoIds: string[],
+  formaPagamento: string | null,
+  observacoes: string | null,
+  refreshPath = "/app/comissoes",
+): Promise<{ ok: boolean; loteId?: string; repasses_pagos?: number; error?: string }> {
+  try {
+    const data = await backendAuthed<{ ok: boolean; lote: { id: string }; repasses_pagos: number }>(
+      `/comissoes/repasses/lote`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          parceiro_id: parceiroId,
+          lancamento_ids: lancamentoIds,
+          forma_pagamento: formaPagamento,
+          observacoes,
+        }),
+      },
+    );
+    revalidatePath("/app/comissoes");
+    revalidatePath(refreshPath);
+    return { ok: true, loteId: data.lote.id, repasses_pagos: data.repasses_pagos };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erro ao registrar o lote de repasse." };
+  }
+}
+
+export async function uploadRepasseComprovanteAction(
+  loteId: string,
+  formData: FormData,
+): Promise<{ ok: boolean; error?: string }> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { ok: true };
+  const { orgId, accessToken } = await getBackendAuthContext();
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${getBackendUrl()}/comissoes/repasses/lote/${loteId}/comprovante`, {
+    method: "POST",
+    headers: { "X-Org-Id": orgId, Authorization: `Bearer ${accessToken}` },
+    body: fd,
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    return { ok: false, error: text || "Erro ao enviar comprovante." };
+  }
+  revalidatePath("/app/comissoes");
+  return { ok: true };
+}
+
+export async function listRepasseLotesAction(parceiroId: string): Promise<RepasseLote[]> {
+  try {
+    const data = await backendAuthed<{ items?: RepasseLote[] }>(
+      `/comissoes/repasses/lotes?parceiro_id=${parceiroId}`,
+      { method: "GET" },
+    );
+    return data.items ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getRepasseComprovanteUrlAction(
+  loteId: string,
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  try {
+    const data = await backendAuthed<{ ok: boolean; url?: string }>(
+      `/comissoes/repasses/lote/${loteId}/comprovante/signed-url`,
+      { method: "POST" },
+    );
+    return { ok: true, url: data.url };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erro ao obter o comprovante." };
+  }
 }
 
 export async function marcarRepassePagoAction(formData: FormData) {

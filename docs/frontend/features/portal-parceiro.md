@@ -27,6 +27,10 @@ Autenticação e vínculo via `getCurrentPartnerAccess` (server). Dados vêm do 
   O detalhe também mostra a **estratégia de lance** da cota (sorteio / lance fixo / lance livre /
   embutido, de `cota.tipo_lance_preferencial`) e a seção **"Lances dados"** (lista de `item.lances`
   com data da assembleia, tipo, percentual/valor e resultado).
+- `app/partner/repasses/page.tsx` — **Meus repasses**: lista os lotes de repasse pagos ao parceiro
+  (`GET /partner/repasses/lotes`), com total recebido, forma de pagamento e **download do comprovante**
+  (`PartnerRepasseList` + server action `getPartnerComprovanteUrlAction` → `.../comprovante/signed-url`,
+  validando a posse do lote). Fecha o ciclo de confiança: o parceiro vê e baixa o comprovante do que recebeu.
 - `app/partner/simuladores/page.tsx` — **Simuladores** (reusa `SimuladoresHub` do app: consórcio/lance
   e comparativo consórcio × financiamento; componentes puros, sem dados da org).
 - `app/partner/me/page.tsx` — minha conta (placeholders "Não informado" em vez de travessão).

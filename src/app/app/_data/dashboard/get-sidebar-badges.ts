@@ -36,14 +36,13 @@ export async function getSidebarBadges(): Promise<SidebarBadges> {
         }
 
         // Pendências de comissões no item Comissões (e no subitem Repasses)
+        const repasses = (countByCat["repasse_vencido"] ?? 0) + (countByCat["repasse_pendente"] ?? 0);
         const comissoes =
             (countByCat["contrato_sem_lancamento"] ?? 0) +
             (countByCat["comissao_inadimplente"] ?? 0) +
-            (countByCat["repasse_pendente"] ?? 0);
+            repasses;
         if (comissoes > 0) badges["/app/comissoes"] = comissoes;
-        if ((countByCat["repasse_pendente"] ?? 0) > 0) {
-            badges["/app/comissoes?tab=repasses"] = countByCat["repasse_pendente"];
-        }
+        if (repasses > 0) badges["/app/comissoes?tab=repasses"] = repasses;
     }
 
     // Lances em aberto no mês vigente = cotas ativas que ainda não foram

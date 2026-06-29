@@ -128,6 +128,14 @@ export type FinanceiroContratoNumeroResult = {
     contrato_numero?: string;
 };
 
+export type DivergenciaPaga = {
+    pagamento_id: string;
+    competencia: string | null;
+    ordem: number;
+    valor_pago: string;
+    valor_recalculado: string;
+};
+
 export type FinanceiroCronogramaPersistResult = {
     ok: boolean;
     message?: string;
@@ -136,6 +144,16 @@ export type FinanceiroCronogramaPersistResult = {
     pagamentos_criados?: number;
     pagamentos_atualizados?: number;
     pagamentos_cancelados?: number;
+    parcelas_pagas_mantidas?: number;
+    divergencias_pagas?: DivergenciaPaga[];
+};
+
+export type FinanceiroPulo = {
+    id: string;
+    competencia: string;
+    motivo?: string | null;
+    actor_id?: string | null;
+    created_at?: string;
 };
 
 export type FinanceiroPagamentoOperacaoResult = {

@@ -121,30 +121,35 @@ export async function getPendencias(): Promise<PendenciasData | null> {
             href: `/app/contratos/${c.id}`,
         }));
 
-    // 3) Repasses de parceiro pendentes de baixa.
-    // Só conta como pendência até o mês vigente; competências futuras são provisão (ainda não venceram).
+    // 3) Repasses de parceiro pendentes. Futuros são provisão (não viram pendência).
+    // Vencidos (competência < mês vigente) = atraso/alta; do mês vigente = média.
     const mesVigente = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-    const repassesPendentes: PendenciaItem[] = lancamentos
-        .filter(
-            (l) =>
-                l.beneficiario_tipo === "parceiro" &&
-                l.repasse_status === "pendente" &&
-                (!l.competencia_prevista || l.competencia_prevista.slice(0, 7) <= mesVigente)
-        )
-        .map((l) => {
-            const parceiro = (l.parceiros_corretores as { nome?: string | null } | null)?.nome || "Parceiro";
-            const cota = (l.cotas as { numero_cota?: string | null; grupo_codigo?: string | null } | null) ?? {};
-            const valor = Number(l.valor_liquido ?? 0);
-            return {
-                id: `repasse-${l.id}`,
-                categoria: "repasse_pendente",
-                severity: "medium" as const,
-                title: `Repasse para ${parceiro}`,
-                subtitle: `${cotaLabel(cota.numero_cota, cota.grupo_codigo)} · ${brl(valor)} a repassar`,
-                acaoLabel: "Dar baixa no repasse",
-                href: l.contrato_id ? `/app/contratos/${l.contrato_id}` : "/app/comissoes?tab=repasses",
-            };
-        });
+    const repasseToItem = (l: LancRow, vencido: boolean): PendenciaItem => {
+        const parceiro = (l.parceiros_corretores as { nome?: string | null } | null)?.nome || "Parceiro";
+        const cota = (l.cotas as { numero_cota?: string | null; grupo_codigo?: string | null } | null) ?? {};
+        const valor = Number(l.valor_liquido ?? 0);
+        return {
+            id: `repasse-${l.id}`,
+            categoria: vencido ? "repasse_vencido" : "repasse_pendente",
+            severity: vencido ? ("high" as const) : ("medium" as const),
+            title: `Repasse para ${parceiro}`,
+            subtitle: `${cotaLabel(cota.numero_cota, cota.grupo_codigo)} · ${brl(valor)} a repassar`,
+            acaoLabel: vencido ? "Pagar repasse vencido" : "Dar baixa no repasse",
+            href: "/app/comissoes?tab=repasses",
+        };
+    };
+    const repassesBase = lancamentos.filter(
+        (l) =>
+            l.beneficiario_tipo === "parceiro" &&
+            l.repasse_status === "pendente" &&
+            (!l.competencia_prevista || l.competencia_prevista.slice(0, 7) <= mesVigente),
+    );
+    const repassesVencidos: PendenciaItem[] = repassesBase
+        .filter((l) => l.competencia_prevista && l.competencia_prevista.slice(0, 7) < mesVigente)
+        .map((l) => repasseToItem(l, true));
+    const repassesPendentes: PendenciaItem[] = repassesBase
+        .filter((l) => !l.competencia_prevista || l.competencia_prevista.slice(0, 7) >= mesVigente)
+        .map((l) => repasseToItem(l, false));
 
     // 4) Comissões em cobrança (cliente inadimplente)
     const comissoesInadimplentes: PendenciaItem[] = lancamentos
@@ -225,9 +230,16 @@ export async function getPendencias(): Promise<PendenciasData | null> {
             items: comissoesInadimplentes,
         },
         {
+            categoria: "repasse_vencido",
+            label: "Repasses vencidos",
+            descricao: "Repasses de parceiro atrasados (competência anterior ao mês vigente).",
+            severity: "high" as const,
+            items: repassesVencidos,
+        },
+        {
             categoria: "repasse_pendente",
-            label: "Repasses pendentes",
-            descricao: "Repasses de parceiro aguardando baixa (competência até o mês vigente).",
+            label: "Repasses do mês",
+            descricao: "Repasses de parceiro a pagar no mês vigente.",
             severity: "medium" as const,
             items: repassesPendentes,
         },

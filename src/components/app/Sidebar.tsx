@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
+  AlertTriangle,
   ArrowLeftRight,
   BarChart3,
   Bell,
@@ -74,7 +75,8 @@ const sections: NavSection[] = [
           { href: "/app/pendencias?cat=comissao_config", label: "Sem comissão", icon: CircleDollarSign },
           { href: "/app/pendencias?cat=contrato_sem_lancamento", label: "Sem lançamentos", icon: BookOpen },
           { href: "/app/pendencias?cat=comissao_inadimplente", label: "Em cobrança", icon: Wallet },
-          { href: "/app/pendencias?cat=repasse_pendente", label: "Repasses", icon: ArrowLeftRight },
+          { href: "/app/pendencias?cat=repasse_vencido", label: "Repasses vencidos", icon: AlertTriangle },
+          { href: "/app/pendencias?cat=repasse_pendente", label: "Repasses do mês", icon: ArrowLeftRight },
           { href: "/app/pendencias?cat=carta_sem_assembleia", label: "Sem assembleia", icon: CalendarDays },
         ],
       },

@@ -247,6 +247,8 @@ export async function persistFinanceiroCronogramaAction(
             pagamentos_criados: number;
             pagamentos_atualizados: number;
             pagamentos_cancelados: number;
+            parcelas_pagas_mantidas?: number;
+            divergencias_pagas?: import("./types").DivergenciaPaga[];
         }>(`/financeiro/contratos/${contratoId}/cronograma`, {
             method: "POST",
         });
@@ -259,12 +261,46 @@ export async function persistFinanceiroCronogramaAction(
             pagamentos_criados: result.pagamentos_criados,
             pagamentos_atualizados: result.pagamentos_atualizados,
             pagamentos_cancelados: result.pagamentos_cancelados,
+            parcelas_pagas_mantidas: result.parcelas_pagas_mantidas ?? 0,
+            divergencias_pagas: result.divergencias_pagas ?? [],
             message: `Cronograma operacional confirmado com ${result.pagamentos_processados} parcelas processadas.`,
         };
     } catch (error) {
         return {
             ok: false,
             error: error instanceof Error ? error.message : "Nao foi possivel persistir o cronograma operacional.",
+        };
+    }
+}
+
+export async function listFinanceiroPulosAction(
+    contratoId: string,
+): Promise<import("./types").FinanceiroPulo[]> {
+    try {
+        const data = await backendAuthed<{ ok: boolean; items?: import("./types").FinanceiroPulo[] }>(
+            `/financeiro/contratos/${contratoId}/pulos`,
+        );
+        return data.items ?? [];
+    } catch {
+        return [];
+    }
+}
+
+export async function desfazerPuloAction(
+    contratoId: string,
+    competencia: string,
+): Promise<FinanceiroPagamentoOperacaoResult> {
+    try {
+        await backendAuthed(`/financeiro/contratos/${contratoId}/pulos/${competencia}`, {
+            method: "DELETE",
+        });
+        revalidatePath("/app/financeiro/pagamentos");
+        revalidatePath("/app/comissoes");
+        return { ok: true, message: "Pulo desfeito e cronograma regerado." };
+    } catch (error) {
+        return {
+            ok: false,
+            error: error instanceof Error ? error.message : "Nao foi possivel desfazer o pulo.",
         };
     }
 }
