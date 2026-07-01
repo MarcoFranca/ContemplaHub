@@ -92,6 +92,7 @@ export function RepassesGestao({ items, refreshPath }: Props) {
   const [tab, setTab] = React.useState<Tab>("agora");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = React.useState<Set<string>>(new Set());
+  const [confirmIds, setConfirmIds] = React.useState<string[] | null>(null);
   const [pending, startTransition] = React.useTransition();
 
   const isCollapsed = (key: string) => collapsed.has(key);
@@ -145,7 +146,7 @@ export function RepassesGestao({ items, refreshPath }: Props) {
       return next;
     });
 
-  const baixarLote = (ids: string[]) => {
+  const executarBaixa = (ids: string[]) => {
     if (ids.length === 0) return;
     startTransition(async () => {
       const res = await marcarRepassesPagosLoteAction(ids, refreshPath);
@@ -155,7 +156,24 @@ export function RepassesGestao({ items, refreshPath }: Props) {
         toast.success(`${res.count} repasse(s) baixado(s).`);
       }
       setSelected(new Set());
+      setConfirmIds(null);
     });
+  };
+
+  // Repasse cuja comissão ainda NÃO foi recebida da operadora (status != pago).
+  const naoRecebidos = (ids: string[]) =>
+    ids.filter((id) => {
+      const it = parc.find((p) => p.id === id);
+      return it && it.status !== "pago";
+    });
+
+  const baixarLote = (ids: string[]) => {
+    if (ids.length === 0) return;
+    if (naoRecebidos(ids).length > 0) {
+      setConfirmIds(ids); // pede confirmação: comissão ainda não recebida
+      return;
+    }
+    executarBaixa(ids);
   };
 
   const renderRow = (item: ComissaoLancamento) => {
@@ -458,6 +476,40 @@ export function RepassesGestao({ items, refreshPath }: Props) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Confirmação: repasse cuja comissão ainda não foi recebida da operadora */}
+      {confirmIds && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-amber-500/30 bg-slate-900 p-6 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-6 w-6 shrink-0 text-amber-400" />
+              <div>
+                <h3 className="text-sm font-semibold text-white">Comissão ainda não recebida</h3>
+                <p className="mt-1.5 text-sm text-slate-300">
+                  {naoRecebidos(confirmIds).length} dos {confirmIds.length} repasse(s) selecionados ainda
+                  <strong className="text-amber-300"> não constam como recebidos da operadora</strong>.
+                  Ao efetivar, eles serão marcados como pagos e a comissão correspondente também será
+                  <strong className="text-slate-200"> quitada</strong>.
+                </p>
+                <p className="mt-2 text-sm text-slate-300">Deseja efetivar o pagamento mesmo assim?</p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setConfirmIds(null)} disabled={pending}>
+                Cancelar
+              </Button>
+              <Button
+                className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                onClick={() => executarBaixa(confirmIds)}
+                disabled={pending}
+              >
+                {pending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                Efetivar mesmo assim
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -23,7 +23,7 @@ function srv() {
 }
 
 function normalizeOrigem(input?: string | null): CanalOrigem {
-    const allowed: CanalOrigem[] = ["lp", "whatsapp", "indicacao", "orgânico", "pago", "outro"];
+    const allowed: CanalOrigem[] = ["lp", "whatsapp", "indicacao", "organico", "pago", "outro"];
     const v = (input ?? "").toLowerCase();
     const map: Record<string, CanalOrigem> = {
         lp: "lp",
@@ -32,8 +32,8 @@ function normalizeOrigem(input?: string | null): CanalOrigem {
         zap: "whatsapp",
         indicacao: "indicacao",
         "indicação": "indicacao",
-        organico: "orgânico",
-        "orgânico": "orgânico",
+        organico: "organico",
+        "orgânico": "organico",
         pago: "pago",
         ads: "pago",
         outro: "outro",
@@ -220,7 +220,7 @@ export async function createLeadManual(formData: FormData): Promise<{ ok: boolea
         const nome = String(formData.get("nome") ?? "").trim();
         const emailRaw = String(formData.get("email") ?? "").trim();
         const telefoneRaw = String(formData.get("telefone") ?? "").trim();
-        const origemRaw = String(formData.get("origem") ?? "orgânico").trim();
+        const origemRaw = String(formData.get("origem") ?? "organico").trim();
 
         if (!nome) return { ok: false, error: "Informe o nome do lead." };
         if (!telefoneRaw && !emailRaw) return { ok: false, error: "Informe telefone ou e-mail." };

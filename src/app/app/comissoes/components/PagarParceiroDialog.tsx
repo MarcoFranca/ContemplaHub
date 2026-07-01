@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Banknote, Loader2, Upload } from "lucide-react";
+import { AlertTriangle, Banknote, Loader2, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,7 @@ export function PagarParceiroDialog({
 
   const ids = items.map((i) => i.id);
   const total = items.reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
+  const naoRecebidos = items.filter((i) => i.status !== "pago").length;
 
   const confirmar = () => {
     if (ids.length === 0) return;
@@ -83,6 +84,16 @@ export function PagarParceiroDialog({
             <div className="text-2xl font-bold tabular-nums text-emerald-300">{money(total)}</div>
             <div className="text-xs text-muted-foreground">{ids.length} parcela(s) serão marcadas como pagas</div>
           </div>
+
+          {naoRecebidos > 0 && (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              <span>
+                {naoRecebidos} parcela(s) ainda <strong>não constam como recebidas da operadora</strong>.
+                Ao confirmar, a comissão correspondente também será quitada.
+              </span>
+            </div>
+          )}
 
           <div>
             <label className="text-xs font-medium text-muted-foreground">Forma de pagamento</label>

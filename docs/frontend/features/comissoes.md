@@ -104,6 +104,9 @@ Cada `ComissaoLancamento` retornado por `listComissaoLancamentosAction` (via `GE
   assinada via `getRepasseComprovanteUrlAction`).
 - **Minimizar**: cada **parceiro** e cada **mês** podem ser recolhidos (chevron) para focar no que
   importa (estado local `collapsed`).
+- **Aviso de comissão não recebida**: ao dar baixa em repasse(s) cujo lançamento de comissão ainda
+  não está `pago` (não recebido da operadora), aparece uma confirmação ("Comissão ainda não recebida…
+  efetivar mesmo assim?"). O backend, ao pagar o repasse, **quita a comissão junto** (status pago).
 
 Em ambos, o trecho cliente/grupo/cota é um `Link` para `/app/contratos/{item.contrato_id}` (detalhes da carta/contrato), com ícone `ExternalLink` indicando navegação.
 

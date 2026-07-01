@@ -75,12 +75,12 @@ export function CreateLeadDialog({ variant = "button" }: { variant?: "button" | 
 
                     <div className="grid gap-2">
                         <Label>Origem</Label>
-                        <Select name="origem" defaultValue="orgânico">
+                        <Select name="origem" defaultValue="organico">
                             <SelectTrigger className="h-9">
                                 <SelectValue placeholder="Selecione" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="orgânico">Orgânico</SelectItem>
+                                <SelectItem value="organico">Orgânico</SelectItem>
                                 <SelectItem value="whatsapp">WhatsApp</SelectItem>
                                 <SelectItem value="indicacao">Indicação</SelectItem>
                                 <SelectItem value="lp">Landing Page</SelectItem>

@@ -63,7 +63,7 @@ const ORIGEM_OPTIONS = [
     { value: "lp", label: "Landing Page" },
     { value: "whatsapp", label: "WhatsApp" },
     { value: "indicacao", label: "Indicação" },
-    { value: "orgânico", label: "Orgânico" },
+    { value: "organico", label: "Orgânico" },
     { value: "pago", label: "Pago" },
     { value: "outro", label: "Outro" },
 ];

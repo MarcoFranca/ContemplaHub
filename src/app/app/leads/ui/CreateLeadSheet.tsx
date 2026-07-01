@@ -158,7 +158,7 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
 
                                 <div className="space-y-1.5 min-w-0">
                                     <Label className="text-xs">Origem</Label>
-                                    <Select defaultValue="orgânico" name="origem">
+                                    <Select defaultValue="organico" name="origem">
                                         <SelectTrigger className="h-9 min-w-0 truncate">
                                             <SelectValue placeholder="Selecione a origem" />
                                         </SelectTrigger>
@@ -167,7 +167,7 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
                                             sideOffset={6}
                                             className="z-[70] min-w-[--radix-select-trigger-width] rounded-xl border-white/10 bg-slate-900/95 backdrop-blur-md"
                                         >
-                                            <SelectItem value="orgânico">Orgânico</SelectItem>
+                                            <SelectItem value="organico">Orgânico</SelectItem>
                                             <SelectItem value="whatsapp">WhatsApp</SelectItem>
                                             <SelectItem value="indicacao">Indicação</SelectItem>
                                             <SelectItem value="lp">Landing Page</SelectItem>

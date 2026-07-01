@@ -27,7 +27,7 @@ export const ALL_KANBAN_STAGES: Stage[] = [
     "perdido",
 ];
 
-export type CanalOrigem = "lp" | "whatsapp" | "indicacao" | "orgânico" | "pago" | "outro";
+export type CanalOrigem = "lp" | "whatsapp" | "indicacao" | "organico" | "pago" | "outro";
 
 export type ContractStatus =
     | "pendente_assinatura"
