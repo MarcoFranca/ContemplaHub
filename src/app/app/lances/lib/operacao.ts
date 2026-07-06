@@ -177,13 +177,60 @@ export function resolveSuggestedPercent(item: LanceCartaListItem) {
     return null;
 }
 
+function componentEstimate(params: {
+    percentual?: number | null;
+    mensal?: number | null;
+    base?: number | null;
+    prazo?: number | null;
+}) {
+    const { percentual, mensal, base, prazo } = params;
+    const validNum = (v?: number | null): v is number => v != null && Number.isFinite(Number(v));
+
+    if (validNum(percentual) && validNum(base)) {
+        return (Number(base) * Number(percentual)) / 100;
+    }
+    if (validNum(mensal) && validNum(prazo) && Number(prazo) > 0) {
+        return Number(mensal) * Number(prazo);
+    }
+    return 0;
+}
+
+/**
+ * Base do lance = custo total do contrato (carta + taxa adm + fundo reserva +
+ * seguro prestamista + taxa adm antecipada). Mesma composição de
+ * `custoTotalEstimado` em features/contratos/utils/financial-calculations.ts.
+ */
+export function resolveBaseLance(item: LanceCartaListItem) {
+    const valorCarta = Number(item.valor_carta ?? 0);
+    if (!valorCarta || !Number.isFinite(valorCarta)) return null;
+
+    const prazo = item.prazo ?? null;
+
+    const taxaAdmin = componentEstimate({
+        percentual: item.taxa_admin_percentual,
+        mensal: item.taxa_admin_valor_mensal,
+        base: valorCarta,
+        prazo,
+    });
+    const fundoReserva = componentEstimate({
+        percentual: item.fundo_reserva_percentual,
+        mensal: item.fundo_reserva_valor_mensal,
+        base: valorCarta,
+        prazo,
+    });
+    const taxaAntecipada = Number(item.taxa_admin_antecipada_valor_total ?? 0) || 0;
+
+    // Seguro prestamista NÃO entra na base do lance.
+    return valorCarta + taxaAdmin + fundoReserva + taxaAntecipada;
+}
+
 export function resolveSuggestedValue(item: LanceCartaListItem) {
     const percentual = resolveSuggestedPercent(item);
-    const valorCarta = Number(item.valor_carta ?? 0);
+    const base = resolveBaseLance(item);
 
-    if (percentual == null || !valorCarta) return null;
+    if (percentual == null || base == null) return null;
 
-    return valorCarta * (percentual / 100);
+    return base * (percentual / 100);
 }
 
 export function formatPercent(value?: number | null) {

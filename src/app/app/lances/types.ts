@@ -21,6 +21,15 @@ export type LanceCartaListItem = {
     valor_carta?: number | null;
     valor_parcela?: number | null;
     prazo?: number | null;
+    // componentes financeiros usados para a base do lance (custo total do contrato)
+    taxa_admin_percentual?: number | null;
+    taxa_admin_valor_mensal?: number | null;
+    fundo_reserva_percentual?: number | null;
+    fundo_reserva_valor_mensal?: number | null;
+    seguro_prestamista_ativo?: boolean | null;
+    seguro_prestamista_percentual?: number | null;
+    seguro_prestamista_valor_mensal?: number | null;
+    taxa_admin_antecipada_valor_total?: number | null;
     status: StatusCota;
     autorizacao_gestao: boolean;
     embutido_permitido: boolean;
