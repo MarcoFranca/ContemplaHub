@@ -37,6 +37,7 @@ import {
     reativarCotaAction,
 } from "../actions/carta-actions";
 import type { LanceCartaListItem } from "../types";
+import { resolveBaseLance } from "../lib/operacao";
 
 type Props = {
     item: LanceCartaListItem;
@@ -341,6 +342,14 @@ function RegistrarLanceDialog({
         ? Number(opcaoFixoSelecionada.percentual)
         : 0;
 
+    // Valor sugerido do lance fixo = percentual da opção sobre a base (custo total
+    // do contrato). É apenas uma referência: o operador pode ajustar antes de salvar.
+    const baseLance = resolveBaseLance(item);
+    const sugestaoLanceFixo =
+        tipoLance === "fixo" && baseLance != null && percentualFixo > 0
+            ? baseLance * (percentualFixo / 100)
+            : null;
+
     const baseInformada = embutidoNumber + fgtsNumber + outroNumber;
     const proprioNumber = Math.max(valorNumber - baseInformada, 0);
 
@@ -418,6 +427,31 @@ function RegistrarLanceDialog({
                             <Badge variant="outline">Permite FGTS</Badge>
                         )}
                     </div>
+
+                    {sugestaoLanceFixo != null && (
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3">
+                            <div className="min-w-0">
+                                <p className="text-xs text-emerald-200/80">
+                                    Valor sugerido do lance ({percentualFixo.toLocaleString("pt-BR")}% sobre {formatBrl(baseLance ?? 0)})
+                                </p>
+                                <p className="text-lg font-semibold text-emerald-200">
+                                    {formatBrl(sugestaoLanceFixo)}
+                                </p>
+                                <p className="text-[11px] text-emerald-200/60">
+                                    Referência. Ajuste se a operadora pedir um valor diferente.
+                                </p>
+                            </div>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="shrink-0 border-emerald-500/30 text-emerald-200 hover:bg-emerald-500/20"
+                                onClick={() => setValor(formatBrl(sugestaoLanceFixo))}
+                            >
+                                Usar valor sugerido
+                            </Button>
+                        </div>
+                    )}
 
                     {item.estrategia?.trim() && (
                         <p className="mt-3 text-sm text-muted-foreground whitespace-pre-line">
