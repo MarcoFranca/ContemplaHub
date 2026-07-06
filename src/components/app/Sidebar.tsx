@@ -172,9 +172,10 @@ const sections: NavSection[] = [
         href: "/app/organizacao",
         icon: Settings,
         label: "Configurações",
-        alsoActiveFor: ["/app/meta-integracoes", "/app/usuarios", "/app/landing-pages"],
+        alsoActiveFor: ["/app/meta-integracoes", "/app/usuarios", "/app/landing-pages", "/app/operadoras"],
         children: [
           { href: "/app/organizacao", label: "Organização", icon: Building2 },
+          { href: "/app/operadoras", label: "Operadoras", icon: Building2 },
           { href: "/app/usuarios", label: "Usuários", icon: Users },
           { href: "/app/meta-integracoes", label: "Meta Ads", icon: Facebook },
           { href: "/app/landing-pages", label: "Landing Pages", icon: Globe2 },

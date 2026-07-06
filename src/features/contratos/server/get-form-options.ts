@@ -14,7 +14,7 @@ export async function getContratoFormOptions() {
     ] = await Promise.all([
         supabaseAdmin
             .from("administradoras")
-            .select("id, nome, org_id")
+            .select("id, nome, org_id, overrides_global_id")
             .or(`org_id.eq.${profile.orgId},org_id.is.null`)
             .order("nome", { ascending: true }),
 
@@ -33,11 +33,21 @@ export async function getContratoFormOptions() {
         throw new Error(parceirosError.message);
     }
 
+    // Esconde globais que a org sobrescreveu (override); mostra a versão da org.
+    const rows = (administradoras ?? []) as Array<{
+        id: string;
+        nome: string;
+        org_id: string | null;
+        overrides_global_id: string | null;
+    }>;
+    const overridden = new Set(
+        rows.filter((r) => r.org_id === profile.orgId && r.overrides_global_id).map((r) => r.overrides_global_id as string),
+    );
+
     return {
-        administradoras: (administradoras ?? []).map((item) => ({
-            id: item.id,
-            nome: item.nome,
-        })),
+        administradoras: rows
+            .filter((r) => !(r.org_id === null && overridden.has(r.id)))
+            .map((item) => ({ id: item.id, nome: item.nome })),
         parceiros: parceiros ?? [],
     };
 }
