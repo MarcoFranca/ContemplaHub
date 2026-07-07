@@ -14,6 +14,7 @@ export function LeadsToolbar() {
     const showActive = sp.get("ativos") === "1";
     const showLost = sp.get("perdidos") === "1";
     const showCold = sp.get("frios") === "1";
+    const onlyWhatsapp = sp.get("whatsapp") === "1";
     const readinessMinParam = sp.get("rmin"); // "25" | "50" | "75" | null
 
     const debounceRef = React.useRef<number | null>(null);
@@ -53,6 +54,11 @@ export function LeadsToolbar() {
             <div className="flex items-center gap-2">
                 <Switch id="perdidos" checked={showLost} onCheckedChange={(v) => setParam("perdidos", v ? "1" : null)} />
                 <Label htmlFor="perdidos" className="text-sm">Mostrar Perdidos</Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <Switch id="whatsapp" checked={onlyWhatsapp} onCheckedChange={(v) => setParam("whatsapp", v ? "1" : null)} />
+                <Label htmlFor="whatsapp" className="text-sm">Só WhatsApp</Label>
             </div>
 
             <Select

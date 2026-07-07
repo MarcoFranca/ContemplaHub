@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileSignature, Loader2 } from "lucide-react";
+import { FileSignature, Loader2, MessageCircle, Flame, Snowflake, Thermometer } from "lucide-react";
 
 import { formatPhoneBR } from "@/lib/formatters";
 import { InterestSummaryRow } from "./InterestSummaryRow";
@@ -49,6 +49,27 @@ function contractStatusClass(status?: ContractStatus | null) {
         default:
             return "bg-white/10 text-slate-200 border-white/10";
     }
+}
+
+function TemperaturaBadge({ temperatura }: { temperatura?: string | null }) {
+    if (!temperatura) return null;
+    const map: Record<string, { label: string; cls: string; Icon: typeof Flame }> = {
+        quente: { label: "Quente", cls: "bg-red-500/15 text-red-300 border-red-500/30", Icon: Flame },
+        morno: { label: "Morno", cls: "bg-amber-500/15 text-amber-300 border-amber-500/30", Icon: Thermometer },
+        frio: { label: "Frio", cls: "bg-sky-500/15 text-sky-300 border-sky-500/30", Icon: Snowflake },
+    };
+    const cfg = map[temperatura];
+    if (!cfg) return null;
+    const { label, cls, Icon } = cfg;
+    return (
+        <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${cls}`}>
+            <Icon className="h-3 w-3" /> {label}
+        </span>
+    );
+}
+
+function isWhatsapp(lead: LeadCard): boolean {
+    return (lead.channel ?? "").toLowerCase() === "whatsapp" || (lead.origem ?? "").toLowerCase() === "whatsapp";
 }
 
 function nextContractAction(status?: ContractStatus | null): {
@@ -223,6 +244,17 @@ export function LeadCardItem({
                     </div>
 
                     <div className="flex shrink-0 flex-col items-end gap-2">
+                        <TemperaturaBadge temperatura={lead.temperatura} />
+
+                        {isWhatsapp(lead) ? (
+                            <span
+                                title="Lead do WhatsApp"
+                                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300"
+                            >
+                                <MessageCircle className="h-3 w-3" /> WhatsApp
+                            </span>
+                        ) : null}
+
                         {ready != null ? (
                             <span className="shrink-0 rounded-full bg-emerald-600/20 px-2 py-0.5 text-[10px] text-emerald-300">
                                 Ready <span className="font-semibold">{ready}%</span>

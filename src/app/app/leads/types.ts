@@ -87,6 +87,7 @@ export interface LeadCard {
     source_label?: string | null;
     form_label?: string | null;
     channel?: string | null;
+    temperatura?: "frio" | "morno" | "quente" | null;
     utm_campaign?: string | null;
     utm_term?: string | null;
     utm_content?: string | null;

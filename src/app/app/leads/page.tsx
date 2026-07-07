@@ -80,6 +80,7 @@ export default async function LeadsKanbanPage(props: PageProps) {
     const showActive = getFlag("ativos");
     const showLost = getFlag("perdidos");
     const showCold = getFlag("frios");
+    const onlyWhatsapp = getFlag("whatsapp");
 
     const STAGES: Stage[] = [
         ...PRIMARY_KANBAN_STAGES,
@@ -88,7 +89,14 @@ export default async function LeadsKanbanPage(props: PageProps) {
         ...(showLost ? (["perdido"] as const) : []),
     ];
 
-    const rows = await listLeadsForKanban({ showActive, showLost, showCold, scope: "me" });
+    const allRows = await listLeadsForKanban({ showActive, showLost, showCold, scope: "me" });
+    const rows = onlyWhatsapp
+        ? (allRows as LeadCard[]).filter(
+              (l) =>
+                  (l.channel ?? "").toLowerCase() === "whatsapp" ||
+                  (l.origem ?? "").toLowerCase() === "whatsapp",
+          )
+        : (allRows as LeadCard[]);
     const columns = columnsByStage(rows as LeadCard[], ALL_KANBAN_STAGES);
 
     const metrics: KanbanMetrics | null = await getKanbanMetricsFromDB();
@@ -101,9 +109,13 @@ export default async function LeadsKanbanPage(props: PageProps) {
     }
 
     return (
-        <div className="h-full w-full overflow-hidden px-4 md:px-6 py-4">
+        <div className="flex h-full w-full flex-col overflow-hidden px-4 md:px-6 py-4">
 
-            <div className="h-full">
+            <div className="mb-3 shrink-0">
+                <LeadsToolbar />
+            </div>
+
+            <div className="min-h-0 flex-1">
                 <KanbanBoard
                     initialColumns={columns}
                     stages={STAGES}
