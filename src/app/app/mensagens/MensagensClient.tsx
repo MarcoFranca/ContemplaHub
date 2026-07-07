@@ -4,11 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, CheckCheck, Clock, AlertTriangle, Send, MessageCircle, ExternalLink } from "lucide-react";
+import { Check, CheckCheck, Clock, AlertTriangle, Send, MessageCircle, ExternalLink, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { replyConversationAction, type Conversation } from "./actions";
+import { reativarIaAction, replyConversationAction, type Conversation } from "./actions";
 
 function StatusIcon({ status }: { status: string | null }) {
     switch (status) {
@@ -74,7 +74,14 @@ export function MensagensClient({ initial }: { initial: Conversation[] }) {
                             }
                         >
                             <div className="flex items-center justify-between gap-2">
-                                <span className="truncate font-medium">{c.nome}</span>
+                                <span className="flex min-w-0 items-center gap-1.5">
+                                    <span className="truncate font-medium">{c.nome}</span>
+                                    {c.precisaHumano ? (
+                                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-300">
+                                            <UserRound className="h-2.5 w-2.5" /> humano
+                                        </span>
+                                    ) : null}
+                                </span>
                                 <span className="shrink-0 text-[10px] text-muted-foreground">{fmt(c.lastAt)}</span>
                             </div>
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -96,6 +103,31 @@ export function MensagensClient({ initial }: { initial: Conversation[] }) {
     );
 }
 
+function ReativarIaButton({ leadId, onDone }: { leadId: string; onDone: () => void }) {
+    const [pending, start] = React.useTransition();
+    return (
+        <Button
+            variant="outline"
+            size="sm"
+            className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+            disabled={pending}
+            onClick={() => {
+                start(async () => {
+                    const res = await reativarIaAction(leadId);
+                    if (!res.ok) {
+                        toast.error(res.error || "Falha ao reativar.");
+                        return;
+                    }
+                    toast.success("IA reativada para esta conversa.");
+                    onDone();
+                });
+            }}
+        >
+            {pending ? "..." : "Reativar IA"}
+        </Button>
+    );
+}
+
 function ConversationThread({
     conversation,
     onSent,
@@ -114,6 +146,14 @@ function ConversationThread({
                     <p className="text-xs text-muted-foreground">{conversation.phone}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    {conversation.precisaHumano ? (
+                        <Badge variant="outline" className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-300">
+                            <UserRound className="h-3 w-3" /> Precisa de humano
+                        </Badge>
+                    ) : null}
+                    {conversation.precisaHumano && conversation.lead_id ? (
+                        <ReativarIaButton leadId={conversation.lead_id} onDone={onSent} />
+                    ) : null}
                     {conversation.janelaAberta ? (
                         <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
                             Janela 24h aberta

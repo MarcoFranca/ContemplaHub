@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCircle2, MessageCircle, Loader2, PlugZap, Unplug } from "lucide-react";
+import { Bot, CheckCircle2, MessageCircle, Loader2, PlugZap, Unplug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ import {
     connectWhatsappManualAction,
     disconnectWhatsappAction,
     testSendWhatsappAction,
+    toggleWhatsappAiAction,
     updateWhatsappTemplateAction,
     type WhatsappConfig,
     type WhatsappIntegration,
@@ -141,8 +142,69 @@ export function WhatsappManager({
                 onDone={() => router.refresh()}
             />
             {!integration?.ativo && <ManualConnectCard onDone={() => router.refresh()} />}
+            {integration?.ativo && (
+                <AiToggleCard integration={integration} onDone={() => router.refresh()} />
+            )}
             <TemplateEditor template={template} />
         </div>
+    );
+}
+
+function AiToggleCard({
+    integration,
+    onDone,
+}: {
+    integration: WhatsappIntegration;
+    onDone: () => void;
+}) {
+    const [pending, start] = React.useTransition();
+    const on = integration.ai_enabled;
+
+    return (
+        <Card className="border-white/10">
+            <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 className="flex items-center gap-2 font-semibold">
+                        <Bot className="h-5 w-5 text-emerald-500" />
+                        Atendimento por IA
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                        Quando ligado, a IA responde os leads no WhatsApp (qualifica, simula e escala
+                        para humano quando necessário). Quando a IA passa para um humano, ela para de
+                        responder aquele lead.
+                    </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                    <Badge
+                        variant="outline"
+                        className={
+                            on
+                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                : "border-white/15 text-muted-foreground"
+                        }
+                    >
+                        {on ? "Ligada" : "Desligada"}
+                    </Badge>
+                    <Button
+                        variant={on ? "outline" : "default"}
+                        disabled={pending}
+                        onClick={() => {
+                            start(async () => {
+                                const res = await toggleWhatsappAiAction(!on);
+                                if (!res.ok) {
+                                    toast.error(res.error || "Falha ao alterar.");
+                                    return;
+                                }
+                                toast.success(on ? "IA desligada." : "IA ligada.");
+                                onDone();
+                            });
+                        }}
+                    >
+                        {pending ? "..." : on ? "Desligar IA" : "Ligar IA"}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 

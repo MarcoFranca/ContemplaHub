@@ -22,6 +22,7 @@ export type Conversation = {
     lastAt: string | null;
     lastDirection: "in" | "out";
     janelaAberta: boolean;
+    precisaHumano: boolean;
     messages: ConversationMessage[];
 };
 
@@ -34,6 +35,7 @@ type Row = {
     msg_type: string | null;
     status: string | null;
     created_at: string | null;
+    payload: { ai_handoff?: boolean } | null;
     leads: { nome: string | null } | null;
 };
 
@@ -43,7 +45,7 @@ export async function loadConversationsAction(): Promise<Conversation[]> {
 
     const { data, error } = await supabaseAdmin
         .from("whatsapp_messages")
-        .select("id, lead_id, phone, direction, body, msg_type, status, created_at, leads(nome)")
+        .select("id, lead_id, phone, direction, body, msg_type, status, created_at, payload, leads(nome)")
         .eq("org_id", profile.orgId)
         .order("created_at", { ascending: true })
         .limit(2000);
@@ -66,6 +68,7 @@ export async function loadConversationsAction(): Promise<Conversation[]> {
         const existing = byLead.get(key);
         if (existing) {
             existing.messages.push(msg);
+            if (r.payload?.ai_handoff === true) existing.precisaHumano = true;
         } else {
             byLead.set(key, {
                 lead_id: r.lead_id,
@@ -75,6 +78,7 @@ export async function loadConversationsAction(): Promise<Conversation[]> {
                 lastAt: null,
                 lastDirection: r.direction,
                 janelaAberta: false,
+                precisaHumano: r.payload?.ai_handoff === true,
                 messages: [msg],
             });
         }
@@ -99,6 +103,38 @@ export async function loadConversationsAction(): Promise<Conversation[]> {
         (a, b) => new Date(b.lastAt ?? 0).getTime() - new Date(a.lastAt ?? 0).getTime(),
     );
     return conversations;
+}
+
+export async function reativarIaAction(
+    leadId: string,
+): Promise<{ ok: boolean; error?: string }> {
+    try {
+        const supabase = await supabaseServer();
+        const {
+            data: { session },
+        } = await supabase.auth.getSession();
+        const profile = await getCurrentProfile();
+        if (!session?.access_token || !profile?.orgId) {
+            return { ok: false, error: "Sessão inválida." };
+        }
+        const res = await fetch(`${getBackendUrl()}/whatsapp/ai/reativar`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Org-Id": profile.orgId,
+                Authorization: `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+            body: JSON.stringify({ lead_id: leadId }),
+        });
+        if (!res.ok) {
+            const t = await res.text().catch(() => "");
+            return { ok: false, error: t || `Erro ${res.status}` };
+        }
+        return { ok: true };
+    } catch (e) {
+        return { ok: false, error: e instanceof Error ? e.message : "Falha ao reativar." };
+    }
 }
 
 export async function replyConversationAction(

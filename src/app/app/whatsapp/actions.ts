@@ -24,6 +24,7 @@ export type WhatsappIntegration = {
     quality_rating: string | null;
     messaging_limit: string | null;
     ativo: boolean;
+    ai_enabled: boolean;
     last_success_at: string | null;
     last_error_at: string | null;
     last_error_message: string | null;
@@ -139,6 +140,20 @@ export async function disconnectWhatsappAction(
         return { ok: true };
     } catch (e) {
         return { ok: false, error: e instanceof Error ? e.message : "Falha ao desconectar." };
+    }
+}
+
+export async function toggleWhatsappAiAction(
+    enabled: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+    try {
+        await authed("/whatsapp/ai/toggle", {
+            method: "POST",
+            body: JSON.stringify({ enabled }),
+        });
+        return { ok: true };
+    } catch (e) {
+        return { ok: false, error: e instanceof Error ? e.message : "Falha ao alterar." };
     }
 }
 
