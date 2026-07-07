@@ -15,6 +15,7 @@ import { ClienteResumoExecutivo, type ResumoExecutivo } from "./ClienteResumoExe
 import { getLeadCadastroPFByLead } from "./pf-cadastro";
 import { ClienteComissoesCard, type ComissoesResumo } from "./ClienteComissoesCard";
 import { ClienteTimelineCard, type TimelineEvento } from "./ClienteTimelineCard";
+import { WhatsappConversationCard, type WhatsappMessage } from "./WhatsappConversationCard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -172,6 +173,27 @@ async function loadLancesCliente(orgId: string, cotasIds: string[]) {
     return data ?? [];
 }
 
+async function loadWhatsappMessages(
+    leadId: string,
+    orgId: string,
+): Promise<{ messages: WhatsappMessage[]; janelaAberta: boolean }> {
+    const supabase = await supabaseServer();
+    const { data, error } = await supabase
+        .from("whatsapp_messages")
+        .select("id, direction, body, msg_type, status, phone, created_at")
+        .eq("org_id", orgId)
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: true })
+        .limit(200);
+    if (error) return { messages: [], janelaAberta: false };
+    const messages = (data ?? []) as WhatsappMessage[];
+    const lastInbound = [...messages].reverse().find((m) => m.direction === "in");
+    const janelaAberta =
+        lastInbound?.created_at != null &&
+        Date.now() - new Date(lastInbound.created_at).getTime() < 24 * 60 * 60 * 1000;
+    return { messages, janelaAberta };
+}
+
 export default async function LeadDetailsPage({
                                                   params,
                                               }: {
@@ -193,6 +215,7 @@ export default async function LeadDetailsPage({
     ]);
 
     const pfCadastro = await getLeadCadastroPFByLead(leadId, profile.orgId);
+    const whatsapp = await loadWhatsappMessages(leadId, profile.orgId);
 
     const cotasIds = cotas.map((c: { id: string }) => c.id);
     const [contratos, comissoes, atividades, lancesCliente, opcoesFixo] = await Promise.all([
@@ -315,6 +338,7 @@ export default async function LeadDetailsPage({
 
                     <div className="space-y-4">
                         <LeadInfoCard lead={lead} />
+                        <WhatsappConversationCard messages={whatsapp.messages} janelaAberta={whatsapp.janelaAberta} />
                         <ClienteTimelineCard eventos={timeline} />
                         <LeadMetaAdsCard lead={lead} diagnostic={diagnostic} />
                         <LeadStrategiesCard lead={lead} />
