@@ -83,6 +83,7 @@ const sections: NavSection[] = [
       },
       { href: "/app/leads", icon: Trello, label: "Leads" },
       { href: "/app/mensagens", icon: MessageCircle, label: "Mensagens" },
+      { href: "/app/agenda", icon: CalendarDays, label: "Agenda" },
       {
         href: "/app/carteira",
         icon: Briefcase,
