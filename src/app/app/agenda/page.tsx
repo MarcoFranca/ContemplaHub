@@ -5,18 +5,21 @@ import Link from "next/link";
 import { CalendarDays, CalendarCog } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { Button } from "@/components/ui/button";
-import { loadAgendamentosAction } from "./actions";
+import { loadAgendamentosAction, listFeriadosCustomAction } from "./actions";
 import { AgendaClient } from "./AgendaClient";
 
 export default async function AgendaPage() {
     const me = await getCurrentProfile();
     if (!me?.orgId) return <main className="p-6">Vincule-se a uma organização.</main>;
 
-    const agendamentos = await loadAgendamentosAction();
+    const [agendamentos, feriadosCustom] = await Promise.all([
+        loadAgendamentosAction(),
+        listFeriadosCustomAction(),
+    ]);
 
     return (
         <div className="h-full overflow-hidden">
-            <main className="mx-auto flex h-full max-w-5xl flex-col gap-4 p-6">
+            <main className="mx-auto flex h-full max-w-7xl flex-col gap-4 p-6">
                 <div className="flex items-start justify-between gap-3">
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-semibold">
@@ -34,7 +37,7 @@ export default async function AgendaPage() {
                     </Button>
                 </div>
 
-                <AgendaClient initial={agendamentos} />
+                <AgendaClient initial={agendamentos} feriadosCustom={feriadosCustom} />
             </main>
         </div>
     );

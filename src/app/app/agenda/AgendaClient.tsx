@@ -4,14 +4,17 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarClock, Check, X, CheckCheck, ExternalLink, Bot, Clock } from "lucide-react";
+import { CalendarClock, Check, X, CheckCheck, ExternalLink, Bot, Clock, CalendarRange, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
     type Agendamento,
     type AgendamentoStatus,
+    type FeriadoCustom,
     updateAgendamentoStatusAction,
 } from "./actions";
+import { AgendaCalendar } from "./AgendaCalendar";
+import { mapaFeriados } from "./feriados";
 
 function fmt(dt: string | null) {
     if (!dt) return "";
@@ -129,16 +132,51 @@ function AgendamentoCard({ ag, onChanged }: { ag: Agendamento; onChanged: () => 
     );
 }
 
-export function AgendaClient({ initial }: { initial: Agendamento[] }) {
+export function AgendaClient({
+    initial,
+    feriadosCustom,
+}: {
+    initial: Agendamento[];
+    feriadosCustom: FeriadoCustom[];
+}) {
     const router = useRouter();
     const onChanged = () => router.refresh();
     const [now] = React.useState(() => Date.now());
+    const [modo, setModo] = React.useState<"calendario" | "lista">("calendario");
+
+    const feriados = React.useMemo(() => {
+        const ano = new Date().getFullYear();
+        return mapaFeriados([ano, ano + 1], feriadosCustom);
+    }, [feriadosCustom]);
+
+    const toggle = (
+        <div className="flex gap-1 self-start rounded-lg border border-white/10 p-0.5">
+            <Button variant={modo === "calendario" ? "secondary" : "ghost"} size="sm" className="gap-1.5" onClick={() => setModo("calendario")}>
+                <CalendarRange className="h-4 w-4" /> Calendário
+            </Button>
+            <Button variant={modo === "lista" ? "secondary" : "ghost"} size="sm" className="gap-1.5" onClick={() => setModo("lista")}>
+                <List className="h-4 w-4" /> Lista
+            </Button>
+        </div>
+    );
+
+    if (modo === "calendario") {
+        return (
+            <div className="flex min-h-0 flex-1 flex-col gap-3">
+                {toggle}
+                <AgendaCalendar agendamentos={initial} feriados={feriados} />
+            </div>
+        );
+    }
 
     if (!initial.length) {
         return (
-            <div className="rounded-xl border border-white/10 p-10 text-center text-muted-foreground">
-                <CalendarClock className="mx-auto mb-3 h-8 w-8 text-emerald-500/60" />
-                Nenhuma reunião agendada ainda. Quando a IA marcar uma reunião com um lead, ela aparece aqui.
+            <div className="flex flex-col gap-3">
+                {toggle}
+                <div className="rounded-xl border border-white/10 p-10 text-center text-muted-foreground">
+                    <CalendarClock className="mx-auto mb-3 h-8 w-8 text-emerald-500/60" />
+                    Nenhuma reunião agendada ainda. Quando a IA marcar uma reunião com um lead, ela aparece aqui.
+                </div>
             </div>
         );
     }
@@ -151,7 +189,8 @@ export function AgendaClient({ initial }: { initial: Agendamento[] }) {
     );
 
     return (
-        <div className="flex-1 space-y-6 overflow-y-auto">
+        <div className="flex-1 space-y-4 overflow-y-auto">
+            {toggle}
             <section>
                 <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                     <Clock className="h-4 w-4" /> Próximas ({proximas.length})

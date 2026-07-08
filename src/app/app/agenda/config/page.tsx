@@ -6,15 +6,18 @@ import { CalendarCog, ArrowLeft } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { Button } from "@/components/ui/button";
 import { listCalendariosAction, listConsultoresAction } from "./actions";
+import { listFeriadosCustomAction } from "../actions";
 import { AgendaConfigClient } from "./AgendaConfigClient";
+import { FeriadosConfig } from "./FeriadosConfig";
 
 export default async function AgendaConfigPage() {
     const me = await getCurrentProfile();
     if (!me?.orgId) return <main className="p-6">Vincule-se a uma organização.</main>;
 
-    const [calendarios, consultores] = await Promise.all([
+    const [calendarios, consultores, feriados] = await Promise.all([
         listCalendariosAction(),
         listConsultoresAction(),
+        listFeriadosCustomAction(),
     ]);
 
     return (
@@ -38,6 +41,8 @@ export default async function AgendaConfigPage() {
                 </div>
 
                 <AgendaConfigClient initialCalendarios={calendarios} consultores={consultores} />
+
+                <FeriadosConfig initial={feriados} />
             </main>
         </div>
     );

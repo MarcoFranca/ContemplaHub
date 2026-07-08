@@ -89,3 +89,67 @@ export async function updateAgendamentoStatusAction(
     if (error) return { ok: false, error: error.message };
     return { ok: true };
 }
+
+export async function updateAgendamentoAction(
+    id: string,
+    patch: Partial<{ titulo: string; inicio: string; fim: string | null; observacao: string | null }>,
+): Promise<{ ok: boolean; error?: string }> {
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) return { ok: false, error: "Sessão inválida." };
+
+    if (patch.inicio && patch.fim && new Date(patch.inicio) >= new Date(patch.fim)) {
+        return { ok: false, error: "O fim deve ser depois do início." };
+    }
+
+    const { error } = await supabaseAdmin
+        .from("agendamentos")
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq("org_id", profile.orgId)
+        .eq("id", id);
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+}
+
+export type FeriadoCustom = { id: string; data: string; nome: string; uf: string | null };
+
+export async function listFeriadosCustomAction(): Promise<FeriadoCustom[]> {
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) return [];
+    const { data } = await supabaseAdmin
+        .from("agenda_feriados")
+        .select("id, data, nome, uf")
+        .eq("org_id", profile.orgId)
+        .order("data", { ascending: true });
+    return (data ?? []) as FeriadoCustom[];
+}
+
+export async function addFeriadoCustomAction(
+    data: string,
+    nome: string,
+    uf: string,
+): Promise<{ ok: boolean; error?: string }> {
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) return { ok: false, error: "Sessão inválida." };
+    if (!data || !nome.trim()) return { ok: false, error: "Informe data e nome do feriado." };
+    const { error } = await supabaseAdmin.from("agenda_feriados").insert({
+        org_id: profile.orgId,
+        data,
+        nome: nome.trim(),
+        uf: uf.trim() || null,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+}
+
+export async function deleteFeriadoCustomAction(id: string): Promise<{ ok: boolean; error?: string }> {
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) return { ok: false, error: "Sessão inválida." };
+    const { error } = await supabaseAdmin
+        .from("agenda_feriados")
+        .delete()
+        .eq("org_id", profile.orgId)
+        .eq("id", id);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+}
