@@ -3,14 +3,18 @@ export const dynamic = "force-dynamic";
 
 import { MessageCircle } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth/server";
-import { loadConversationsAction } from "./actions";
+import { loadConversationsAction, loadAiFalhasAction } from "./actions";
 import { MensagensClient } from "./MensagensClient";
+import { AiFalhasBanner } from "./AiFalhasBanner";
 
 export default async function MensagensPage() {
     const me = await getCurrentProfile();
     if (!me?.orgId) return <main className="p-6">Vincule-se a uma organização.</main>;
 
-    const conversations = await loadConversationsAction();
+    const [conversations, falhas] = await Promise.all([
+        loadConversationsAction(),
+        loadAiFalhasAction(),
+    ]);
 
     return (
         <div className="h-full overflow-hidden">
@@ -24,6 +28,8 @@ export default async function MensagensPage() {
                         Central de conversas do WhatsApp. Acompanhe e responda os leads em um só lugar.
                     </p>
                 </div>
+
+                <AiFalhasBanner falhas={falhas} />
 
                 <MensagensClient initial={conversations} />
             </main>

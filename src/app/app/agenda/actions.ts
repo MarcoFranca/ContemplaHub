@@ -3,7 +3,7 @@
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 
-export type AgendamentoStatus = "agendado" | "confirmado" | "cancelado" | "realizado";
+export type AgendamentoStatus = "agendado" | "confirmado" | "cancelado" | "realizado" | "no_show";
 
 export type Agendamento = {
     id: string;

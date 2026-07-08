@@ -39,6 +39,28 @@ type Row = {
     leads: { nome: string | null } | null;
 };
 
+export type AiFalha = {
+    id: string;
+    lead_id: string | null;
+    telefone: string | null;
+    contexto: string | null;
+    erro: string | null;
+    created_at: string | null;
+};
+
+export async function loadAiFalhasAction(): Promise<AiFalha[]> {
+    const profile = await getCurrentProfile();
+    if (!profile?.orgId) return [];
+    const { data, error } = await supabaseAdmin
+        .from("ai_falhas")
+        .select("id, lead_id, telefone, contexto, erro, created_at")
+        .eq("org_id", profile.orgId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+    if (error) return [];
+    return (data ?? []) as AiFalha[];
+}
+
 export async function loadConversationsAction(): Promise<Conversation[]> {
     const profile = await getCurrentProfile();
     if (!profile?.orgId) return [];

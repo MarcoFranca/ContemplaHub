@@ -36,6 +36,7 @@ const statusCfg: Record<AgendamentoStatus, { label: string; cls: string }> = {
     confirmado: { label: "Confirmado", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
     cancelado: { label: "Cancelado", cls: "border-red-500/30 bg-red-500/10 text-red-300" },
     realizado: { label: "Realizado", cls: "border-white/15 bg-white/5 text-muted-foreground" },
+    no_show: { label: "Não compareceu", cls: "border-orange-500/30 bg-orange-500/10 text-orange-300" },
 };
 
 function AgendamentoCard({ ag, onChanged }: { ag: Agendamento; onChanged: () => void }) {
@@ -54,7 +55,7 @@ function AgendamentoCard({ ag, onChanged }: { ag: Agendamento; onChanged: () => 
         });
     }
 
-    const encerrado = ag.status === "cancelado" || ag.status === "realizado";
+    const encerrado = ag.status === "cancelado" || ag.status === "realizado" || ag.status === "no_show";
 
     return (
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -115,6 +116,15 @@ function AgendamentoCard({ ag, onChanged }: { ag: Agendamento; onChanged: () => 
                             onClick={() => setStatus("realizado")}
                         >
                             <CheckCheck className="h-3.5 w-3.5" /> Realizada
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={pending}
+                            className="gap-1.5 border-orange-500/30 text-orange-300 hover:bg-orange-500/10"
+                            onClick={() => setStatus("no_show")}
+                        >
+                            <X className="h-3.5 w-3.5" /> Não compareceu
                         </Button>
                         <Button
                             variant="outline"

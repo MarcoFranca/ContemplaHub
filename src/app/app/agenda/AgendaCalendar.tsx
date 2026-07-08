@@ -45,6 +45,7 @@ const statusColor: Record<string, string> = {
     confirmado: "#10b981",
     cancelado: "#ef4444",
     realizado: "#64748b",
+    no_show: "#f97316",
 };
 
 function toLocalInput(d: Date): string {
@@ -213,7 +214,7 @@ function EditDialog({
     pending: boolean;
     onClose: () => void;
     onSave: (patch: { titulo: string; inicio: string; fim: string | null; observacao: string | null }) => void;
-    onStatus: (status: "confirmado" | "cancelado" | "realizado") => void;
+    onStatus: (status: "confirmado" | "cancelado" | "realizado" | "no_show") => void;
 }) {
     const [titulo, setTitulo] = React.useState("");
     const [inicio, setInicio] = React.useState("");
@@ -270,6 +271,15 @@ function EditDialog({
                             onClick={() => onStatus("cancelado")}
                         >
                             Cancelar reunião
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-orange-500/30 text-orange-300 hover:bg-orange-500/10"
+                            disabled={pending}
+                            onClick={() => onStatus("no_show")}
+                        >
+                            Não compareceu
                         </Button>
                         <Button variant="outline" size="sm" disabled={pending} onClick={() => onStatus("realizado")}>
                             Realizada
