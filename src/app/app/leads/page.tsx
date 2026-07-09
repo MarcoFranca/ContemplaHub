@@ -93,7 +93,7 @@ export default async function LeadsKanbanPage(props: PageProps) {
     const rows = onlyWhatsapp
         ? (allRows as LeadCard[]).filter(
               (l) =>
-                  (l.channel ?? "").toLowerCase() === "whatsapp" ||
+                  (l.channel ?? "").toLowerCase().startsWith("whatsapp") ||
                   (l.origem ?? "").toLowerCase() === "whatsapp",
           )
         : (allRows as LeadCard[]);

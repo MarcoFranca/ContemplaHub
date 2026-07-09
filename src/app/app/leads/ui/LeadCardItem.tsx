@@ -69,7 +69,7 @@ function TemperaturaBadge({ temperatura }: { temperatura?: string | null }) {
 }
 
 function isWhatsapp(lead: LeadCard): boolean {
-    return (lead.channel ?? "").toLowerCase() === "whatsapp" || (lead.origem ?? "").toLowerCase() === "whatsapp";
+    return (lead.channel ?? "").toLowerCase().startsWith("whatsapp") || (lead.origem ?? "").toLowerCase() === "whatsapp";
 }
 
 function nextContractAction(status?: ContractStatus | null): {
@@ -251,7 +251,8 @@ export function LeadCardItem({
                                 title="Lead do WhatsApp"
                                 className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300"
                             >
-                                <MessageCircle className="h-3 w-3" /> WhatsApp
+                                <MessageCircle className="h-3 w-3" />
+                                {(lead.channel ?? "").toLowerCase() === "whatsapp_ad" ? "WhatsApp Ad" : "WhatsApp"}
                             </span>
                         ) : null}
 
