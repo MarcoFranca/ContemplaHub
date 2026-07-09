@@ -2,31 +2,26 @@
 
 ## Responsabilidade
 
-A rota `/app/financeiro/pagamentos` virou a tela operacional de comissao da carta:
+As rotas do Financeiro agora se dividem assim:
 
-- selecionar carta/cota/contrato;
-- visualizar contexto da venda;
-- configurar comissao total;
-- definir cronograma de recebimento;
-- configurar parceiro e repasse;
-- previsualizar cronograma financeiro;
-- confirmar o cronograma operacional;
-- operar as excecoes mensais do recebimento.
+- `/app/financeiro`: panorama gerencial de comissoes e repasses da empresa.
+- `/app/financeiro/pagamentos`: operacao por carta para configurar comissao e cadastrar cronogramas.
 
 ## Rotas
 
 - `/app/financeiro`
 - `/app/financeiro/pagamentos`
 
-Query params relevantes:
+Query params relevantes em pagamentos:
 
 - `item_id`
 - `contrato_id`
 
 ## Principais pontos de codigo
 
-### Pagina
+### Paginas
 
+- `src/app/app/financeiro/page.tsx`
 - `src/app/app/financeiro/pagamentos/page.tsx`
 
 ### Actions
@@ -39,99 +34,66 @@ Query params relevantes:
 
 ### Componentes
 
+- `FinanceiroPanorama`
 - `ComissaoOperacionalWorkspace`
 - `CronogramaPreviewTable`
 - `CronogramaOperacionalTable`
 
-### Pulos de competência + divergências de parcela paga
-
-O `ComissaoOperacionalWorkspace` exibe:
-- **"Competências puladas"**: lista os pulos persistidos (`listFinanceiroPulosAction` →
-  `GET /financeiro/contratos/{id}/pulos`) com botão **desfazer** (`desfazerPuloAction` →
-  `DELETE .../pulos/{competencia}`, que regenera o cronograma).
-- **"Parcelas pagas com valor divergente"**: após confirmar/reprocessar, o resultado traz
-  `parcelas_pagas_mantidas` e `divergencias_pagas`. As divergências (parcela paga cujo valor difere
-  do recálculo) aparecem num aviso âmbar com botão **"Reverter baixa"**
-  (`updateFinanceiroPagamentoStatusAction(item, "previsto")`). O valor pago nunca é alterado pelo
-  sistema; a correção é manual (reverter baixa → reprocessar → dar baixa com o valor certo).
-
 ## Navegacao
 
-O Financeiro agora aparece como categoria propria no menu lateral:
+O menu lateral passa a refletir o fluxo financeiro:
 
+- `Financeiro`
 - `Panorama`
 - `Pagamentos`
+- `Comissoes`
 
-## Fluxo principal
+## Panorama financeiro
+
+A rota `/app/financeiro` concentra uma leitura gerencial sem alterar o backend:
+
+- comissao da empresa projetada;
+- comissao da empresa disponivel para baixa;
+- comissao da empresa ja recebida;
+- repasse parceiro pendente;
+- repasse parceiro pago;
+- valores cancelados;
+- timeline mensal com projetado, pago, repasse e cancelado;
+- ranking dos contratos com maior saldo operacional.
+
+Os dados nascem da leitura consolidada de `listComissaoLancamentosAction()` e sao agregados no frontend para dashboard.
+
+## Fluxo principal em pagamentos
 
 1. O usuario seleciona a carta/contrato.
-   A lista nasce da cota/carta e pode mostrar:
-   - carta com contrato completo;
-   - carta com numero de contrato pendente (mostra input inline para salvar o numero, via `updateFinanceiroContratoNumeroAction`);
-   - carta sem contrato ainda cadastrado (o alerta "Numero de contrato pendente" oferece o botao "Cadastrar contrato da carta" que leva a `/app/cartas/{cotaId}`, onde o contrato e registrado em `completar-cadastro-carta` com `mode="registerExisting"`). Observacao: a carta ja existe; "cadastrar" aqui significa editar a carta para vincular o numero do contrato.
-2. A tela mostra o contexto operacional:
-   - cliente;
-   - cota;
-   - valor da carta;
-   - administradora;
-   - status da cota e do contrato;
-   - comissao ativa;
-   - parceiro vinculado.
-3. Se o numero do contrato estiver pendente, a tela solicita o cadastro sem sair do fluxo.
-4. O usuario escolhe o tipo de recebimento:
-   - a vista;
-   - parcelado linear;
-   - parcelado variavel/manual.
-5. O usuario ajusta:
+2. A tela mostra o contexto operacional da venda.
+3. Se o numero do contrato estiver pendente, a propria tela permite atualizar esse numero.
+4. O usuario configura:
    - percentual total;
-   - regras/parcelas;
+   - tipo de recebimento;
+   - parcelas/regras;
    - parceiro e imposto retido.
-6. A tela calcula o preview local:
-   - comissao bruta;
-   - parceiro bruto, imposto e liquido;
-   - empresa liquida;
-   - cronograma por parcela.
-7. Ao salvar, a tela persiste a configuracao oficial da cota via `PUT /comissoes/cotas/{cota_id}`.
-8. Ao confirmar o cronograma operacional, a tela:
+5. A tela gera o preview financeiro local.
+6. Ao salvar, persiste a configuracao oficial da cota via `PUT /comissoes/cotas/{cota_id}`.
+7. Ao confirmar o cronograma operacional, a tela:
    - salva a configuracao;
    - persiste as parcelas previstas em `public.pagamentos`;
    - reprocessa `cota_pagamento_competencias`;
    - reprocessa `comissao_lancamentos`;
    - atualiza a projecao segura do backend.
-9. A aba `Operacao mensal` mostra a carteira prevista mes a mes e permite atuar so nas excecoes:
+8. A aba `Operacao mensal` mostra a carteira prevista mes a mes e permite atuar so nas excecoes:
    - marcar como pago;
    - marcar como inadimplente;
-   - cancelar futuros;
-   - pular a proxima competencia e empurrar as demais para frente.
-10. A propria tela continua exibindo:
-    - lancamentos reais;
-    - projecao;
-    - resumo financeiro;
-    - timeline.
+   - reverter para previsto;
+   - pular a competencia;
+   - cancelar recebimentos futuros;
+   - editar detalhes da parcela.
 
-## UX: acoes de salvar duplicadas (topo e rodape)
+## Ajustes recentes de UX
 
-Os botoes "Salvar regra" e "Confirmar cronograma"/"Reprocessar cronograma" aparecem duas vezes
-em `ComissaoOperacionalWorkspace`:
-
-- no cabecalho da secao "Configuracao comercial" (acesso rapido);
-- em uma barra de acoes no rodape do bloco de configuracao, apos "Configuracoes avancadas"
-  (observacoes/regra da primeira competencia).
-
-Motivo: o `ComissaoConfigSection`/`ComissaoBuilder` (base financeira, estrutura de recebimento,
-cronograma de parcelas, parceiros) e longo, e o usuario preenchia tudo e precisava rolar de volta
-ao topo para salvar. O botao do rodape usa os mesmos handlers (`handleSaveConfig` /
-`handleGenerateProjection`), sem duplicar logica.
-
-## Panorama financeiro
-
-A rota `/app/financeiro` agora concentra uma leitura gerencial:
-
-- comissao da empresa a receber;
-- repasse parceiro pendente;
-- valores travados por pendencia/inadimplencia;
-- valores cancelados;
-- timeline mensal com projetado, pago, pendente e cancelado.
+- O painel de operacao mensal ganhou mais largura e scroll horizontal controlado para nao esmagar as colunas.
+- O bloco de preview/operacao fica fixo em telas muito largas para reduzir rolagem.
+- As tabs da operacao aceitam quebra de linha quando faltar espaco horizontal.
 
 ## Integracao com backend
 
