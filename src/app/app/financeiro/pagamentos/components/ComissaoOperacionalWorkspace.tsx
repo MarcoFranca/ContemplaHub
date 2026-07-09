@@ -32,7 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ComissaoConfigSection } from "@/app/app/lances/components/comissao/ComissaoConfigSection";
 import { ContratoSearchSelect } from "./ContratoSearchSelect";
-import { ComissaoStatusBadge, RepasseStatusBadge } from "@/app/app/comissoes/components/status-badges";
+import { ComissaoStatusBadge } from "@/app/app/comissoes/components/status-badges";
 import type { CotaComissaoPayload, CotaComissaoResponse } from "@/app/app/lances/types";
 import type { ComissaoModelo } from "@/app/app/comissoes/types";
 import { listModelosComissaoAction } from "@/app/app/comissoes/actions";
@@ -574,10 +574,10 @@ export function ComissaoOperacionalWorkspace({
       )}
 
       {/* ── Corpo: Configuração (esq) + Visualização (dir) ── */}
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+      <div className="grid gap-6 min-[1780px]:grid-cols-[minmax(0,1.08fr)_minmax(620px,0.92fr)]">
 
         {/* ── Coluna esquerda: Configuração comercial ── */}
-        <section className="grid gap-5 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.45)]">
+        <section className="grid gap-5 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.45)] min-[1780px]:sticky min-[1780px]:top-6 min-[1780px]:self-start">
 
           {/* Cabeçalho + botões de ação */}
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -839,7 +839,7 @@ export function ComissaoOperacionalWorkspace({
 
           {/* Abas operacionais */}
           <Tabs defaultValue="operacao">
-            <TabsList className="h-10 rounded-xl bg-slate-950/80 p-1">
+            <TabsList className="h-auto w-full flex-wrap justify-start rounded-xl bg-slate-950/80 p-1">
               <TabsTrigger value="operacao" className="rounded-lg px-3 text-xs">
                 Operação mensal
               </TabsTrigger>

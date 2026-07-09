@@ -37,13 +37,10 @@ import {
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 
-// ── Tipos ────────────────────────────────────────────────────────────────────
-
 type NavChild = {
   href: string;
   label: string;
   icon: typeof Home;
-  /** rotas extras que contam como "ativa" para este filho */
   alsoActiveFor?: string[];
 };
 
@@ -52,7 +49,6 @@ type NavItem = {
   icon: typeof Home;
   label: string;
   children?: NavChild[];
-  /** rotas extras que ativam o pai */
   alsoActiveFor?: string[];
 };
 
@@ -61,23 +57,21 @@ type NavSection = {
   items: NavItem[];
 };
 
-// ── Estrutura de navegação ────────────────────────────────────────────────────
-
 const sections: NavSection[] = [
   {
-    label: "Operação",
+    label: "Operacao",
     items: [
       { href: "/app", icon: Home, label: "Painel" },
       {
         href: "/app/pendencias",
         icon: Bell,
-        label: "Pendências",
+        label: "Pendencias",
         children: [
-          { href: "/app/pendencias?cat=comissao_config", label: "Sem comissão", icon: CircleDollarSign },
-          { href: "/app/pendencias?cat=contrato_sem_lancamento", label: "Sem lançamentos", icon: BookOpen },
-          { href: "/app/pendencias?cat=comissao_inadimplente", label: "Em cobrança", icon: Wallet },
+          { href: "/app/pendencias?cat=comissao_config", label: "Sem comissao", icon: CircleDollarSign },
+          { href: "/app/pendencias?cat=contrato_sem_lancamento", label: "Sem lancamentos", icon: BookOpen },
+          { href: "/app/pendencias?cat=comissao_inadimplente", label: "Em cobranca", icon: Wallet },
           { href: "/app/pendencias?cat=repasse_vencido", label: "Repasses vencidos", icon: AlertTriangle },
-          { href: "/app/pendencias?cat=repasse_pendente", label: "Repasses do mês", icon: ArrowLeftRight },
+          { href: "/app/pendencias?cat=repasse_pendente", label: "Repasses do mes", icon: ArrowLeftRight },
           { href: "/app/pendencias?cat=carta_sem_assembleia", label: "Sem assembleia", icon: CalendarDays },
         ],
       },
@@ -99,8 +93,8 @@ const sections: NavSection[] = [
         icon: Calculator,
         label: "Simuladores",
         children: [
-          { href: "/app/simuladores?sim=consorcio", label: "Consórcio (lance)", icon: Calculator },
-          { href: "/app/simuladores?sim=comparativo", label: "Consórcio × Financiamento", icon: Scale },
+          { href: "/app/simuladores?sim=consorcio", label: "Consorcio (lance)", icon: Calculator },
+          { href: "/app/simuladores?sim=comparativo", label: "Consorcio x Financiamento", icon: Scale },
         ],
       },
     ],
@@ -109,48 +103,41 @@ const sections: NavSection[] = [
     label: "Financeiro",
     items: [
       {
-        href: "/app/comissoes",
+        href: "/app/financeiro",
         icon: CircleDollarSign,
-        label: "Comissões",
-        alsoActiveFor: ["/app/financeiro"],
+        label: "Financeiro",
+        alsoActiveFor: ["/app/comissoes"],
         children: [
           {
-            href: "/app/comissoes?tab=dashboard",
+            href: "/app/financeiro",
+            label: "Panorama",
+            icon: LayoutDashboard,
+            alsoActiveFor: ["/app/financeiro"],
+          },
+          {
+            href: "/app/financeiro/pagamentos",
+            label: "Pagamentos",
+            icon: BookOpen,
+            alsoActiveFor: ["/app/financeiro/pagamentos"],
+          },
+        ],
+      },
+      {
+        href: "/app/comissoes",
+        icon: BarChart3,
+        label: "Comissoes",
+        children: [
+          {
+            href: "/app/comissoes",
             label: "Dashboard",
             icon: LayoutDashboard,
             alsoActiveFor: ["/app/comissoes"],
           },
-          {
-            href: "/app/comissoes?tab=pipeline",
-            label: "Pipeline",
-            icon: BarChart3,
-          },
-          {
-            href: "/app/comissoes?tab=lancamentos",
-            label: "Lançamentos",
-            icon: List,
-          },
-          {
-            href: "/app/comissoes?tab=repasses",
-            label: "Repasses",
-            icon: ArrowLeftRight,
-          },
-          {
-            href: "/app/comissoes?tab=cronograma",
-            label: "Cronograma",
-            icon: CalendarDays,
-          },
-          {
-            href: "/app/financeiro/pagamentos",
-            label: "Config. Comissão",
-            icon: BookOpen,
-            alsoActiveFor: ["/app/financeiro/pagamentos"],
-          },
-          {
-            href: "/app/comissoes/modelos",
-            label: "Modelos",
-            icon: Layers,
-          },
+          { href: "/app/comissoes?tab=pipeline", label: "Pipeline", icon: BarChart3 },
+          { href: "/app/comissoes?tab=lancamentos", label: "Lancamentos", icon: List },
+          { href: "/app/comissoes?tab=repasses", label: "Repasses", icon: ArrowLeftRight },
+          { href: "/app/comissoes?tab=cronograma", label: "Cronograma", icon: CalendarDays },
+          { href: "/app/comissoes/modelos", label: "Modelos", icon: Layers },
         ],
       },
       {
@@ -159,11 +146,7 @@ const sections: NavSection[] = [
         label: "Parceiros",
         children: [
           { href: "/app/parceiros", label: "Cadastro", icon: Users },
-          {
-            href: "/app/parceiros/gerencial",
-            label: "Gerencial",
-            icon: BarChart3,
-          },
+          { href: "/app/parceiros/gerencial", label: "Gerencial", icon: BarChart3 },
         ],
       },
     ],
@@ -174,12 +157,12 @@ const sections: NavSection[] = [
       {
         href: "/app/organizacao",
         icon: Settings,
-        label: "Configurações",
+        label: "Configuracoes",
         alsoActiveFor: ["/app/meta-integracoes", "/app/usuarios", "/app/landing-pages", "/app/operadoras", "/app/whatsapp"],
         children: [
-          { href: "/app/organizacao", label: "Organização", icon: Building2 },
+          { href: "/app/organizacao", label: "Organizacao", icon: Building2 },
           { href: "/app/operadoras", label: "Operadoras", icon: Building2 },
-          { href: "/app/usuarios", label: "Usuários", icon: Users },
+          { href: "/app/usuarios", label: "Usuarios", icon: Users },
           { href: "/app/meta-integracoes", label: "Meta Ads", icon: Facebook },
           { href: "/app/whatsapp", label: "WhatsApp", icon: MessageCircle },
           { href: "/app/landing-pages", label: "Landing Pages", icon: Globe2 },
@@ -191,10 +174,8 @@ const sections: NavSection[] = [
 
 const onboardingItems: NavItem[] = [
   { href: "/app", icon: Home, label: "Painel" },
-  { href: "/app/organizacao", icon: Building2, label: "Organização" },
+  { href: "/app/organizacao", icon: Building2, label: "Organizacao" },
 ];
-
-// ── Helpers de active state ───────────────────────────────────────────────────
 
 function isItemActive(path: string, href: string, alsoActiveFor?: string[]): boolean {
   const base = href.split("?")[0];
@@ -213,8 +194,6 @@ function isParentActive(path: string, item: NavItem): boolean {
   if (isItemActive(path, item.href, item.alsoActiveFor)) return true;
   return item.children?.some((c) => isChildActive(path, c)) ?? false;
 }
-
-// ── Componente ────────────────────────────────────────────────────────────────
 
 function NavBadge({ count }: { count: number }) {
   return (
@@ -236,10 +215,8 @@ export function Sidebar({
   onToggle: () => void;
 }) {
   const path = usePathname();
-
-  // Expansão manual dos submenus (independe de navegar até a categoria).
-  // undefined = segue o estado ativo; true/false = escolha explícita do usuário.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
   const toggleExpanded = (href: string) =>
     setExpanded((prev) => ({ ...prev, [href]: !(prev[href] ?? false) }));
 
@@ -248,11 +225,10 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col border-r border-white/10 bg-slate-950/60 backdrop-blur-xl transition-[width] duration-300",
+        "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/10 bg-slate-950/60 backdrop-blur-xl transition-[width] duration-300 md:flex",
         collapsed ? "w-[4.5rem]" : "w-60",
       )}
     >
-      {/* Logo / toggle */}
       <div className="flex items-center justify-between border-b border-white/10 px-3 py-3">
         {collapsed ? (
           <Image
@@ -273,7 +249,7 @@ export function Sidebar({
               className="h-12 w-auto"
               priority
             />
-            <p className="mt-0.5 text-[11px] text-slate-500">Gestão de Consórcios</p>
+            <p className="mt-0.5 text-[11px] text-slate-500">Gestao de Consorcios</p>
           </Link>
         )}
         <button
@@ -285,19 +261,15 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
         {items.map((section, sIdx) => (
           <div key={section.label} className={cn(sIdx > 0 && "mt-4")}>
-            {/* Section label */}
             {!collapsed && (
               <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
                 {section.label}
               </p>
             )}
-            {collapsed && sIdx > 0 && (
-              <div className="mx-3 my-2 border-t border-white/8" />
-            )}
+            {collapsed && sIdx > 0 && <div className="mx-3 my-2 border-t border-white/8" />}
 
             <div className="space-y-0.5">
               {section.items.map((item) => {
@@ -309,7 +281,6 @@ export function Sidebar({
 
                 return (
                   <div key={item.href}>
-                    {/* Parent item */}
                     <div
                       className={cn(
                         "flex items-center rounded-lg pr-1 transition-colors",
@@ -349,13 +320,13 @@ export function Sidebar({
                       )}
                     </div>
 
-                    {/* Children — visíveis quando a categoria está ativa OU expandida manualmente */}
                     {hasChildren && childrenOpen && item.children && (
                       <div className="ml-3 mt-0.5 space-y-0.5 border-l border-white/10 pl-3">
                         {item.children.map((child) => {
                           const childActive = isChildActive(path, child);
                           const ChildIcon = child.icon;
                           const childCount = badges[child.href] ?? 0;
+
                           return (
                             <Link
                               key={child.href}
@@ -363,7 +334,7 @@ export function Sidebar({
                               className={cn(
                                 "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors",
                                 childActive
-                                  ? "bg-emerald-500/10 text-emerald-200 font-medium"
+                                  ? "bg-emerald-500/10 font-medium text-emerald-200"
                                   : "text-slate-500 hover:bg-white/5 hover:text-slate-200",
                               )}
                             >
@@ -383,7 +354,6 @@ export function Sidebar({
         ))}
       </nav>
 
-      {/* Footer */}
       <div className="flex items-center justify-between border-t border-white/10 px-3 py-3">
         {!collapsed && <span className="text-[11px] text-slate-600">v1.0.0</span>}
         <LogoutButton className="flex items-center gap-1 text-xs text-slate-500 transition hover:text-rose-400" />
