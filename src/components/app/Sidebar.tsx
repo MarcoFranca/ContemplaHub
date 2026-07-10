@@ -16,6 +16,7 @@ import {
   Briefcase,
   Building2,
   Calculator,
+  Megaphone,
   CalendarDays,
   CircleDollarSign,
   Facebook,
@@ -97,6 +98,7 @@ const sections: NavSection[] = [
           { href: "/app/simuladores?sim=comparativo", label: "Consorcio x Financiamento", icon: Scale },
         ],
       },
+      { href: "/app/campanhas", icon: Megaphone, label: "Campanhas" },
     ],
   },
   {

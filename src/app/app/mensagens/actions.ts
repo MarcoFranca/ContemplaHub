@@ -12,6 +12,10 @@ export type ConversationMessage = {
     msg_type: string | null;
     status: string | null;
     created_at: string | null;
+    operationalSource: string | null;
+    operationalSourceLabel: string | null;
+    handoffReason: string | null;
+    aiHandoff: boolean;
 };
 
 export type Conversation = {
@@ -23,7 +27,22 @@ export type Conversation = {
     lastDirection: "in" | "out";
     janelaAberta: boolean;
     precisaHumano: boolean;
+    handoffReason: string | null;
     messages: ConversationMessage[];
+};
+
+type WhatsappPayload = {
+    ai_handoff?: boolean;
+    handoff_reason?: string;
+    operational_source?: string;
+    operational_handoff?: boolean;
+    auto_reply?: boolean;
+    ai_fallback?: boolean;
+    ai_media_fallback?: boolean;
+    followup?: boolean;
+    reminder?: string | boolean;
+    manual_reply?: boolean;
+    ai?: boolean;
 };
 
 type Row = {
@@ -35,9 +54,21 @@ type Row = {
     msg_type: string | null;
     status: string | null;
     created_at: string | null;
-    payload: { ai_handoff?: boolean } | null;
+    payload: WhatsappPayload | null;
     leads: { nome: string | null } | null;
 };
+
+function sourceLabel(payload: WhatsappPayload | null): string | null {
+    const source = payload?.operational_source;
+    if (source === "ia") return "IA";
+    if (source === "fallback_boas_vindas") return "Fallback";
+    if (source === "fallback_erro_ia") return "Fallback IA";
+    if (source === "fallback_midia") return "Fallback mídia";
+    if (source === "followup") return "Follow-up";
+    if (source === "lembrete") return "Lembrete";
+    if (source === "manual") return "Manual";
+    return null;
+}
 
 export type AiFalha = {
     id: string;
@@ -86,11 +117,18 @@ export async function loadConversationsAction(): Promise<Conversation[]> {
             msg_type: r.msg_type,
             status: r.status,
             created_at: r.created_at,
+            operationalSource: r.payload?.operational_source ?? null,
+            operationalSourceLabel: sourceLabel(r.payload),
+            handoffReason: r.payload?.handoff_reason ?? null,
+            aiHandoff: r.payload?.ai_handoff === true || r.payload?.operational_handoff === true,
         };
         const existing = byLead.get(key);
         if (existing) {
             existing.messages.push(msg);
-            if (r.payload?.ai_handoff === true) existing.precisaHumano = true;
+            if (msg.aiHandoff) {
+                existing.precisaHumano = true;
+                existing.handoffReason = msg.handoffReason ?? existing.handoffReason;
+            }
         } else {
             byLead.set(key, {
                 lead_id: r.lead_id,
@@ -100,7 +138,8 @@ export async function loadConversationsAction(): Promise<Conversation[]> {
                 lastAt: null,
                 lastDirection: r.direction,
                 janelaAberta: false,
-                precisaHumano: r.payload?.ai_handoff === true,
+                precisaHumano: msg.aiHandoff,
+                handoffReason: msg.handoffReason,
                 messages: [msg],
             });
         }

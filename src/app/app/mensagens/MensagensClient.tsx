@@ -39,6 +39,32 @@ function fmt(dt: string | null) {
     }
 }
 
+function SourceBadge({
+    label,
+    source,
+}: {
+    label: string | null;
+    source: string | null;
+}) {
+    if (!label) return null;
+    const className =
+        source === "ia"
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+            : source === "followup"
+              ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
+              : source === "lembrete"
+                ? "border-violet-500/30 bg-violet-500/10 text-violet-300"
+                : source?.startsWith("fallback")
+                  ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                  : "border-white/15 text-muted-foreground";
+
+    return (
+        <Badge variant="outline" className={`h-5 px-1.5 text-[10px] ${className}`}>
+            {label}
+        </Badge>
+    );
+}
+
 export function MensagensClient({ initial }: { initial: Conversation[] }) {
     const router = useRouter();
     const [selectedKey, setSelectedKey] = React.useState<string | null>(
@@ -80,6 +106,12 @@ export function MensagensClient({ initial }: { initial: Conversation[] }) {
                                         <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-300">
                                             <UserRound className="h-2.5 w-2.5" /> humano
                                         </span>
+                                    ) : null}
+                                    {c.messages[c.messages.length - 1]?.direction === "out" ? (
+                                        <SourceBadge
+                                            label={c.messages[c.messages.length - 1]?.operationalSourceLabel ?? null}
+                                            source={c.messages[c.messages.length - 1]?.operationalSource ?? null}
+                                        />
                                     ) : null}
                                 </span>
                                 <span className="shrink-0 text-[10px] text-muted-foreground">{fmt(c.lastAt)}</span>
@@ -151,6 +183,11 @@ function ConversationThread({
                             <UserRound className="h-3 w-3" /> Precisa de humano
                         </Badge>
                     ) : null}
+                    {conversation.handoffReason ? (
+                        <Badge variant="outline" className="max-w-[280px] border-amber-500/20 bg-amber-500/5 text-amber-200">
+                            Motivo: {conversation.handoffReason}
+                        </Badge>
+                    ) : null}
                     {conversation.precisaHumano && conversation.lead_id ? (
                         <ReativarIaButton leadId={conversation.lead_id} onDone={onSent} />
                     ) : null}
@@ -189,6 +226,19 @@ function ConversationThread({
                                 <p className="whitespace-pre-wrap break-words">
                                     {m.body || (m.msg_type ? `[${m.msg_type}]` : "")}
                                 </p>
+                                {out ? (
+                                    <div className="mt-2 flex flex-wrap items-center gap-1">
+                                        <SourceBadge label={m.operationalSourceLabel} source={m.operationalSource} />
+                                        {m.aiHandoff && m.handoffReason ? (
+                                            <Badge
+                                                variant="outline"
+                                                className="border-amber-500/20 bg-amber-500/5 text-[10px] text-amber-200"
+                                            >
+                                                Handoff: {m.handoffReason}
+                                            </Badge>
+                                        ) : null}
+                                    </div>
+                                ) : null}
                                 <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-muted-foreground">
                                     <span>{fmt(m.created_at)}</span>
                                     {out ? <StatusIcon status={m.status} /> : null}
