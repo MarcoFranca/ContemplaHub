@@ -56,7 +56,7 @@ Responsabilidades:
 - `/`:
   home institucional do ContemplaHub como plataforma SaaS B2B para operações de consórcio, com hero, mockup de dashboard, funcionalidades, IA, segurança, dashboards e CTA de demonstração
 - `/politica-de-privacidade`:
-  página pública institucional para compliance e cadastro de app na Meta
+  página pública institucional para compliance e cadastro do app, cobrindo uso da plataforma web, app mobile, autenticação, mensageria, captação, agenda e direitos de exclusão
 - `/exclusao-de-dados`:
   página pública institucional com instruções para solicitação de exclusão/correção de dados
 - `/guia-consorcio`:
