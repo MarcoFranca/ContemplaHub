@@ -9,6 +9,11 @@ O App Router está organizado em quatro zonas principais:
 - aplicação autenticada principal em `/app`
 - portal do parceiro em `/partner`
 
+## Seguro Azos
+
+- `/app/seguros-azos`: carteira de apólices e comissões sincronizadas da Azos; exige sessão e
+  organização ativa.
+
 ## Layouts relevantes
 
 ### `src/app/layout.tsx`
@@ -80,6 +85,11 @@ Grupo `(auth)`:
 - `/register`
 - `/forgot-password`
 - `/reset-password`
+
+Observação:
+
+- o cadastro público pode ser desligado via `NEXT_PUBLIC_PUBLIC_SIGNUP_ENABLED`;
+- quando a flag está desativada, o link "Criar conta" some da tela de login e `/register` redireciona para `/login`, preservando o fluxo pronto para futura reativação comercial.
 
 Outras rotas de auth:
 

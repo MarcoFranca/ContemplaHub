@@ -21,6 +21,7 @@ Ela documenta:
 - [Design system e UI](./design-system.md)
 - [Dados e integrações](./data-fetching-and-actions.md)
 - [Feature Leads](./features/leads.md)
+- [Feature Seguro de Vida Azos](./features/seguros-azos.md)
 - [Feature Meta Integrações](./features/meta-integracoes.md)
 - [Feature Carteira](./features/carteira.md)
 - [Feature Contratos](./features/contratos.md)

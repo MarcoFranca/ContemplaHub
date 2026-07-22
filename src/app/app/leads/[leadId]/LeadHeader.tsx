@@ -8,6 +8,7 @@ import {
     Phone,
     Target,
     UserRound,
+    ShieldCheck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrencyBRL, formatPhoneBR } from "./leadUtils";
@@ -98,7 +99,10 @@ export function LeadHeader({
                 </div>
 
                 <div className="flex flex-col gap-3 lg:min-w-[320px]">
-                    <div className="flex justify-start lg:justify-end">
+                    <div className="flex justify-start lg:justify-end gap-2">
+                        <Link href={`/app/leads/${lead.id}/seguro-azos`} className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20">
+                            <ShieldCheck className="h-4 w-4" /> Seguro Azos
+                        </Link>
                         <EditLeadSheet
                             lead={{
                                 id: lead.id,

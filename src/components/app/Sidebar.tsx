@@ -31,6 +31,7 @@ import {
   PanelLeftOpen,
   Scale,
   Settings,
+  ShieldCheck,
   Target,
   Trello,
   Users,
@@ -88,6 +89,7 @@ const sections: NavSection[] = [
           { href: "/app/carteira?view=cartas", label: "Cartas", icon: Wallet },
         ],
       },
+      { href: "/app/seguros-azos", icon: ShieldCheck, label: "Seguros Azos" },
       { href: "/app/lances", icon: Target, label: "Lances" },
       {
         href: "/app/simuladores",
