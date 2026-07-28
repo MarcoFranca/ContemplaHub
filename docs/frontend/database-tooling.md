@@ -113,8 +113,37 @@ Há divergências importantes entre o schema Drizzle e o domínio realmente oper
 
 - o bloco Meta Ads (`meta_lead_integrations`, `meta_webhook_events`) não está representado no Drizzle
 - o bloco de propostas/cadastros operacionais do backend usa `lead_propostas` e `lead_cadastros`, enquanto o Drizzle ainda carrega `deals` e `propostas`
+- a tabela `propostas` (Drizzle) hoje só é **lida** pelo frontend (`get-dashboard-data.ts`, métricas do dashboard) — nenhum fluxo atual insere nela. Quem cria proposta de verdade (`NovaPropostaForm` → server action, e o agente de IA em `app/ai/tools.py::gerar_proposta`) grava em `lead_propostas`, com o conteúdo do cenário em `payload jsonb`. Trate `propostas` como legado/somente-leitura ao decidir onde validar/alterar regras de proposta.
 - tabelas como `lead_stage_history`, `activities`, `notes` e `attachments` existem no Drizzle, mas não são fonte operacional central do backend atual
 - o schema Drizzle deve ser tratado como **histórico/auxiliar**, não como fonte de verdade do banco
+
+## Como as mudanças de schema chegam de fato no Supabase
+
+**Importante — leia antes de propor qualquer migration:** não existe pipeline de CI
+(`drizzle-kit migrate`/`db:push`) aplicando essas migrations automaticamente. Na prática,
+mudanças de schema são aplicadas **manualmente pelo Marco direto no SQL Editor do
+dashboard do Supabase**. Os arquivos em `drizzle/*.sql` + `schema.ts` documentam a
+intenção e mantêm a tipagem do ORM consistente, mas não são o mecanismo real de deploy —
+podem inclusive ficar defasados do estado real do banco (ver guardrail equivalente no
+`MIGRATION_RUNBOOK.md` da raiz do projeto: "se houver divergência entre schema real e
+migrations do repo, o schema real do banco vence").
+
+Consequência prática: ao propor uma migration aqui, sempre entregar também o SQL puro,
+pronto para colar no SQL Editor — isso é o artefato que efetivamente desbloqueia a
+feature, não só o arquivo `.sql` no repo.
+
+### Cuidado com `ALTER TYPE ... ADD VALUE` em enums Postgres
+
+Já tivemos dois incidentes reais com isso (`lance_tipo` na migration `0012`, `produto` na
+migration `0013`): adicionar um valor a um enum existente via `ALTER TYPE ... ADD VALUE`
+não é confiável neste projeto. O cache de schema do PostgREST (Supabase Data API) não
+passa a reconhecer o valor novo sem um restart do serviço, e continua injetando o cast
+`::nome_do_enum` nas queries — o que gera erro `22P02` ("invalid input value for enum").
+
+Padrão adotado sempre que isso acontecer: converter a coluna de `enum` para `text`
+(`ALTER TABLE ... ALTER COLUMN ... TYPE text USING coluna::text`) e mover a validação dos
+valores aceitos para o backend (`Literal` no Pydantic) e para o Zod no frontend. Não é
+necessário apagar o tipo enum em si — pode ficar órfão, sem custo.
 
 ## Regras de manutenção
 
