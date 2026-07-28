@@ -144,7 +144,7 @@ export default async function ContratoDetailsPage({
                                 Cliente: <span className="text-foreground">{leadNome ?? "—"}</span>
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                Contrato Nº {contrato.numero ?? "—"} · ID da cota: {cota?.id ?? "—"}
+                                Contrato Nº {contrato.numero ?? "—"}
                             </p>
                         </div>
 

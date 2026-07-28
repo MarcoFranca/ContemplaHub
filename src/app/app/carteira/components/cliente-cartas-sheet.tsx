@@ -155,9 +155,6 @@ export function ClienteCartasSheet({
                                             <div className="text-sm font-semibold text-foreground">
                                                 Cota {carta.numero_cota ?? "—"}
                                             </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                ID: {carta.cota_id ?? "—"}
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
