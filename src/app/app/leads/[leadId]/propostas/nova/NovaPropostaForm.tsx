@@ -23,7 +23,7 @@ import { MoneyInput } from "@/components/form/MoneyInput";
 import { parseMoneyBRCents } from "@/lib/masks";
 import { fireConfetti } from "@/lib/ui/confetti";
 
-type Produto = "imobiliario" | "auto";
+type Produto = "imobiliario" | "auto" | "pesados";
 
 type ScenarioFormState = {
     titulo: string;
@@ -367,6 +367,7 @@ export function NewProposalForm({ leadId, leadName }: Props) {
                                                 Imobiliário
                                             </SelectItem>
                                             <SelectItem value="auto">Auto</SelectItem>
+                                            <SelectItem value="pesados">Pesados</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

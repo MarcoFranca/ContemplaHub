@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const produtoSchema = z.enum(["imobiliario", "auto"]);
+export const produtoSchema = z.enum(["imobiliario", "auto", "pesados"]);
 export const taxaAdminAntecipadaFormaPagamentoSchema = z.enum(["avista", "parcelado"]);
 export const contratoStatusSchema = z.enum([
     "pendente_assinatura",

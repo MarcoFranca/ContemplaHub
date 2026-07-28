@@ -4,7 +4,7 @@ import { getBackendUrl } from "@/lib/backend";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export type ImportProduto = "imobiliario" | "auto";
+export type ImportProduto = "imobiliario" | "auto" | "pesados";
 export type ImportStatus = "pronta" | "aviso" | "erro" | "ignorada";
 
 export type ImportPreviewRow = {

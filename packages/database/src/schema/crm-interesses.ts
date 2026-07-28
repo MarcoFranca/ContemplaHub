@@ -4,7 +4,7 @@ import {
 import { orgs, profiles } from "./orgs-profiles";
 import { leads } from "./crm";
 import { cotas } from "./consorcio"; // se quiser FK para a cota convertida
-import { produtoEnum, perfilPsico } from "./enums";
+import { perfilPsico } from "./enums";
 
 /** status: aberto | convertido | arquivado */
 export const interesseStatus = (col: string) =>
@@ -22,7 +22,9 @@ export const leadInteresses = pgTable(
             .references(() => leads.id, { onDelete: "cascade" }),
 
         // campos do interesse
-        produto: produtoEnum("produto"),           // usa seu enum: imobiliario|auto
+        // texto livre (validado no backend via Literal Produto: imobiliario|auto|pesados).
+        // Era enum "produto", convertido para text na migration 0013 (ver consorcio.ts).
+        produto: text("produto"),
         valorTotal: numeric("valor_total"),
         prazoMeses: integer("prazo_meses"),
         objetivo: text("objetivo"),

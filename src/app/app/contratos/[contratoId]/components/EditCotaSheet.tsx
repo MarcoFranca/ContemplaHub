@@ -172,6 +172,7 @@ export function EditCotaSheet({ cota, contrato }: { cota: CotaDados; contrato: C
                                         <option value="">Selecione</option>
                                         <option value="imobiliario">Imobiliário</option>
                                         <option value="auto">Auto</option>
+                                        <option value="pesados">Pesados</option>
                                     </select>
                                 </div>
                             </div>

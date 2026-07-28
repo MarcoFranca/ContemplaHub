@@ -200,6 +200,7 @@ export function CreateLeadSheet({ variant = "button" }: Props) {
                                             <SelectItem value="none">—</SelectItem>
                                             <SelectItem value="imobiliario">Imobiliário</SelectItem>
                                             <SelectItem value="auto">Auto</SelectItem>
+                                            <SelectItem value="pesados">Pesados</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

@@ -20,7 +20,7 @@ import {AcceptProposalSection} from "@/app/propostas/[publicHash]/AcceptProposal
 
 export const dynamic = "force-dynamic";
 
-type ProdutoTipo = "imobiliario" | "auto" | "outro";
+type ProdutoTipo = "imobiliario" | "auto" | "pesados" | "outro";
 
 interface PropostaScenario {
     id: string;
@@ -256,7 +256,9 @@ export default async function PropostaPublicaPage({
                           ? "Consórcio imobiliário"
                           : mainScenario.produto === "auto"
                               ? "Consórcio de veículo"
-                              : "Consórcio"}
+                              : mainScenario.produto === "pesados"
+                                  ? "Consórcio de pesados"
+                                  : "Consórcio"}
                     </span>
                                     </CardTitle>
                                 </CardHeader>
@@ -435,6 +437,8 @@ export default async function PropostaPublicaPage({
                               ? "Imobiliário"
                               : c.produto === "auto"
                                   ? "Auto"
+                                  : c.produto === "pesados"
+                                      ? "Pesados"
                                   : "Consórcio"}
                         </span>
                                             </CardTitle>

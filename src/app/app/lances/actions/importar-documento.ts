@@ -9,7 +9,7 @@ export type DocumentoImportado = {
         grupo_codigo?: string;
         numero_cota?: string;
         numero_contrato?: string;
-        produto?: "imobiliario" | "auto";
+        produto?: "imobiliario" | "auto" | "pesados";
         valor_carta?: number;
         valor_parcela?: number;
         prazo?: number;

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 // Types mirrored from backend schema
-type ProdutoTipo = "imobiliario" | "auto" | "outro";
+type ProdutoTipo = "imobiliario" | "auto" | "pesados" | "outro";
 
 type ProposalScenario = {
     id: string;
@@ -154,7 +154,9 @@ function ScenarioCard({
             ? "Imobiliário"
             : scenario.produto === "auto"
                 ? "Auto"
-                : "Outro";
+                : scenario.produto === "pesados"
+                    ? "Pesados"
+                    : "Outro";
 
     return (
         <Card

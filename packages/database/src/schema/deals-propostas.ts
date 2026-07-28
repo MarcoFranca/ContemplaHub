@@ -1,7 +1,7 @@
 import {
     pgTable, uuid, text, integer, numeric, timestamp, jsonb, index
 } from "drizzle-orm/pg-core";
-import { dealStatus, produtoEnum } from "./enums";
+import { dealStatus } from "./enums";
 import { orgs, profiles } from "./orgs-profiles";
 import { leads } from "./crm";
 
@@ -34,7 +34,9 @@ export const propostas = pgTable(
         orgId: uuid("org_id").references(() => orgs.id, { onDelete: "cascade" }),
         leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }),
         dealId: uuid("deal_id").references(() => deals.id, { onDelete: "cascade" }),
-        tipo: produtoEnum("tipo").notNull(), // imobiliario/auto
+        // texto livre (validado no backend via Literal ProdutoTipo: imobiliario|auto|pesados).
+        // Era enum "produto", convertido para text na migration 0013 (ver consorcio.ts).
+        tipo: text("tipo").notNull(),
         valorCarta: numeric("valor_carta").notNull(),
         prazoMeses: integer("prazo_meses").notNull(),
         taxaAdmin: numeric("taxa_admin"),

@@ -9,7 +9,7 @@ export type ContratoStatus =
 
 export type CotaSituacao = "ativa" | "contemplada" | "cancelada";
 
-export type Produto = "imobiliario" | "auto";
+export type Produto = "imobiliario" | "auto" | "pesados";
 export type TaxaAdminAntecipadaFormaPagamento = "avista" | "parcelado";
 
 export interface AdministradoraOption {
@@ -38,7 +38,7 @@ export type ContratoFormValues = {
     administradoraId: string;
     grupoCodigo: string;
     numeroCota: string;
-    produto: "imobiliario" | "auto";
+    produto: "imobiliario" | "auto" | "pesados";
 
     valorCarta: number;
     prazo: number;

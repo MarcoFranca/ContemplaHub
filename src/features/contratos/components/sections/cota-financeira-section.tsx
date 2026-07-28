@@ -55,6 +55,7 @@ export function CotaFinanceiraSection({ control }: Props) {
               <SelectContent>
                 <SelectItem value="imobiliario">Imóvel</SelectItem>
                 <SelectItem value="auto">Auto</SelectItem>
+                <SelectItem value="pesados">Pesados</SelectItem>
               </SelectContent>
             </Select>
             {fieldState.error ? <p className="text-sm text-red-400">{fieldState.error.message}</p> : null}

@@ -93,8 +93,8 @@ export function CompletarCadastroCarta({
 }) {
     const router = useRouter();
 
-    const produto: "imobiliario" | "auto" =
-        cota.produto === "auto" ? "auto" : "imobiliario";
+    const produto: "imobiliario" | "auto" | "pesados" =
+        cota.produto === "auto" || cota.produto === "pesados" ? cota.produto : "imobiliario";
 
     const prefill: Partial<ContratoFormValues> = {
         existingCotaId: cota.id,

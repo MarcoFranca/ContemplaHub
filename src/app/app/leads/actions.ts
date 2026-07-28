@@ -407,7 +407,7 @@ export async function createContractFromLead(
 
         numero_cota: getStr("numeroCota"),
         grupo_codigo: getStr("grupoCodigo"),
-        produto: (getStr("produto") ?? "imobiliario") as "imobiliario" | "auto",
+        produto: (getStr("produto") ?? "imobiliario") as "imobiliario" | "auto" | "pesados",
 
         valor_carta: getStr("valorCarta") ?? "",
         valor_parcela: getStr("valorParcela"),

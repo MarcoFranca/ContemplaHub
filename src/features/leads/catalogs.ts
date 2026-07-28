@@ -1,4 +1,4 @@
-export type ProdutoTipo = "imobiliario" | "auto";
+export type ProdutoTipo = "imobiliario" | "auto" | "pesados";
 
 export const objetivosImobiliario = [
     { v: "primeira-casa", l: "Primeira casa" },
@@ -25,6 +25,9 @@ export const objetivosAuto = [
     { v: "veiculo-acessibilidade", l: "Veículo com acessibilidade" },
 ] as const;
 
+// TODO: hoje "pesados" usa a mesma lista de objetivos de "auto" como aproximação
+// (frota, utilitário etc.). Se quiser objetivos específicos para pesados
+// (ex.: "Trocar frota", "Máquina agrícola/pesada"), me passe a lista que eu ajusto.
 export const objetivosByProduto = (p: ProdutoTipo) =>
     p === "imobiliario" ? [...objetivosImobiliario] : [...objetivosAuto];
 

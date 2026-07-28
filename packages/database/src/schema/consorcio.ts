@@ -13,7 +13,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { orgs, profiles } from "./orgs-profiles";
 import {
-    produtoEnum,
     lanceTipo,
     contemplacaoMotivo,
     fontePagamentoLance,
@@ -51,7 +50,11 @@ export const grupos = pgTable(
         orgId: uuid("org_id").references(() => orgs.id, { onDelete: "cascade" }),
         administradoraId: uuid("administradora_id").references(() => administradoras.id, { onDelete: "cascade" }),
         codigo: text("codigo"),
-        produto: produtoEnum("produto"),
+        // texto livre (validado no backend via Literal Produto: imobiliario|auto|pesados).
+        // Era enum "produto", convertido para text na migration 0013 pelo mesmo motivo do
+        // lance_tipo (0012): ALTER TYPE ... ADD VALUE não é reconhecido de forma confiável
+        // pelo cache de schema do PostgREST/Supabase sem restart do serviço.
+        produto: text("produto"),
         assembleiaDia: integer("assembleia_dia"), // ex: 21
         observacoes: text("observacoes"),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -118,7 +121,10 @@ export const cotas = pgTable(
 
         // status e controle
         situacao: text("situacao").default("ativa"), // ativa/contemplada/cancelada/quitada
-        produto: produtoEnum("produto").notNull(),
+        // texto livre (validado no backend via Literal Produto: imobiliario|auto|pesados).
+        // Era enum "produto", convertido para text na migration 0013 (mesmo motivo do
+        // lance_tipo em 0012 — cache de schema do PostgREST não pega ADD VALUE sem restart).
+        produto: text("produto").notNull(),
         dataAdesao: date("data_adesao"),
         assembleiaDia: integer("assembleia_dia"), // 1–31
 

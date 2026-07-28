@@ -25,7 +25,7 @@ const BACKEND_URL =
 
 // ==== TYPES ===================================================================
 
-type ProdutoTipo = "imobiliario" | "auto" | "outro";
+type ProdutoTipo = "imobiliario" | "auto" | "pesados" | "outro";
 
 interface PropostaScenario {
     id: string;
@@ -273,7 +273,9 @@ export default async function LeadPropostaDetailPage({
                       ? "Imobiliário"
                       : mainScenario.produto === "auto"
                           ? "Auto"
-                          : "Consórcio"}
+                          : mainScenario.produto === "pesados"
+                              ? "Pesados"
+                              : "Consórcio"}
                 </span>
                                             </div>
                                             {mainScenario.administradora && (
@@ -344,7 +346,9 @@ export default async function LeadPropostaDetailPage({
                     ? "Imobiliário"
                     : c.produto === "auto"
                         ? "Auto"
-                        : "Consórcio"}
+                        : c.produto === "pesados"
+                            ? "Pesados"
+                            : "Consórcio"}
               </span>
                                         </CardTitle>
                                     </CardHeader>

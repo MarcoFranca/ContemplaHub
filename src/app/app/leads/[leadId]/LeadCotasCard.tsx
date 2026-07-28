@@ -30,6 +30,7 @@ import {
     ShieldCheck,
     Sparkles,
     Target,
+    Truck,
     WalletCards,
 } from "lucide-react";
 
@@ -138,6 +139,7 @@ function fmtTipoLance(v: string | null | undefined) {
 
 function ProdutoIcon({ produto, className }: { produto: string | null | undefined; className?: string }) {
     const p = (produto ?? "").toLowerCase();
+    if (p.includes("pesado") || p.includes("caminh")) return <Truck className={className} />;
     if (p.includes("auto") || p.includes("veic")) return <Car className={className} />;
     return <Home className={className} />;
 }

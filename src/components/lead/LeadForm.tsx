@@ -128,7 +128,7 @@ export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
             {/* 👉 Grupo compacto no mobile: Tipo + Prazo lado a lado */}
             <div className="grid gap-2 col-span-1 md:col-span-6 min-w-0">
                 <Label htmlFor="tipo">Tipo de consórcio</Label>
-                <Select value={tipo} onValueChange={(v: "imobiliario" | "auto") => setTipo(v)}>
+                <Select value={tipo} onValueChange={(v: "imobiliario" | "auto" | "pesados") => setTipo(v)}>
                     <SelectTrigger id="tipo" className={`${fieldH} w-full`}>
                         <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
@@ -138,6 +138,7 @@ export function LeadForm({ hash = "autentika", onSuccess }: LeadFormProps) {
                     >
                         <SelectItem value="imobiliario">Imobiliário</SelectItem>
                         <SelectItem value="auto">Automóvel</SelectItem>
+                        <SelectItem value="pesados">Pesados</SelectItem>
                     </SelectContent>
                 </Select>
                 <input type="hidden" name="tipo" value={tipo} />

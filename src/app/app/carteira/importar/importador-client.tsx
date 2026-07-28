@@ -145,7 +145,7 @@ export function ImportadorClient({ initialProduto = "imobiliario" }: Props) {
                             type="single"
                             value={produtoPadrao}
                             onValueChange={(value) => {
-                                if (value === "imobiliario" || value === "auto") {
+                                if (value === "imobiliario" || value === "auto" || value === "pesados") {
                                     setProdutoPadrao(value);
                                 }
                             }}
@@ -156,6 +156,9 @@ export function ImportadorClient({ initialProduto = "imobiliario" }: Props) {
                             </ToggleGroupItem>
                             <ToggleGroupItem value="auto" aria-label="Produto padrão auto">
                                 Auto
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="pesados" aria-label="Produto padrão pesados">
+                                Pesados
                             </ToggleGroupItem>
                         </ToggleGroup>
 

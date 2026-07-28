@@ -237,6 +237,7 @@ export function LancesFilters({
                                         <SelectItem value="__all__">Todos os produtos</SelectItem>
                                         <SelectItem value="imobiliario">Imobiliário</SelectItem>
                                         <SelectItem value="auto">Auto</SelectItem>
+                                        <SelectItem value="pesados">Pesados</SelectItem>
                                     </SelectContent>
                                 </Select>
 
@@ -351,6 +352,7 @@ export function LancesFilters({
                         <SelectItem value="__all__">Todos os produtos</SelectItem>
                         <SelectItem value="imobiliario">Imobiliário</SelectItem>
                         <SelectItem value="auto">Auto</SelectItem>
+                        <SelectItem value="pesados">Pesados</SelectItem>
                     </SelectContent>
                 </Select>
 

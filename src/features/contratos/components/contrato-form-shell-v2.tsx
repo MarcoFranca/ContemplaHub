@@ -433,17 +433,15 @@ export function ContratoFormShellV2({
               </div>
             </div>
 
-            {mode === "registerExisting" && (
-              <div className="flex flex-col gap-2 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-slate-200">
-                  <p className="font-medium text-white">Importar do PDF da Porto</p>
-                  <p className="text-slate-400">
-                    Tem o extrato ou a apólice? Importe para preencher os campos automaticamente e já anexar o documento.
-                  </p>
-                </div>
-                <ImportarDocumentoButton onImported={handleDocumentoImportado} />
+            <div className="flex flex-col gap-2 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-slate-200">
+                <p className="font-medium text-white">Importar do PDF da Porto</p>
+                <p className="text-slate-400">
+                  Tem o extrato ou a apólice? Importe para preencher os campos automaticamente e já anexar o documento.
+                </p>
               </div>
-            )}
+              <ImportarDocumentoButton onImported={handleDocumentoImportado} />
+            </div>
 
             {mode === "fromLead" ? (
               <Alert className="border-emerald-400/20 bg-emerald-500/10 text-slate-100">

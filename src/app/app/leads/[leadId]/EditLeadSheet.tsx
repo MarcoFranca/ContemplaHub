@@ -303,6 +303,7 @@ export function EditLeadSheet({
                                             <option value="">Não informado</option>
                                             <option value="imobiliario">Imóvel</option>
                                             <option value="auto">Automóvel</option>
+                                            <option value="pesados">Pesados</option>
                                         </select>
                                     </div>
 

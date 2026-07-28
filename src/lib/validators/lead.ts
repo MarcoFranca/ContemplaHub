@@ -52,7 +52,7 @@ export const LeadInSchema = z.object({
 
     // (opcional) tipo do consórcio vindo do form; lead não tem essa coluna
     // mas podemos usar para criar deal depois — aqui apenas aceitamos.
-    tipo: z.enum(["imobiliario", "auto"]).optional(),
+    tipo: z.enum(["imobiliario", "auto", "pesados"]).optional(),
 });
 
 export type LeadIn = z.infer<typeof LeadInSchema>;

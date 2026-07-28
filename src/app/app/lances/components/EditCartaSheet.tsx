@@ -959,6 +959,7 @@ export function EditCartaSheet({
                                         >
                                             <option value="imobiliario">Imóvel</option>
                                             <option value="auto">Auto</option>
+                                            <option value="pesados">Pesados</option>
                                         </select>
                                     </div>
 

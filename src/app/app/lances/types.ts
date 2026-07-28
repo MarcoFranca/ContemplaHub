@@ -7,7 +7,7 @@ export type StatusMes =
     | "contemplada"
     | "cancelada";
 
-export type Produto = "imobiliario" | "auto";
+export type Produto = "imobiliario" | "auto" | "pesados";
 
 export type LanceCartaListItem = {
     cota_id: string;
