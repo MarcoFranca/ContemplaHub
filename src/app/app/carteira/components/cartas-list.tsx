@@ -21,6 +21,7 @@ import type { CarteiraCartaItem } from "../lib/types";
 import { EmptyState } from "./empty-state";
 import { LancePreferencialSelect } from "./lance-preferencial-select";
 import { EstrategiaCartaDialog } from "./estrategia-carta-dialog";
+import { AlertasCartaDialog } from "./alertas-carta-dialog";
 import { normalizePreferencial } from "@/app/app/lances/lib/operacao";
 
 type CartasListProps = {
@@ -164,6 +165,13 @@ export function CartasList({ items }: CartasListProps) {
 
                             {/* Ações */}
                             <div className="flex flex-wrap items-center justify-start gap-1.5 md:justify-end">
+                                <AlertasCartaDialog
+                                    cotaId={it.cota.cota_id}
+                                    leadId={it.cliente.lead_id}
+                                    pendentes={it.cota.alertas_pendentes}
+                                    proximaData={it.cota.alerta_proxima_data}
+                                />
+
                                 <EstrategiaCartaDialog
                                     cotaId={it.cota.cota_id}
                                     objetivo={it.cota.estrategia_objetivo}

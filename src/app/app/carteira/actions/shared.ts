@@ -111,6 +111,7 @@ export async function loadCarteiraUniverse(
                 latestContratoByCota: new Map<string, ContratoRow>(),
                 latestLanceByCota: new Map<string, UltimoLanceRow>(),
                 administradorasMap: new Map<string, AdministradoraRow>(),
+                alertasByCota: new Map<string, { pendentes: number; proxima: string | null }>(),
             };
         }
 
@@ -158,6 +159,7 @@ export async function loadCarteiraUniverse(
                 latestContratoByCota: new Map<string, ContratoRow>(),
                 latestLanceByCota: new Map<string, UltimoLanceRow>(),
                 administradorasMap: new Map<string, AdministradoraRow>(),
+                alertasByCota: new Map<string, { pendentes: number; proxima: string | null }>(),
             };
         }
 
@@ -384,6 +386,27 @@ export async function loadCarteiraUniverse(
             });
         }
 
+        // Resumo de alertas pendentes por carta (para a lista de Cartas).
+        const alertasByCota = new Map<string, { pendentes: number; proxima: string | null }>();
+        if (cotaIds.length > 0) {
+            try {
+                const { data: alertasData } = await s
+                    .from("cota_alertas")
+                    .select("cota_id, data")
+                    .eq("org_id", me.orgId)
+                    .eq("status", "pendente")
+                    .in("cota_id", cotaIds);
+                for (const a of (alertasData ?? []) as { cota_id: string; data: string }[]) {
+                    const cur = alertasByCota.get(a.cota_id) ?? { pendentes: 0, proxima: null };
+                    cur.pendentes += 1;
+                    if (!cur.proxima || a.data < cur.proxima) cur.proxima = a.data;
+                    alertasByCota.set(a.cota_id, cur);
+                }
+            } catch {
+                /* tabela pode não existir neste ambiente ainda */
+            }
+        }
+
         logInfo("[carteira] loadCarteiraUniverse:done", {
             ...logContext,
             carteiraCount: filteredCarteiraRows.length,
@@ -400,6 +423,7 @@ export async function loadCarteiraUniverse(
             latestContratoByCota,
             latestLanceByCota,
             administradorasMap,
+            alertasByCota,
         };
     } catch (error) {
         logError("[carteira] loadCarteiraUniverse:error", {

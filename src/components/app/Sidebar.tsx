@@ -17,6 +17,7 @@ import {
   Building2,
   Calculator,
   Megaphone,
+  BellRing,
   CalendarDays,
   CircleDollarSign,
   Facebook,
@@ -80,6 +81,7 @@ const sections: NavSection[] = [
       { href: "/app/leads", icon: Trello, label: "Leads" },
       { href: "/app/mensagens", icon: MessageCircle, label: "Mensagens" },
       { href: "/app/agenda", icon: CalendarDays, label: "Agenda" },
+      { href: "/app/alertas", icon: BellRing, label: "Alertas" },
       {
         href: "/app/carteira",
         icon: Briefcase,

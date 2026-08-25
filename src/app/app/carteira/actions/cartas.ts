@@ -18,6 +18,7 @@ export async function listCarteiraCartas(
         latestContratoByCota,
         latestLanceByCota,
         administradorasMap,
+        alertasByCota,
     } = await loadCarteiraUniverse(filters);
 
     const carteiraByLead = new Map<string, (typeof carteiraRows)[number]>(
@@ -72,6 +73,8 @@ export async function listCarteiraCartas(
                     estrategia_valor_lance: asNumber(cota.estrategia_valor_lance),
                     estrategia_embutido_pct: asNumber(cota.estrategia_embutido_pct),
                     estrategia_observacao: cota.estrategia_observacao ?? null,
+                    alertas_pendentes: alertasByCota.get(cota.id)?.pendentes ?? 0,
+                    alerta_proxima_data: alertasByCota.get(cota.id)?.proxima ?? null,
                     data_adesao: cota.data_adesao ?? null,
                     administradora: cota.administradora_id
                         ? administradorasMap.get(cota.administradora_id)?.nome ?? null

@@ -174,6 +174,8 @@ export type CarteiraCartaItem = {
         estrategia_valor_lance: number | null;
         estrategia_embutido_pct: number | null;
         estrategia_observacao: string | null;
+        alertas_pendentes: number;
+        alerta_proxima_data: string | null;
         data_adesao: string | null;
         administradora: string | null;
         autorizacao_gestao: boolean | null;
@@ -213,4 +215,5 @@ export type CarteiraUniverse = {
     latestContratoByCota: Map<string, ContratoRow>;
     latestLanceByCota: Map<string, UltimoLanceRow>;
     administradorasMap: Map<string, AdministradoraRow>;
+    alertasByCota: Map<string, { pendentes: number; proxima: string | null }>;
 };
