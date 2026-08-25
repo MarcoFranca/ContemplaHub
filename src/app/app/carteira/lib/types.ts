@@ -62,6 +62,11 @@ export type CotaRow = {
     parcela_reduzida: boolean | null;
     data_ultimo_lance: string | null;
     tipo_lance_preferencial: string | null;
+    estrategia_objetivo: string | null;
+    estrategia_prazo_lance: string | null;
+    estrategia_valor_lance: number | null;
+    estrategia_embutido_pct: number | null;
+    estrategia_observacao: string | null;
     data_adesao: string | null;
     autorizacao_gestao: boolean | null;
     created_at?: string | null;
@@ -164,6 +169,11 @@ export type CarteiraCartaItem = {
         parcela_reduzida: boolean | null;
         data_ultimo_lance: string | null;
         tipo_lance_preferencial: string | null;
+        estrategia_objetivo: string | null;
+        estrategia_prazo_lance: string | null;
+        estrategia_valor_lance: number | null;
+        estrategia_embutido_pct: number | null;
+        estrategia_observacao: string | null;
         data_adesao: string | null;
         administradora: string | null;
         autorizacao_gestao: boolean | null;

@@ -67,6 +67,11 @@ export async function listCarteiraCartas(
                     parcela_reduzida: cota.parcela_reduzida ?? null,
                     data_ultimo_lance: cota.data_ultimo_lance ?? null,
                     tipo_lance_preferencial: cota.tipo_lance_preferencial ?? null,
+                    estrategia_objetivo: cota.estrategia_objetivo ?? null,
+                    estrategia_prazo_lance: cota.estrategia_prazo_lance ?? null,
+                    estrategia_valor_lance: asNumber(cota.estrategia_valor_lance),
+                    estrategia_embutido_pct: asNumber(cota.estrategia_embutido_pct),
+                    estrategia_observacao: cota.estrategia_observacao ?? null,
                     data_adesao: cota.data_adesao ?? null,
                     administradora: cota.administradora_id
                         ? administradorasMap.get(cota.administradora_id)?.nome ?? null

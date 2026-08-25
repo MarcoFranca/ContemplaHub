@@ -10,6 +10,7 @@ import { fmtCurrency, fmtDate, fmtPhone } from "../lib/format";
 import type { CarteiraCartaItem } from "../lib/types";
 import { EmptyState } from "./empty-state";
 import { LancePreferencialSelect } from "./lance-preferencial-select";
+import { EstrategiaCartaDialog } from "./estrategia-carta-dialog";
 
 type CartasListProps = {
     items: CarteiraCartaItem[];
@@ -86,9 +87,38 @@ export function CartasList({ items }: CartasListProps) {
                                 Adesão {fmtDate(it.cota.data_adesao)} · Entrada {fmtDate(it.carteira.entered_at)}
                                 {it.cota.ultimo_lance?.data ? ` · ultimo lance ${fmtDate(it.cota.ultimo_lance.data)}` : ""}
                             </div>
+
+                            {it.cota.estrategia_objetivo ||
+                            it.cota.estrategia_prazo_lance ||
+                            it.cota.estrategia_valor_lance != null ? (
+                                <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/5 px-2 py-1 text-[11px] text-emerald-200/90">
+                                    <span className="font-medium">Estratégia:</span>{" "}
+                                    {[
+                                        it.cota.estrategia_objetivo,
+                                        it.cota.estrategia_prazo_lance ? `lance: ${it.cota.estrategia_prazo_lance}` : null,
+                                        it.cota.estrategia_valor_lance != null
+                                            ? `reserva ${fmtCurrency(it.cota.estrategia_valor_lance)}`
+                                            : null,
+                                        it.cota.estrategia_embutido_pct != null
+                                            ? `embutido ${it.cota.estrategia_embutido_pct}%`
+                                            : null,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(" · ")}
+                                </div>
+                            ) : null}
                         </div>
 
                         <div className="flex flex-wrap items-center justify-end gap-2">
+                            <EstrategiaCartaDialog
+                                cotaId={it.cota.cota_id}
+                                objetivo={it.cota.estrategia_objetivo}
+                                prazoLance={it.cota.estrategia_prazo_lance}
+                                valorLance={it.cota.estrategia_valor_lance}
+                                embutidoPct={it.cota.estrategia_embutido_pct}
+                                observacao={it.cota.estrategia_observacao}
+                            />
+
                             {it.cliente.telefone ? (
                                 <a
                                     href={buildWhatsAppLink(

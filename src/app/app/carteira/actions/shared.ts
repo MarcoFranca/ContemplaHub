@@ -195,7 +195,7 @@ export async function loadCarteiraUniverse(
                 const { data: cotasOptionalData, error: cotasOptionalError } = await s
                     .from("cotas")
                     .select(
-                        "id, status, fgts_permitido, embutido_permitido, embutido_max_percent, parcela_reduzida, data_ultimo_lance, tipo_lance_preferencial"
+                        "id, status, fgts_permitido, embutido_permitido, embutido_max_percent, parcela_reduzida, data_ultimo_lance, tipo_lance_preferencial, estrategia_objetivo, estrategia_prazo_lance, estrategia_valor_lance, estrategia_embutido_pct, estrategia_observacao"
                     )
                     .eq("org_id", me.orgId)
                     .in(
@@ -225,6 +225,11 @@ export async function loadCarteiraUniverse(
                         parcela_reduzida?: boolean | null;
                         data_ultimo_lance?: string | null;
                         tipo_lance_preferencial?: string | null;
+                        estrategia_objetivo?: string | null;
+                        estrategia_prazo_lance?: string | null;
+                        estrategia_valor_lance?: number | null;
+                        estrategia_embutido_pct?: number | null;
+                        estrategia_observacao?: string | null;
                     };
 
                     const optionalById = new Map<string, CotaOptionalRow>(
@@ -247,6 +252,11 @@ export async function loadCarteiraUniverse(
                             parcela_reduzida: optional.parcela_reduzida ?? null,
                             data_ultimo_lance: optional.data_ultimo_lance ?? null,
                             tipo_lance_preferencial: optional.tipo_lance_preferencial ?? null,
+                            estrategia_objetivo: optional.estrategia_objetivo ?? null,
+                            estrategia_prazo_lance: optional.estrategia_prazo_lance ?? null,
+                            estrategia_valor_lance: optional.estrategia_valor_lance ?? null,
+                            estrategia_embutido_pct: optional.estrategia_embutido_pct ?? null,
+                            estrategia_observacao: optional.estrategia_observacao ?? null,
                         };
                     });
 
