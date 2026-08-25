@@ -1,5 +1,15 @@
 import Link from "next/link";
-import { FileText, MessageCircle } from "lucide-react";
+import {
+    FileText,
+    MessageCircle,
+    Phone,
+    Building2,
+    Hash,
+    Wallet,
+    CalendarClock,
+    UserRound,
+    Target,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,10 +21,27 @@ import type { CarteiraCartaItem } from "../lib/types";
 import { EmptyState } from "./empty-state";
 import { LancePreferencialSelect } from "./lance-preferencial-select";
 import { EstrategiaCartaDialog } from "./estrategia-carta-dialog";
+import { normalizePreferencial } from "@/app/app/lances/lib/operacao";
 
 type CartasListProps = {
     items: CarteiraCartaItem[];
 };
+
+const accentByLance: Record<string, string> = {
+    fixo: "bg-emerald-400/70",
+    livre: "bg-sky-400/70",
+    embutido: "bg-violet-400/70",
+    sorteio: "bg-slate-400/50",
+};
+
+function metaChip(text: string, Icon: typeof Hash) {
+    return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-slate-300">
+            <Icon className="h-3 w-3 opacity-70" />
+            {text}
+        </span>
+    );
+}
 
 export function CartasList({ items }: CartasListProps) {
     if (items.length === 0) {
@@ -23,142 +50,168 @@ export function CartasList({ items }: CartasListProps) {
 
     return (
         <div className="overflow-hidden rounded-[26px] border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.025] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-xl">
-            <div className="grid border-b border-white/10 bg-white/[0.03] px-4 py-3 text-xs uppercase tracking-[0.14em] text-muted-foreground md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center">
+            <div className="hidden border-b border-white/10 bg-white/[0.03] px-5 py-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground md:grid md:grid-cols-[minmax(0,1.7fr)_minmax(0,0.9fr)_minmax(0,1.3fr)_auto] md:items-center md:gap-4">
                 <div>Cliente / carta</div>
                 <div>Valor e prazo</div>
-                <div>Estado</div>
-                <div className="text-right">Acao</div>
+                <div>Estratégia e estado</div>
+                <div className="text-right">Ações</div>
             </div>
 
-            <div className="divide-y divide-white/10">
-                {items.map((it) => (
-                    <div
-                        key={it.cota.cota_id}
-                        className="grid gap-3 px-4 py-3 transition-colors hover:bg-white/[0.025] md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center"
-                    >
-                        <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold text-foreground">
-                                {it.cliente.nome ?? "-"}
-                            </div>
-                            <div className="mt-1 truncate text-xs text-muted-foreground">
-                                {fmtPhone(it.cliente.telefone) ?? "Sem telefone"} · {it.cota.administradora ?? "Sem administradora"} ·
-                                {" "}Cota {it.cota.numero_cota ?? "-"} · Grupo {it.cota.grupo_codigo ?? "-"}
-                            </div>
-                        </div>
+            <div className="divide-y divide-white/[0.07]">
+                {items.map((it) => {
+                    const lance = normalizePreferencial(it.cota.tipo_lance_preferencial);
+                    const accent = lance ? accentByLance[lance] : "bg-white/10";
+                    const temEstrategia =
+                        it.cota.estrategia_objetivo ||
+                        it.cota.estrategia_prazo_lance ||
+                        it.cota.estrategia_valor_lance != null ||
+                        it.cota.estrategia_embutido_pct != null;
 
-                        <div className="space-y-1">
-                            <div className="text-sm font-semibold text-foreground">
-                                {fmtCurrency(it.cota.valor_carta)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                Parcela {fmtCurrency(it.cota.valor_parcela)} ·{" "}
-                                {it.cota.prazo ? `${it.cota.prazo} meses` : "Prazo -"}
-                                {it.cota.assembleia_dia ? ` · dia ${it.cota.assembleia_dia}` : ""}
-                            </div>
-                        </div>
+                    return (
+                        <div
+                            key={it.cota.cota_id}
+                            className="relative grid gap-4 px-5 py-4 pl-6 transition-colors hover:bg-white/[0.03] md:grid-cols-[minmax(0,1.7fr)_minmax(0,0.9fr)_minmax(0,1.3fr)_auto] md:items-center"
+                        >
+                            <span className={`absolute inset-y-3 left-0 w-[3px] rounded-r-full ${accent}`} aria-hidden />
 
-                        <div className="space-y-1.5">
-                            <div className="flex flex-wrap gap-1.5">
-                                <LancePreferencialSelect cotaId={it.cota.cota_id} tipo={it.cota.tipo_lance_preferencial} />
-
-                                {it.cota.situacao ? (
-                                    <Badge variant="outline" className="capitalize">
-                                        {it.cota.situacao}
-                                    </Badge>
-                                ) : null}
-
-                                <Badge variant="outline" className="capitalize">
-                                    {it.carteira.status_carteira}
-                                </Badge>
-
-                                {it.contrato.status ? (
-                                    <Badge
-                                        variant={contratoBadgeVariant(it.contrato.status)}
-                                        className="capitalize"
-                                    >
-                                        {it.contrato.status}
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="outline">Sem contrato</Badge>
-                                )}
-                            </div>
-
-                            <div className="text-xs text-muted-foreground">
-                                Adesão {fmtDate(it.cota.data_adesao)} · Entrada {fmtDate(it.carteira.entered_at)}
-                                {it.cota.ultimo_lance?.data ? ` · ultimo lance ${fmtDate(it.cota.ultimo_lance.data)}` : ""}
-                            </div>
-
-                            {it.cota.estrategia_objetivo ||
-                            it.cota.estrategia_prazo_lance ||
-                            it.cota.estrategia_valor_lance != null ? (
-                                <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/5 px-2 py-1 text-[11px] text-emerald-200/90">
-                                    <span className="font-medium">Estratégia:</span>{" "}
-                                    {[
-                                        it.cota.estrategia_objetivo,
-                                        it.cota.estrategia_prazo_lance ? `lance: ${it.cota.estrategia_prazo_lance}` : null,
-                                        it.cota.estrategia_valor_lance != null
-                                            ? `reserva ${fmtCurrency(it.cota.estrategia_valor_lance)}`
-                                            : null,
-                                        it.cota.estrategia_embutido_pct != null
-                                            ? `embutido ${it.cota.estrategia_embutido_pct}%`
-                                            : null,
-                                    ]
-                                        .filter(Boolean)
-                                        .join(" · ")}
+                            {/* Cliente / carta */}
+                            <div className="min-w-0">
+                                <div className="truncate text-sm font-semibold text-foreground">
+                                    {it.cliente.nome ?? "-"}
                                 </div>
-                            ) : null}
-                        </div>
+                                <div className="mt-1 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                                    <Phone className="h-3 w-3 shrink-0 opacity-70" />
+                                    <span className="truncate">{fmtPhone(it.cliente.telefone) ?? "Sem telefone"}</span>
+                                    <span className="text-white/20">•</span>
+                                    <Building2 className="h-3 w-3 shrink-0 opacity-70" />
+                                    <span className="truncate">{it.cota.administradora ?? "Sem administradora"}</span>
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                    {metaChip(`Cota ${it.cota.numero_cota ?? "-"}`, Hash)}
+                                    {metaChip(`Grupo ${it.cota.grupo_codigo ?? "-"}`, Hash)}
+                                </div>
+                            </div>
 
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                            <EstrategiaCartaDialog
-                                cotaId={it.cota.cota_id}
-                                objetivo={it.cota.estrategia_objetivo}
-                                prazoLance={it.cota.estrategia_prazo_lance}
-                                valorLance={it.cota.estrategia_valor_lance}
-                                embutidoPct={it.cota.estrategia_embutido_pct}
-                                observacao={it.cota.estrategia_observacao}
-                            />
+                            {/* Valor e prazo */}
+                            <div className="space-y-1">
+                                <div className="text-lg font-semibold leading-none tracking-tight text-foreground tabular-nums">
+                                    {fmtCurrency(it.cota.valor_carta)}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Wallet className="h-3 w-3 opacity-70" />
+                                    <span className="tabular-nums">{fmtCurrency(it.cota.valor_parcela)}</span>
+                                    <span className="text-white/20">•</span>
+                                    <span>{it.cota.prazo ? `${it.cota.prazo}m` : "-"}</span>
+                                    {it.cota.assembleia_dia ? (
+                                        <>
+                                            <span className="text-white/20">•</span>
+                                            <CalendarClock className="h-3 w-3 opacity-70" />
+                                            <span>dia {it.cota.assembleia_dia}</span>
+                                        </>
+                                    ) : null}
+                                </div>
+                            </div>
 
-                            {it.cliente.telefone ? (
-                                <a
-                                    href={buildWhatsAppLink(
-                                        it.cliente.telefone,
-                                        `Olá ${it.cliente.nome ?? ""}, tudo bem?`
+                            {/* Estratégia e estado */}
+                            <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <LancePreferencialSelect cotaId={it.cota.cota_id} tipo={it.cota.tipo_lance_preferencial} />
+                                    {it.contrato.status ? (
+                                        <Badge variant={contratoBadgeVariant(it.contrato.status)} className="capitalize">
+                                            {it.contrato.status}
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="border-white/15 text-muted-foreground">
+                                            Sem contrato
+                                        </Badge>
                                     )}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                                    {it.cota.situacao ? <span className="capitalize">{it.cota.situacao}</span> : null}
+                                    <span className="text-white/20">•</span>
+                                    <span>Adesão {fmtDate(it.cota.data_adesao)}</span>
+                                    <span className="text-white/20">•</span>
+                                    <span>Entrada {fmtDate(it.carteira.entered_at)}</span>
+                                    {it.cota.ultimo_lance?.data ? (
+                                        <>
+                                            <span className="text-white/20">•</span>
+                                            <span>último lance {fmtDate(it.cota.ultimo_lance.data)}</span>
+                                        </>
+                                    ) : null}
+                                </div>
+
+                                {temEstrategia ? (
+                                    <div className="flex items-start gap-1.5 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.06] px-2 py-1.5 text-[11px] text-emerald-200/90">
+                                        <Target className="mt-0.5 h-3 w-3 shrink-0" />
+                                        <span className="min-w-0">
+                                            {[
+                                                it.cota.estrategia_objetivo,
+                                                it.cota.estrategia_prazo_lance ? `lance: ${it.cota.estrategia_prazo_lance}` : null,
+                                                it.cota.estrategia_valor_lance != null
+                                                    ? `reserva ${fmtCurrency(it.cota.estrategia_valor_lance)}`
+                                                    : null,
+                                                it.cota.estrategia_embutido_pct != null
+                                                    ? `embutido ${it.cota.estrategia_embutido_pct}%`
+                                                    : null,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(" · ")}
+                                        </span>
+                                    </div>
+                                ) : null}
+                            </div>
+
+                            {/* Ações */}
+                            <div className="flex flex-wrap items-center justify-start gap-1.5 md:justify-end">
+                                <EstrategiaCartaDialog
+                                    cotaId={it.cota.cota_id}
+                                    objetivo={it.cota.estrategia_objetivo}
+                                    prazoLance={it.cota.estrategia_prazo_lance}
+                                    valorLance={it.cota.estrategia_valor_lance}
+                                    embutidoPct={it.cota.estrategia_embutido_pct}
+                                    observacao={it.cota.estrategia_observacao}
+                                />
+
+                                <Link
+                                    href={
+                                        it.contrato.contrato_id
+                                            ? `/app/contratos/${it.contrato.contrato_id}`
+                                            : `/app/cartas/${it.cota.cota_id}`
+                                    }
                                 >
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-8 rounded-xl border-white/10 bg-white/[0.03]"
+                                        className="h-8 rounded-xl border-emerald-500/25 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
                                     >
-                                        <MessageCircle className="h-3.5 w-3.5" />
+                                        <FileText className="mr-1.5 h-3.5 w-3.5" />
+                                        Ver carta
                                     </Button>
-                                </a>
-                            ) : null}
+                                </Link>
 
-                            <Link
-                                href={
-                                    it.contrato.contrato_id
-                                        ? `/app/contratos/${it.contrato.contrato_id}`
-                                        : `/app/cartas/${it.cota.cota_id}`
-                                }
-                            >
-                                <Button size="sm" variant="outline" className="h-8 rounded-xl border-white/10 bg-white/[0.03]">
-                                    <FileText className="mr-1.5 h-3.5 w-3.5" />
-                                    Ver carta
-                                </Button>
-                            </Link>
+                                {it.cliente.telefone ? (
+                                    <a
+                                        href={buildWhatsAppLink(it.cliente.telefone, `Olá ${it.cliente.nome ?? ""}, tudo bem?`)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Chamar no WhatsApp"
+                                    >
+                                        <Button size="icon" variant="outline" className="h-8 w-8 rounded-xl border-white/10 bg-white/[0.03]">
+                                            <MessageCircle className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </a>
+                                ) : null}
 
-                            <Link href={`/app/leads/${it.cliente.lead_id}`}>
-                                <Button size="sm" variant="outline" className="h-8 rounded-xl border-white/10 bg-white/[0.03]">
-                                    Abrir cliente
-                                </Button>
-                            </Link>
+                                <Link href={`/app/leads/${it.cliente.lead_id}`} title="Abrir cliente">
+                                    <Button size="icon" variant="outline" className="h-8 w-8 rounded-xl border-white/10 bg-white/[0.03]">
+                                        <UserRound className="h-3.5 w-3.5" />
+                                    </Button>
+                                </Link>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

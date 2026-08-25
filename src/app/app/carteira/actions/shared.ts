@@ -369,7 +369,8 @@ export async function loadCarteiraUniverse(
             const { data: admsData, error: admsError } = await s
                 .from("administradoras")
                 .select("id, nome")
-                .eq("org_id", me.orgId)
+                // inclui administradoras globais (org_id null), como a Porto Seguro
+                .or(`org_id.eq.${me.orgId},org_id.is.null`)
                 .in("id", administradoraIds);
 
             if (admsError) throw admsError;
