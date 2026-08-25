@@ -46,6 +46,8 @@
 
 :root {
   --radius: 0.625rem;
+  /* Faz o navegador pintar controles nativos (select, date picker) no tema certo. */
+  color-scheme: light;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -80,6 +82,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -135,6 +138,24 @@
   [aria-disabled="true"],
   [data-disabled="true"] {
     @apply cursor-not-allowed;
+  }
+
+  /* <select> nativo: garante opções legíveis no popup (evita texto escuro sobre fundo escuro).
+     No Windows/Chrome o popup nativo só respeita o color-scheme, então forçamos por elemento. */
+  select,
+  input,
+  textarea {
+    color-scheme: inherit;
+  }
+  .dark select,
+  .dark input,
+  .dark textarea {
+    color-scheme: dark;
+  }
+  select option,
+  select optgroup {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
   }
 }
 
