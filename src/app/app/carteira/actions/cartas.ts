@@ -66,6 +66,7 @@ export async function listCarteiraCartas(
                     embutido_max_percent: asNumber(cota.embutido_max_percent),
                     parcela_reduzida: cota.parcela_reduzida ?? null,
                     data_ultimo_lance: cota.data_ultimo_lance ?? null,
+                    tipo_lance_preferencial: cota.tipo_lance_preferencial ?? null,
                     data_adesao: cota.data_adesao ?? null,
                     administradora: cota.administradora_id
                         ? administradorasMap.get(cota.administradora_id)?.nome ?? null

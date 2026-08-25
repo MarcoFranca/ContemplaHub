@@ -195,7 +195,7 @@ export async function loadCarteiraUniverse(
                 const { data: cotasOptionalData, error: cotasOptionalError } = await s
                     .from("cotas")
                     .select(
-                        "id, status, fgts_permitido, embutido_permitido, embutido_max_percent, parcela_reduzida, data_ultimo_lance"
+                        "id, status, fgts_permitido, embutido_permitido, embutido_max_percent, parcela_reduzida, data_ultimo_lance, tipo_lance_preferencial"
                     )
                     .eq("org_id", me.orgId)
                     .in(
@@ -224,6 +224,7 @@ export async function loadCarteiraUniverse(
                         embutido_max_percent?: number | null;
                         parcela_reduzida?: boolean | null;
                         data_ultimo_lance?: string | null;
+                        tipo_lance_preferencial?: string | null;
                     };
 
                     const optionalById = new Map<string, CotaOptionalRow>(
@@ -245,6 +246,7 @@ export async function loadCarteiraUniverse(
                             embutido_max_percent: optional.embutido_max_percent ?? null,
                             parcela_reduzida: optional.parcela_reduzida ?? null,
                             data_ultimo_lance: optional.data_ultimo_lance ?? null,
+                            tipo_lance_preferencial: optional.tipo_lance_preferencial ?? null,
                         };
                     });
 

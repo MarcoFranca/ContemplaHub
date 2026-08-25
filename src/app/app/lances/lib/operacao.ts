@@ -107,7 +107,7 @@ export type ResolvedPreferenciaLance = {
     source: PreferenciaLanceSource;
 };
 
-function normalizePreferencial(value?: string | null): PreferenciaLanceValue | "" {
+export function normalizePreferencial(value?: string | null): PreferenciaLanceValue | "" {
     const v = (value ?? "").trim().toLowerCase();
 
     if (v === "fixo") return "fixo";

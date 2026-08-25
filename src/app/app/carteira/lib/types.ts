@@ -61,6 +61,7 @@ export type CotaRow = {
     embutido_max_percent: number | null;
     parcela_reduzida: boolean | null;
     data_ultimo_lance: string | null;
+    tipo_lance_preferencial: string | null;
     data_adesao: string | null;
     autorizacao_gestao: boolean | null;
     created_at?: string | null;
@@ -162,6 +163,7 @@ export type CarteiraCartaItem = {
         embutido_max_percent: number | null;
         parcela_reduzida: boolean | null;
         data_ultimo_lance: string | null;
+        tipo_lance_preferencial: string | null;
         data_adesao: string | null;
         administradora: string | null;
         autorizacao_gestao: boolean | null;

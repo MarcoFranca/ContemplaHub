@@ -9,6 +9,7 @@ import { contratoBadgeVariant } from "../lib/badges";
 import { fmtCurrency, fmtDate, fmtPhone } from "../lib/format";
 import type { CarteiraCartaItem } from "../lib/types";
 import { EmptyState } from "./empty-state";
+import { LancePreferencialSelect } from "./lance-preferencial-select";
 
 type CartasListProps = {
     items: CarteiraCartaItem[];
@@ -57,6 +58,8 @@ export function CartasList({ items }: CartasListProps) {
 
                         <div className="space-y-1.5">
                             <div className="flex flex-wrap gap-1.5">
+                                <LancePreferencialSelect cotaId={it.cota.cota_id} tipo={it.cota.tipo_lance_preferencial} />
+
                                 {it.cota.situacao ? (
                                     <Badge variant="outline" className="capitalize">
                                         {it.cota.situacao}
