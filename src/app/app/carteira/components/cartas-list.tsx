@@ -23,6 +23,7 @@ import { EmptyState } from "./empty-state";
 import { LancePreferencialSelect } from "./lance-preferencial-select";
 import { EstrategiaCartaDialog } from "./estrategia-carta-dialog";
 import { AlertasCartaDialog } from "./alertas-carta-dialog";
+import { CartaQuickStatus } from "./carta-quick-status";
 import { normalizePreferencial } from "@/app/app/lances/lib/operacao";
 
 type CartasListProps = {
@@ -233,6 +234,8 @@ export function CartasList({ items }: CartasListProps) {
                                         <UserRound className="h-3.5 w-3.5" />
                                     </Button>
                                 </Link>
+
+                                <CartaQuickStatus cotaId={it.cota.cota_id} situacao={it.cota.situacao} />
                             </div>
                         </div>
                     );
