@@ -66,5 +66,16 @@ export async function getSidebarBadges(): Promise<SidebarBadges> {
     );
     badges["/app/lances"] = Math.max(ativas.size - resolvidas.size, 0);
 
+    // Alertas de carta pendentes que vencem hoje ou já venceram.
+    const hojeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const alertasRes = await supa
+        .from("cota_alertas")
+        .select("id")
+        .eq("org_id", orgId)
+        .eq("status", "pendente")
+        .lte("data", hojeStr);
+    const alertasDue = (alertasRes.data ?? []).length;
+    if (alertasDue > 0) badges["/app/alertas"] = alertasDue;
+
     return badges;
 }

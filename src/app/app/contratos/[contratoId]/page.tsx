@@ -229,7 +229,11 @@ export default async function ContratoDetailsPage({
                         <InfoMiniCard
                             icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />}
                             label="Situação da cota"
-                            value={cota?.situacao ?? "—"}
+                            value={
+                                cota?.status
+                                    ? String(cota.status).charAt(0).toUpperCase() + String(cota.status).slice(1)
+                                    : "Ativa"
+                            }
                         />
                         <InfoMiniCard
                             icon={<Banknote className="h-3.5 w-3.5 text-emerald-300" />}

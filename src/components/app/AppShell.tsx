@@ -4,6 +4,7 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { CopilotoWidget } from "./CopilotoWidget";
 
 type ShellStyle = React.CSSProperties & {
     "--sidebar-w": string;
@@ -63,6 +64,8 @@ export function AppShell({
                 </main>
 
             </div>
+
+            {hasOrg ? <CopilotoWidget /> : null}
         </div>
     );
 }

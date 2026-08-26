@@ -9,6 +9,7 @@ import {
     CalendarClock,
     UserRound,
     Target,
+    Trophy,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +62,15 @@ export function CartasList({ items }: CartasListProps) {
             <div className="divide-y divide-white/[0.07]">
                 {items.map((it) => {
                     const lance = normalizePreferencial(it.cota.tipo_lance_preferencial);
-                    const accent = lance ? accentByLance[lance] : "bg-white/10";
+                    const contemplada =
+                        (it.cota.situacao ?? "").toLowerCase() === "contemplada" ||
+                        it.contrato.status === "contemplado" ||
+                        Boolean(it.contrato.data_contemplacao);
+                    const accent = contemplada
+                        ? "bg-amber-400/80"
+                        : lance
+                            ? accentByLance[lance]
+                            : "bg-white/10";
                     const temEstrategia =
                         it.cota.estrategia_objetivo ||
                         it.cota.estrategia_prazo_lance ||
@@ -117,7 +126,11 @@ export function CartasList({ items }: CartasListProps) {
                             <div className="space-y-2">
                                 <div className="flex flex-wrap items-center gap-1.5">
                                     <LancePreferencialSelect cotaId={it.cota.cota_id} tipo={it.cota.tipo_lance_preferencial} />
-                                    {it.contrato.status ? (
+                                    {contemplada ? (
+                                        <Badge className="gap-1 border-amber-400/40 bg-amber-400/15 text-amber-200">
+                                            <Trophy className="h-3 w-3" /> Contemplada
+                                        </Badge>
+                                    ) : it.contrato.status ? (
                                         <Badge variant={contratoBadgeVariant(it.contrato.status)} className="capitalize">
                                             {it.contrato.status}
                                         </Badge>
@@ -129,8 +142,12 @@ export function CartasList({ items }: CartasListProps) {
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-                                    {it.cota.situacao ? <span className="capitalize">{it.cota.situacao}</span> : null}
-                                    <span className="text-white/20">•</span>
+                                    {!contemplada && it.cota.situacao ? (
+                                        <>
+                                            <span className="capitalize">{it.cota.situacao}</span>
+                                            <span className="text-white/20">•</span>
+                                        </>
+                                    ) : null}
                                     <span>Adesão {fmtDate(it.cota.data_adesao)}</span>
                                     <span className="text-white/20">•</span>
                                     <span>Entrada {fmtDate(it.carteira.entered_at)}</span>

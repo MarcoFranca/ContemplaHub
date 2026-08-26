@@ -12,6 +12,7 @@ import {
     Layers3,
     MessageCircle,
     ReceiptText,
+    Trophy,
     UserRoundPlus,
 } from "lucide-react";
 
@@ -66,6 +67,10 @@ type ClienteCartasSheetProps = {
 
 function statusLabel(carta: CartaItem) {
     return carta.situacao || carta.status || "Sem status";
+}
+
+function isContemplada(carta: CartaItem) {
+    return (carta.situacao || carta.status || "").toLowerCase() === "contemplada";
 }
 
 export function ClienteCartasSheet({
@@ -163,7 +168,15 @@ export function ClienteCartasSheet({
                                     <div className="text-base font-semibold text-foreground">
                                         {fmtCurrency(carta.valor_carta ?? 0)}
                                     </div>
-                                    <Badge variant="outline" className="mt-2 capitalize">
+                                    <Badge
+                                        variant="outline"
+                                        className={
+                                            isContemplada(carta)
+                                                ? "mt-2 gap-1 border-amber-400/40 bg-amber-400/15 text-amber-200"
+                                                : "mt-2 capitalize"
+                                        }
+                                    >
+                                        {isContemplada(carta) ? <Trophy className="h-3 w-3" /> : null}
                                         {statusLabel(carta)}
                                     </Badge>
                                     {carta.cota_id ? (
