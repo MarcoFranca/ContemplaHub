@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
-  CornerDownRight,
+  CornerUpLeft,
   FilePlus2,
   Layers,
   ArrowRightLeft,
@@ -92,9 +92,11 @@ export function ComissaoOperacionalWorkspace({
   pagamentos,
   basePath = "/app/financeiro/pagamentos",
   showCartaSelector = true,
-}: Props & { basePath?: string; showCartaSelector?: boolean }) {
+  embedded = false,
+}: Props & { basePath?: string; showCartaSelector?: boolean; embedded?: boolean }) {
   const initialPayload = normalizeComissaoPayload(comissaoAtual);
   const router = useRouter();
+  const [showConfig, setShowConfig] = useState(!embedded);
   const [isSaving, startSaving] = useTransition();
   const [isProjecting, startProjecting] = useTransition();
   const [isUpdatingNumber, startUpdatingNumber] = useTransition();
@@ -111,6 +113,14 @@ export function ComissaoOperacionalWorkspace({
   const [busyPulo, setBusyPulo] = useState<string | null>(null);
 
   const contratoIdAtual = contratoSelecionado?.contrato_id;
+
+  const reloadPulos = useCallback(() => {
+    if (!contratoIdAtual) return;
+    listFinanceiroPulosAction(contratoIdAtual)
+      .then(setPulos)
+      .catch(() => {});
+  }, [contratoIdAtual]);
+
   useEffect(() => {
     if (!contratoIdAtual) return;
     let active = true;
@@ -135,6 +145,7 @@ export function ComissaoOperacionalWorkspace({
         return;
       }
       toast.success(res.message || "Pulo desfeito.");
+      reloadPulos();
       router.refresh();
     });
   };
@@ -321,6 +332,7 @@ export function ComissaoOperacionalWorkspace({
         return;
       }
       toast.success(result.message || "Competência pulada com sucesso.");
+      reloadPulos();
       router.refresh();
     });
   };
@@ -373,6 +385,7 @@ export function ComissaoOperacionalWorkspace({
   return (
     <div className="grid gap-6">
       {/* ── Header: seletor de carta + contexto ── */}
+      {!embedded && (
       <section className="grid gap-4 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.45)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="grid gap-2">
@@ -506,34 +519,6 @@ export function ComissaoOperacionalWorkspace({
           </div>
         )}
       </section>
-
-      {/* Competências puladas (decisões persistidas) + desfazer */}
-      {pulos.length > 0 && (
-        <section className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4">
-          <p className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-sky-100">
-            <CornerDownRight className="h-4 w-4" />
-            Competências puladas
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {pulos.map((p) => (
-              <span
-                key={p.id}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200"
-              >
-                {fmtMesPulo(p.competencia)}
-                <button
-                  type="button"
-                  onClick={() => handleDesfazerPulo(p.competencia)}
-                  disabled={busyPulo === p.competencia}
-                  title="Desfazer pulo e regerar o cronograma"
-                  className="text-slate-400 transition hover:text-rose-300 disabled:opacity-50"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </span>
-            ))}
-          </div>
-        </section>
       )}
 
       {/* Divergências de parcelas pagas após reprocesso (não alteramos o pago) */}
@@ -574,10 +559,25 @@ export function ComissaoOperacionalWorkspace({
       )}
 
       {/* ── Corpo: Configuração (esq) + Visualização (dir) ── */}
-      <div className="grid gap-6 min-[1780px]:grid-cols-[minmax(0,1.08fr)_minmax(620px,0.92fr)]">
+      <div className={embedded ? "grid gap-6" : "grid gap-6 min-[1780px]:grid-cols-[minmax(0,1.08fr)_minmax(620px,0.92fr)]"}>
 
         {/* ── Coluna esquerda: Configuração comercial ── */}
-        <section className="grid gap-5 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.45)] min-[1780px]:sticky min-[1780px]:top-6 min-[1780px]:self-start">
+        {embedded && !showConfig ? (
+          <button
+            type="button"
+            onClick={() => setShowConfig(true)}
+            className="order-2 flex items-center justify-between gap-3 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 text-left shadow-[0_20px_80px_rgba(15,23,42,0.45)] transition hover:bg-slate-900"
+          >
+            <div>
+              <h2 className="text-base font-semibold text-white">Configuração comercial</h2>
+              <p className="mt-0.5 text-sm text-slate-400">
+                Percentuais, cronograma de recebimento e repasse do parceiro. Toque para ajustar.
+              </p>
+            </div>
+            <Settings2 className="h-5 w-5 shrink-0 text-emerald-300" />
+          </button>
+        ) : (
+        <section className={`grid gap-5 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.45)] ${embedded ? "order-2" : "min-[1780px]:sticky min-[1780px]:top-6 min-[1780px]:self-start"}`}>
 
           {/* Cabeçalho + botões de ação */}
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -588,6 +588,17 @@ export function ComissaoOperacionalWorkspace({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              {embedded && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-slate-300 hover:bg-white/[0.06]"
+                  onClick={() => setShowConfig(false)}
+                >
+                  Recolher
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -750,11 +761,14 @@ export function ComissaoOperacionalWorkspace({
             </Button>
           </div>
         </section>
+        )}
 
         {/* ── Coluna direita: Pré-visualização e operação ── */}
-        <section className="grid gap-5 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.45)]">
+        <section className={`grid gap-5 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.45)] ${embedded ? "order-1" : ""}`}>
           <div>
-            <h2 className="text-base font-semibold text-white">Pré-visualização operacional</h2>
+            <h2 className="text-base font-semibold text-white">
+              {embedded ? "Operação e repasse" : "Pré-visualização operacional"}
+            </h2>
             <p className="mt-0.5 text-sm text-slate-400">
               Divisão por parcela antes de seguir para o motor financeiro.
             </p>
@@ -869,6 +883,35 @@ export function ComissaoOperacionalWorkspace({
                   </p>
                 )}
               </div>
+
+              {pulos.length > 0 && (
+                <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3">
+                  <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold text-amber-200">
+                    <CornerUpLeft className="h-3.5 w-3.5" />
+                    Competências puladas — clique no X para desfazer e trazer as parcelas de volta
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {pulos.map((p) => (
+                      <span
+                        key={p.id}
+                        className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs text-amber-100"
+                      >
+                        {fmtMesPulo(p.competencia)}
+                        <button
+                          type="button"
+                          onClick={() => handleDesfazerPulo(p.competencia)}
+                          disabled={busyPulo === p.competencia}
+                          title="Desfazer pulo e regerar o cronograma"
+                          className="text-amber-300/70 transition hover:text-rose-300 disabled:opacity-50"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <CronogramaOperacionalTable
                 pagamentos={pagamentos}
                 busyPagamentoId={busyPagamentoId}

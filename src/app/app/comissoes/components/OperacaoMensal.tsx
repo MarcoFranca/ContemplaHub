@@ -15,6 +15,7 @@ import {
   CircleSlash,
   Clock,
   CornerDownRight,
+  CornerUpLeft,
   ExternalLink,
   Loader2,
   RotateCcw,
@@ -32,6 +33,7 @@ import {
   marcarParaCobrancaAction,
   removerFlagCobrancaAction,
   skipComissaoLancamentoAction,
+  undoSkipComissaoLancamentoAction,
 } from "../actions";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -209,6 +211,50 @@ function ConfirmSkipModal({
   );
 }
 
+function ConfirmUndoSkipModal({
+  open,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+        <CornerUpLeft className="mx-auto mb-3 h-8 w-8 text-amber-400" />
+        <h3 className="text-center text-sm font-semibold text-white">Desfazer pulo desta competência?</h3>
+        <p className="mt-2 text-center text-xs text-slate-400">
+          Use se você <strong className="text-slate-200">pulou por engano</strong>. <br />
+          O pulo deste mês será removido e{" "}
+          <strong className="text-slate-200">as parcelas futuras voltam -1 mês</strong>, ao
+          cronograma original. <br />
+          Se não houver pulo registrado neste mês, nada será alterado.
+        </p>
+        <div className="mt-5 flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 border-white/10 text-slate-300 hover:bg-white/10"
+            onClick={onClose}
+          >
+            Voltar
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 border border-amber-500/20 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+            onClick={onConfirm}
+          >
+            <CornerUpLeft className="mr-1.5 h-3.5 w-3.5" /> Desfazer pulo
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Modal de flagging de inadimplência ────────────────────────────────────────
 
 function CobrancaModal({
@@ -275,6 +321,7 @@ function LancamentoRow({
   onCobranca,
   onRemoverCobranca,
   onSkip,
+  onUndoSkip,
 }: {
   item: ComissaoLancamento;
   busy: boolean;
@@ -284,6 +331,7 @@ function LancamentoRow({
   onCobranca: () => void;
   onRemoverCobranca: () => void;
   onSkip: () => void;
+  onUndoSkip: () => void;
 }) {
   const isPago = item.status === "pago";
   const isCancelado = item.status === "cancelado";
@@ -375,6 +423,9 @@ function LancamentoRow({
             <ActionBtn onClick={onSkip} disabled={busy} variant="ghost" title="Pular competência — não houve pagamento neste mês (ex.: assembleia não iniciada). Empurra as parcelas futuras +1 mês.">
               <CornerDownRight className="h-3.5 w-3.5" />
             </ActionBtn>
+            <ActionBtn onClick={onUndoSkip} disabled={busy} variant="ghost" title="Desfazer pulo — reverte um pulo de competência feito por engano (traz as parcelas futuras -1 mês).">
+              <CornerUpLeft className="h-3.5 w-3.5" />
+            </ActionBtn>
           </>
         )}
 
@@ -447,6 +498,7 @@ function GrupoMes({
   const [confirmCancel, setConfirmCancel] = React.useState<string | null>(null);
   const [confirmCobranca, setConfirmCobranca] = React.useState<string | null>(null);
   const [confirmSkip, setConfirmSkip] = React.useState<string | null>(null);
+  const [confirmUndoSkip, setConfirmUndoSkip] = React.useState<string | null>(null);
   const [collapsed, setCollapsed] = React.useState(grupo.isFuturo);
 
   const run = async (id: string, fn: () => Promise<void>) => {
@@ -512,6 +564,19 @@ function GrupoMes({
           });
         }}
         onClose={() => setConfirmSkip(null)}
+      />
+
+      <ConfirmUndoSkipModal
+        open={Boolean(confirmUndoSkip)}
+        onConfirm={async () => {
+          const id = confirmUndoSkip!;
+          setConfirmUndoSkip(null);
+          await run(id, async () => {
+            const res = await undoSkipComissaoLancamentoAction(id);
+            toast.success(res?.message || "Pulo desfeito e parcelas futuras reprogramadas.");
+          });
+        }}
+        onClose={() => setConfirmUndoSkip(null)}
       />
 
       <div className={`overflow-hidden rounded-2xl border ${borderCls}`}>
@@ -590,6 +655,7 @@ function GrupoMes({
                 onCobranca={() => setConfirmCobranca(item.id)}
                 onRemoverCobranca={() => run(item.id, () => removerFlagCobrancaAction(item.id))}
                 onSkip={() => setConfirmSkip(item.id)}
+                onUndoSkip={() => setConfirmUndoSkip(item.id)}
               />
             ))}
           </div>

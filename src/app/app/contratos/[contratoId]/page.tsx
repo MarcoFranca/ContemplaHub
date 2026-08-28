@@ -14,12 +14,20 @@ import {
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import {
-    getCompetenciasContratoAction,
     getLancamentosContratoAction,
     getResumoFinanceiroContratoAction, getTimelineContratoAction
 } from "@/app/app/comissoes/actions";
+import {
+    listFinanceiroContratoOptionsAction,
+    listPagamentosByContratoAction,
+} from "@/app/app/financeiro/pagamentos/actions";
+import {
+    getComissaoCotaAction,
+    listParceirosForSelectAction,
+} from "@/app/app/lances/actions/comissao-actions";
 import { getLanceCartaDetalhe } from "@/app/app/lances/actions/carta-actions";
-import { ComissoesContratoCard } from "./components/ComissoesContratoCard";
+import { ComissaoOperacionalWorkspace } from "@/app/app/financeiro/pagamentos/components/ComissaoOperacionalWorkspace";
+import { HistoricoLancesPanel } from "./components/HistoricoLancesPanel";
 import { ContratoStatusEditor } from "./components/ContratoStatusEditor";
 import { EditCotaSheet } from "./components/EditCotaSheet";
 import { ContratoPdfUploadCard } from "@/features/contratos/components/contrato-pdf-upload-card";
@@ -103,13 +111,28 @@ export default async function ContratoDetailsPage({
     if (!contrato) notFound();
 
     const cota = contrato.cotas;
-    const [lancamentos, competencias, resumoFinanceiro, timeline, leadNome] = await Promise.all([
+    const [
+        lancamentosResp,
+        resumoFinanceiro,
+        timeline,
+        leadNome,
+        contratoOptions,
+        parceirosDisponiveis,
+        pagamentosResp,
+    ] = await Promise.all([
         getLancamentosContratoAction(contratoId),
-        getCompetenciasContratoAction(contratoId),
         getResumoFinanceiroContratoAction(contratoId),
         getTimelineContratoAction(contratoId),
         loadLeadNome(cota?.lead_id, profile.orgId),
+        listFinanceiroContratoOptionsAction(),
+        listParceirosForSelectAction(),
+        listPagamentosByContratoAction(contratoId),
     ]);
+
+    // Opção do workspace (mesma tela do Financeiro) para este contrato
+    const contratoSelecionado =
+        contratoOptions.find((o) => o.contrato_id === contratoId) ?? null;
+    const comissaoAtual = cota?.id ? await getComissaoCotaAction(cota.id).catch(() => null) : null;
 
     const lanceDetalhe = cota?.id
         ? await getLanceCartaDetalhe(cota.id, new Date().toISOString().slice(0, 10)).catch(() => null)
@@ -119,7 +142,7 @@ export default async function ContratoDetailsPage({
 
     return (
         <div className="h-full overflow-auto px-4 py-6 md:px-6">
-            <div className="mx-auto max-w-5xl space-y-5">
+            <div className="mx-auto max-w-6xl space-y-5">
                 {/* VOLTAR */}
                 <div className="flex items-center gap-2">
                     <Link
@@ -274,16 +297,40 @@ export default async function ContratoDetailsPage({
                 {/* CONTRATO PDF */}
                 <ContratoPdfUploadCard contractId={contratoId} />
 
-                <ComissoesContratoCard
-                    contratoId={contratoId}
-                    resumoFinanceiro={resumoFinanceiro.totais}
-                    lancamentos={lancamentos.items}
-                    competencias={competencias.items}
-                    timeline={timeline.items}
-                    cotaId={cota?.id}
-                    historicoLances={lanceDetalhe?.historico_lances}
-                    contemplacao={lanceDetalhe?.contemplacao}
-                />
+                {/* Cenário completo de comissão e repasse (mesma tela do Financeiro) */}
+                {contratoSelecionado ? (
+                    <ComissaoOperacionalWorkspace
+                        key={`${contratoId}:${comissaoAtual?.config?.id ?? "sem-config"}`}
+                        contratos={contratoOptions}
+                        selectedContratoId={contratoSelecionado.selection_id}
+                        contratoSelecionado={contratoSelecionado}
+                        comissaoAtual={comissaoAtual}
+                        parceirosDisponiveis={parceirosDisponiveis}
+                        resumoFinanceiro={resumoFinanceiro}
+                        timeline={timeline}
+                        lancamentos={lancamentosResp.items}
+                        pagamentos={pagamentosResp.items}
+                        basePath={`/app/contratos/${contratoId}`}
+                        showCartaSelector={false}
+                        embedded
+                    />
+                ) : (
+                    <div className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 text-sm text-muted-foreground">
+                        Este contrato ainda não está elegível para a operação de comissão.
+                    </div>
+                )}
+
+                {/* Histórico de lances e contemplação (exclusivo do contrato) */}
+                {cota?.id ? (
+                    <div className="rounded-[26px] border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.025] p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-xl">
+                        <h2 className="mb-3 text-sm font-semibold text-foreground">Lances e contemplação</h2>
+                        <HistoricoLancesPanel
+                            cotaId={cota.id}
+                            historicoLances={lanceDetalhe?.historico_lances ?? []}
+                            contemplacao={lanceDetalhe?.contemplacao ?? null}
+                        />
+                    </div>
+                ) : null}
             </div>
         </div>
     );

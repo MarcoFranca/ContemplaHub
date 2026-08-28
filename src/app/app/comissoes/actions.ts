@@ -265,6 +265,19 @@ export async function skipComissaoLancamentoAction(lancamentoId: string) {
 }
 
 /**
+ * Desfaz o pulo de competência de um lançamento: remove o registro de pulo e
+ * regenera o cronograma, trazendo as competências futuras de volta -1 mês.
+ * Usado quando uma competência foi pulada por engano.
+ */
+export async function undoSkipComissaoLancamentoAction(lancamentoId: string) {
+  const data = await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/despular`, {
+    method: "POST",
+  });
+  revalidatePath("/app/comissoes");
+  return data as { ok?: boolean; message?: string; pagamentos_afetados?: number };
+}
+
+/**
  * Marca o lançamento para cobrança ativa (cliente em atraso no boleto).
  * Mantém o lançamento como "previsto" mas sinaliza com flag de inadimplência.
  */

@@ -46,7 +46,6 @@ const nowYM = (() => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 })();
 
-/** Mês de referência do repasse: usa a previsão de repasse, senão a competência. */
 function dueYM(item: ComissaoLancamento): string {
   const ref = item.repasse_previsto_em || item.competencia_prevista || "";
   return ref.slice(0, 7);
@@ -62,42 +61,20 @@ function bucketOf(item: ComissaoLancamento): Bucket {
 
 const dataLabel = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : null);
 
-const ymLabel = (ym: string) => {
-  if (!ym) return "Sem competência";
-  const [y, m] = ym.split("-").map(Number);
-  return new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1));
-};
+const sum = (arr: ComissaoLancamento[]) => arr.reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
 
-/** Agrupa lançamentos por mês de repasse (asc), com subtotal e ids do mês. */
-function groupByMonth(items: ComissaoLancamento[]) {
-  const map = new Map<string, ComissaoLancamento[]>();
-  for (const it of items) {
-    const ym = dueYM(it);
-    (map.get(ym) ?? (map.set(ym, []), map.get(ym)!)).push(it);
-  }
-  return [...map.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([ym, list]) => ({
-      ym,
-      label: ymLabel(ym),
-      total: list.reduce((s, i) => s + Number(i.valor_liquido || 0), 0),
-      ids: list.map((i) => i.id),
-      items: list,
-    }));
-}
-
-type Tab = "agora" | "futuros" | "pagos";
+type Tab = "repassar" | "pagos";
 
 export function RepassesGestao({ items, refreshPath }: Props) {
-  const [tab, setTab] = React.useState<Tab>("agora");
+  const [tab, setTab] = React.useState<Tab>("repassar");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
-  const [collapsed, setCollapsed] = React.useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [confirmIds, setConfirmIds] = React.useState<string[] | null>(null);
   const [pending, startTransition] = React.useTransition();
 
-  const isCollapsed = (key: string) => collapsed.has(key);
-  const toggleCollapse = (key: string) =>
-    setCollapsed((prev) => {
+  const isExpanded = (key: string) => expanded.has(key);
+  const toggleExpand = (key: string) =>
+    setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -105,7 +82,6 @@ export function RepassesGestao({ items, refreshPath }: Props) {
     });
 
   const parc = items.filter((i) => i.beneficiario_tipo === "parceiro");
-
   const pendentes = parc.filter((i) => i.repasse_status === "pendente");
   const pagos = parc.filter((i) => i.repasse_status === "pago");
 
@@ -113,13 +89,10 @@ export function RepassesGestao({ items, refreshPath }: Props) {
   const mes = pendentes.filter((i) => bucketOf(i) === "mes");
   const futuro = pendentes.filter((i) => bucketOf(i) === "futuro");
 
-  const sum = (arr: ComissaoLancamento[]) => arr.reduce((s, i) => s + Number(i.valor_liquido || 0), 0);
+  const selectable = tab === "repassar";
+  const visible = tab === "repassar" ? pendentes : pagos;
 
-  // Itens da aba ativa
-  const visible = tab === "agora" ? [...atraso, ...mes] : tab === "futuros" ? futuro : pagos;
-  const selectable = tab !== "pagos";
-
-  // Agrupa por parceiro dentro da aba
+  // Agrupa por parceiro
   const gruposMap = new Map<string, { nome: string; items: ComissaoLancamento[] }>();
   for (const it of visible) {
     const pid = it.parceiro_id ?? "—";
@@ -127,7 +100,12 @@ export function RepassesGestao({ items, refreshPath }: Props) {
     g.items.push(it);
     gruposMap.set(pid, g);
   }
-  const grupos = [...gruposMap.entries()].sort((a, b) => sum(b[1].items) - sum(a[1].items));
+  // Ordena por urgência (atraso + mês primeiro), depois pelo total
+  const grupos = [...gruposMap.entries()].sort((a, b) => {
+    const urg = (x: ComissaoLancamento[]) => sum(x.filter((i) => bucketOf(i) !== "futuro"));
+    const du = urg(b[1].items) - urg(a[1].items);
+    return du !== 0 ? du : sum(b[1].items) - sum(a[1].items);
+  });
 
   const selectedItems = visible.filter((i) => selected.has(i.id));
   const selectedTotal = sum(selectedItems);
@@ -150,17 +128,13 @@ export function RepassesGestao({ items, refreshPath }: Props) {
     if (ids.length === 0) return;
     startTransition(async () => {
       const res = await marcarRepassesPagosLoteAction(ids, refreshPath);
-      if (res.falhas > 0) {
-        toast.error(`${res.count} baixado(s), ${res.falhas} falharam.`);
-      } else {
-        toast.success(`${res.count} repasse(s) baixado(s).`);
-      }
+      if (res.falhas > 0) toast.error(`${res.count} baixado(s), ${res.falhas} falharam.`);
+      else toast.success(`${res.count} repasse(s) baixado(s).`);
       setSelected(new Set());
       setConfirmIds(null);
     });
   };
 
-  // Repasse cuja comissão ainda NÃO foi recebida da operadora (status != pago).
   const naoRecebidos = (ids: string[]) =>
     ids.filter((id) => {
       const it = parc.find((p) => p.id === id);
@@ -170,7 +144,7 @@ export function RepassesGestao({ items, refreshPath }: Props) {
   const baixarLote = (ids: string[]) => {
     if (ids.length === 0) return;
     if (naoRecebidos(ids).length > 0) {
-      setConfirmIds(ids); // pede confirmação: comissão ainda não recebida
+      setConfirmIds(ids);
       return;
     }
     executarBaixa(ids);
@@ -189,7 +163,7 @@ export function RepassesGestao({ items, refreshPath }: Props) {
     return (
       <div
         key={item.id}
-        className={`flex items-center gap-3 border-l-2 ${accent} px-4 py-3 transition-colors hover:bg-white/2`}
+        className={`flex items-center gap-3 border-l-2 ${accent} px-4 py-2.5 transition-colors hover:bg-white/[0.02]`}
       >
         {selectable && (
           <input
@@ -200,36 +174,20 @@ export function RepassesGestao({ items, refreshPath }: Props) {
           />
         )}
         <div className="min-w-0 flex-1">
-          <Link
-            href={`/app/contratos/${item.contrato_id}`}
-            className="group flex items-center gap-2 hover:underline"
-          >
+          <Link href={`/app/contratos/${item.contrato_id}`} className="group flex items-center gap-2 hover:underline">
             <span className="truncate text-sm font-medium group-hover:text-emerald-300">
               {item.cliente_nome ?? "Cliente sem nome"}
             </span>
-            {item.grupo_codigo && (
-              <span className="text-xs text-muted-foreground">· Grupo {item.grupo_codigo}</span>
-            )}
-            {item.numero_cota && (
-              <span className="text-xs text-muted-foreground">· Cota {item.numero_cota}</span>
-            )}
-            <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
+            {item.numero_cota && <span className="text-xs text-muted-foreground">· Cota {item.numero_cota}</span>}
+            <ExternalLink className="h-3 w-3 shrink-0 opacity-40" />
           </Link>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
             <span>{EVENTO_LABELS[item.tipo_evento] ?? item.tipo_evento} · Parc. {item.ordem}</span>
-            {b === "atraso" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-1.5 text-[10px] font-medium text-rose-300">
-                <AlertTriangle className="h-3 w-3" /> Vencido
-              </span>
-            )}
-            {item.repasse_pago_em && (
-              <span className="text-emerald-400/80">· Pago {dataLabel(item.repasse_pago_em)}</span>
-            )}
+            {item.repasse_pago_em && <span className="text-emerald-400/80">· Pago {dataLabel(item.repasse_pago_em)}</span>}
           </div>
         </div>
         <div className="text-right">
           <div className="text-sm font-semibold tabular-nums">{money(item.valor_liquido)}</div>
-          <div className="text-[10px] text-muted-foreground">líquido</div>
         </div>
         {item.repasse_status === "pendente" ? (
           <Button
@@ -252,47 +210,64 @@ export function RepassesGestao({ items, refreshPath }: Props) {
     );
   };
 
-  const TABS: { key: Tab; label: string; count: number; icon: typeof Clock; cls: string }[] = [
-    { key: "agora", label: "A pagar agora", count: atraso.length + mes.length, icon: Clock, cls: "text-amber-300" },
-    { key: "futuros", label: "A vencer (futuro)", count: futuro.length, icon: CalendarClock, cls: "text-sky-300" },
-    { key: "pagos", label: "Pagos", count: pagos.length, icon: CheckCircle2, cls: "text-emerald-300" },
+  // Detalhe expandido: agrupa as parcelas do parceiro por urgência
+  const renderDetalhe = (g: { items: ComissaoLancamento[] }) => {
+    if (!selectable) {
+      return <div className="divide-y divide-border/20">{g.items.map(renderRow)}</div>;
+    }
+    const buckets = (
+      [
+        { key: "atraso", label: "Em atraso", cls: "text-rose-300", items: g.items.filter((i) => bucketOf(i) === "atraso") },
+        { key: "mes", label: "Vence este mês", cls: "text-amber-300", items: g.items.filter((i) => bucketOf(i) === "mes") },
+        { key: "futuro", label: "A vencer", cls: "text-sky-300", items: g.items.filter((i) => bucketOf(i) === "futuro") },
+      ] as { key: Bucket; label: string; cls: string; items: ComissaoLancamento[] }[]
+    ).filter((b) => b.items.length > 0);
+
+    return (
+      <div>
+        {buckets.map((bk) => {
+          const ids = bk.items.map((i) => i.id);
+          const allSel = ids.every((id) => selected.has(id));
+          return (
+            <div key={bk.key}>
+              <div className="flex items-center justify-between gap-2 border-b border-white/5 bg-white/[0.02] px-4 py-1.5">
+                <span className="inline-flex items-center gap-2 text-xs font-medium">
+                  <input
+                    type="checkbox"
+                    checked={allSel}
+                    onChange={(e) => toggleMany(ids, e.target.checked)}
+                    className="h-3.5 w-3.5 accent-emerald-500"
+                    title={`Selecionar ${bk.label.toLowerCase()}`}
+                  />
+                  <span className={bk.cls}>{bk.label}</span>
+                  <span className="text-muted-foreground">· {bk.items.length}</span>
+                </span>
+                <span className="text-sm font-semibold tabular-nums">{money(sum(bk.items))}</span>
+              </div>
+              <div className="divide-y divide-border/20">{bk.items.map(renderRow)}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const TABS: { key: Tab; label: string; count: number; icon: typeof Clock }[] = [
+    { key: "repassar", label: "A repassar", count: pendentes.length, icon: Clock },
+    { key: "pagos", label: "Pagos", count: pagos.length, icon: CheckCircle2 },
   ];
 
   return (
     <div className="space-y-5 p-6">
       {/* KPIs por urgência */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi
-          icon={AlertTriangle}
-          label="Em atraso"
-          value={money(sum(atraso))}
-          hint={`${atraso.length} repasse(s) vencido(s)`}
-          tone="rose"
-        />
-        <Kpi
-          icon={Clock}
-          label="Vence neste mês"
-          value={money(sum(mes))}
-          hint={`${mes.length} a pagar este mês`}
-          tone="amber"
-        />
-        <Kpi
-          icon={CheckCircle2}
-          label="Pago"
-          value={money(sum(pagos))}
-          hint={`${pagos.length} liquidado(s)`}
-          tone="emerald"
-        />
-        <Kpi
-          icon={CalendarClock}
-          label="A vencer (futuro)"
-          value={money(sum(futuro))}
-          hint={`${futuro.length} provisionado(s)`}
-          tone="slate"
-        />
+        <Kpi icon={AlertTriangle} label="Em atraso" value={money(sum(atraso))} hint={`${atraso.length} repasse(s) vencido(s)`} tone="rose" />
+        <Kpi icon={Clock} label="Vence neste mês" value={money(sum(mes))} hint={`${mes.length} a pagar este mês`} tone="amber" />
+        <Kpi icon={CalendarClock} label="A vencer (futuro)" value={money(sum(futuro))} hint={`${futuro.length} provisionado(s)`} tone="slate" />
+        <Kpi icon={CheckCircle2} label="Pago" value={money(sum(pagos))} hint={`${pagos.length} liquidado(s)`} tone="emerald" />
       </div>
 
-      {/* Abas de foco */}
+      {/* Abas */}
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => {
           const Icon = t.icon;
@@ -306,12 +281,10 @@ export function RepassesGestao({ items, refreshPath }: Props) {
                 setSelected(new Set());
               }}
               className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${
-                active
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-white"
-                  : "border-white/10 bg-white/5 text-muted-foreground hover:text-foreground"
+                active ? "border-emerald-500/40 bg-emerald-500/10 text-white" : "border-white/10 bg-white/5 text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Icon className={`h-4 w-4 ${active ? t.cls : ""}`} />
+              <Icon className="h-4 w-4" />
               {t.label}
               <span className="rounded-full bg-white/10 px-1.5 text-xs">{t.count}</span>
             </button>
@@ -323,19 +296,13 @@ export function RepassesGestao({ items, refreshPath }: Props) {
       {selectable && selectedItems.length > 0 && (
         <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 backdrop-blur">
           <span className="text-sm">
-            <strong>{selectedItems.length}</strong> selecionado(s) ·{" "}
-            <strong className="tabular-nums">{money(selectedTotal)}</strong>
+            <strong>{selectedItems.length}</strong> selecionado(s) · <strong className="tabular-nums">{money(selectedTotal)}</strong>
           </span>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())} disabled={pending}>
               Limpar
             </Button>
-            <Button
-              size="sm"
-              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
-              onClick={() => baixarLote([...selected])}
-              disabled={pending}
-            >
+            <Button size="sm" className="bg-emerald-500 text-slate-950 hover:bg-emerald-400" onClick={() => baixarLote([...selected])} disabled={pending}>
               {pending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1.5 h-3.5 w-3.5" />}
               Dar baixa em lote ({selectedItems.length})
             </Button>
@@ -343,88 +310,96 @@ export function RepassesGestao({ items, refreshPath }: Props) {
         </div>
       )}
 
-      {/* Lista agrupada por parceiro */}
-      {visible.length === 0 ? (
+      {/* Lista de PARCEIROS (recolhida por padrão) */}
+      {grupos.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/40 py-16">
           <Wallet className="mb-3 h-10 w-10 text-muted-foreground/25" />
           <p className="text-sm text-muted-foreground">
-            {tab === "agora"
-              ? "Nenhum repasse a pagar agora. Tudo em dia! 🎉"
-              : tab === "futuros"
-                ? "Nenhum repasse futuro provisionado."
-                : "Nenhum repasse pago no período."}
+            {tab === "repassar" ? "Nenhum repasse pendente. Tudo em dia! 🎉" : "Nenhum repasse pago no período."}
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {grupos.map(([pid, g]) => {
-            const ids = g.items.map((i) => i.id);
-            const allSel = selectable && ids.every((id) => selected.has(id));
+            const aberto = isExpanded(pid);
+            const bAtraso = sum(g.items.filter((i) => bucketOf(i) === "atraso"));
+            const bMes = sum(g.items.filter((i) => bucketOf(i) === "mes"));
+            const bFuturo = sum(g.items.filter((i) => bucketOf(i) === "futuro"));
+            const pendentesDoParceiro = g.items.filter((i) => i.repasse_status === "pendente");
+
             return (
               <div key={pid} className="overflow-hidden rounded-2xl border border-border/35 bg-card/15">
-                <div className="flex items-center justify-between gap-3 border-b border-border/25 bg-card/25 px-4 py-3">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => toggleCollapse(pid)}
-                      className="rounded p-0.5 text-muted-foreground hover:text-foreground"
-                      title={isCollapsed(pid) ? "Expandir" : "Minimizar"}
-                    >
-                      {isCollapsed(pid) ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </button>
-                    {selectable && (
-                      <input
-                        type="checkbox"
-                        checked={allSel}
-                        onChange={(e) => toggleMany(ids, e.target.checked)}
-                        className="h-4 w-4 accent-emerald-500"
-                        title="Selecionar todos deste parceiro"
-                      />
-                    )}
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
-                      <Users className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      {pid !== "—" ? (
-                        <Link
-                          href={`/app/parceiros/${pid}`}
-                          className="truncate text-sm font-semibold hover:text-emerald-300 hover:underline"
-                          title="Ver detalhes do parceiro"
-                        >
-                          {g.nome}
-                        </Link>
-                      ) : (
-                        <div className="truncate text-sm font-semibold">{g.nome}</div>
-                      )}
-                      <div className="text-xs text-muted-foreground">{g.items.length} repasse(s)</div>
-                    </div>
+                {/* Cabeçalho do parceiro (resumo escaneável) */}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(pid)}
+                    className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                    title={aberto ? "Recolher" : "Ver parcelas"}
+                  >
+                    {aberto ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </button>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+                    <Users className="h-4 w-4" />
                   </div>
+
+                  <div className="min-w-0 flex-1">
+                    {pid !== "—" ? (
+                      <Link href={`/app/parceiros/${pid}`} className="truncate text-sm font-semibold hover:text-emerald-300 hover:underline" title="Ver parceiro">
+                        {g.nome}
+                      </Link>
+                    ) : (
+                      <div className="truncate text-sm font-semibold">{g.nome}</div>
+                    )}
+                    {selectable ? (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        {bAtraso > 0 && (
+                          <span className="rounded-md bg-rose-500/15 px-1.5 py-0.5 text-[11px] font-medium text-rose-300">
+                            Atraso {money(bAtraso)}
+                          </span>
+                        )}
+                        {bMes > 0 && (
+                          <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium text-amber-300">
+                            Este mês {money(bMes)}
+                          </span>
+                        )}
+                        {bFuturo > 0 && (
+                          <span className="rounded-md bg-sky-500/10 px-1.5 py-0.5 text-[11px] font-medium text-sky-300">
+                            Futuro {money(bFuturo)}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">{g.items.length} repasse(s)</div>
+                    )}
+                  </div>
+
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Total {tab === "pagos" ? "pago" : "a pagar"}</div>
-                      <div className="text-sm font-bold tabular-nums">{money(sum(g.items))}</div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {tab === "pagos" ? "Total pago" : "A repassar"}
+                      </div>
+                      <div className="text-base font-bold tabular-nums">{money(tab === "pagos" ? sum(g.items) : bAtraso + bMes)}</div>
                     </div>
                     <HistoricoLotesDialog
                       parceiroId={pid}
                       nome={g.nome}
                       trigger={
-                        <Button variant="outline" size="sm" className="h-8 gap-1.5 border-white/10" title="Histórico de repasses">
+                        <Button variant="outline" size="icon" className="h-8 w-8 border-white/10" title="Histórico de repasses">
                           <History className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline">Histórico</span>
                         </Button>
                       }
                     />
-                    {selectable && g.items.some((i) => i.repasse_status === "pendente") && (
+                    {selectable && pendentesDoParceiro.length > 0 && (
                       <PagarParceiroDialog
                         parceiroId={pid}
                         nome={g.nome}
-                        items={g.items.filter((i) => i.repasse_status === "pendente")}
+                        items={pendentesDoParceiro}
                         refreshPath={refreshPath}
                         trigger={
                           <Button size="sm" className="h-8 bg-emerald-500 text-slate-950 hover:bg-emerald-400">
                             <Banknote className="mr-1.5 h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">Pagar tudo</span>
-                            <span className="sm:hidden">Pagar</span>
+                            Pagar
                           </Button>
                         }
                       />
@@ -432,54 +407,14 @@ export function RepassesGestao({ items, refreshPath }: Props) {
                   </div>
                 </div>
 
-                {!isCollapsed(pid) && (
-                <div>
-                  {groupByMonth(g.items).map((mg) => {
-                    const allSelMonth = selectable && mg.ids.every((id) => selected.has(id));
-                    const mKey = `${pid}:${mg.ym}`;
-                    const mClosed = isCollapsed(mKey);
-                    return (
-                      <div key={mg.ym}>
-                        {/* Subtotal do mês — "quanto repassar neste mês" */}
-                        <div className="flex items-center justify-between gap-2 border-b border-white/5 bg-white/[0.02] px-4 py-1.5">
-                          <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium capitalize text-muted-foreground">
-                            {selectable && (
-                              <input
-                                type="checkbox"
-                                checked={allSelMonth}
-                                onChange={(e) => toggleMany(mg.ids, e.target.checked)}
-                                className="h-3.5 w-3.5 accent-emerald-500"
-                                title="Selecionar todo o mês"
-                              />
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => toggleCollapse(mKey)}
-                              className="inline-flex items-center gap-1.5 hover:text-foreground"
-                            >
-                              {mClosed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                              <CalendarClock className="h-3.5 w-3.5" />
-                              {mg.label}
-                            </button>
-                          </span>
-                          <span className="text-sm font-bold tabular-nums">
-                            {money(mg.total)}
-                            <span className="ml-1 text-[11px] font-normal text-muted-foreground">· {mg.items.length}</span>
-                          </span>
-                        </div>
-                        {!mClosed && <div className="divide-y divide-border/20">{mg.items.map(renderRow)}</div>}
-                      </div>
-                    );
-                  })}
-                </div>
-                )}
+                {aberto && <div className="border-t border-border/25">{renderDetalhe(g)}</div>}
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Confirmação: repasse cuja comissão ainda não foi recebida da operadora */}
+      {/* Confirmação: comissão ainda não recebida da operadora */}
       {confirmIds && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-amber-500/30 bg-slate-900 p-6 shadow-2xl">
@@ -489,8 +424,7 @@ export function RepassesGestao({ items, refreshPath }: Props) {
                 <h3 className="text-sm font-semibold text-white">Comissão ainda não recebida</h3>
                 <p className="mt-1.5 text-sm text-slate-300">
                   {naoRecebidos(confirmIds).length} dos {confirmIds.length} repasse(s) selecionados ainda
-                  <strong className="text-amber-300"> não constam como recebidos da operadora</strong>.
-                  Ao efetivar, eles serão marcados como pagos e a comissão correspondente também será
+                  <strong className="text-amber-300"> não constam como recebidos da operadora</strong>. Ao efetivar, eles serão marcados como pagos e a comissão também será
                   <strong className="text-slate-200"> quitada</strong>.
                 </p>
                 <p className="mt-2 text-sm text-slate-300">Deseja efetivar o pagamento mesmo assim?</p>
@@ -500,11 +434,7 @@ export function RepassesGestao({ items, refreshPath }: Props) {
               <Button variant="outline" onClick={() => setConfirmIds(null)} disabled={pending}>
                 Cancelar
               </Button>
-              <Button
-                className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
-                onClick={() => executarBaixa(confirmIds)}
-                disabled={pending}
-              >
+              <Button className="bg-emerald-500 text-slate-950 hover:bg-emerald-400" onClick={() => executarBaixa(confirmIds)} disabled={pending}>
                 {pending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
                 Efetivar mesmo assim
               </Button>
