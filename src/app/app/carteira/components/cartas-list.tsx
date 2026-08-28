@@ -10,6 +10,7 @@ import {
     UserRound,
     Target,
     Trophy,
+    Ban,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -67,11 +68,16 @@ export function CartasList({ items }: CartasListProps) {
                         (it.cota.situacao ?? "").toLowerCase() === "contemplada" ||
                         it.contrato.status === "contemplado" ||
                         Boolean(it.contrato.data_contemplacao);
-                    const accent = contemplada
-                        ? "bg-amber-400/80"
-                        : lance
-                            ? accentByLance[lance]
-                            : "bg-white/10";
+                    const cancelada =
+                        (it.cota.situacao ?? "").toLowerCase() === "cancelada" ||
+                        it.contrato.status === "cancelado";
+                    const accent = cancelada
+                        ? "bg-rose-500/80"
+                        : contemplada
+                            ? "bg-amber-400/80"
+                            : lance
+                                ? accentByLance[lance]
+                                : "bg-white/10";
                     const temEstrategia =
                         it.cota.estrategia_objetivo ||
                         it.cota.estrategia_prazo_lance ||
@@ -81,7 +87,13 @@ export function CartasList({ items }: CartasListProps) {
                     return (
                         <div
                             key={it.cota.cota_id}
-                            className="relative grid gap-4 px-5 py-4 pl-6 transition-colors hover:bg-white/[0.03] md:grid-cols-[minmax(0,1.7fr)_minmax(0,0.9fr)_minmax(0,1.3fr)_auto] md:items-center"
+                            className={`relative grid gap-4 px-5 py-4 pl-6 transition-colors md:grid-cols-[minmax(0,1.7fr)_minmax(0,0.9fr)_minmax(0,1.3fr)_auto] md:items-center ${
+                                cancelada
+                                    ? "bg-rose-500/[0.05] opacity-70 hover:opacity-100 hover:bg-rose-500/[0.07]"
+                                    : contemplada
+                                        ? "bg-amber-400/[0.06] hover:bg-amber-400/[0.09]"
+                                        : "hover:bg-white/[0.03]"
+                            }`}
                         >
                             <span className={`absolute inset-y-3 left-0 w-[3px] rounded-r-full ${accent}`} aria-hidden />
 
@@ -127,7 +139,11 @@ export function CartasList({ items }: CartasListProps) {
                             <div className="space-y-2">
                                 <div className="flex flex-wrap items-center gap-1.5">
                                     <LancePreferencialSelect cotaId={it.cota.cota_id} tipo={it.cota.tipo_lance_preferencial} />
-                                    {contemplada ? (
+                                    {cancelada ? (
+                                        <Badge className="gap-1 border-rose-500/40 bg-rose-500/15 text-rose-300">
+                                            <Ban className="h-3 w-3" /> Cancelada
+                                        </Badge>
+                                    ) : contemplada ? (
                                         <Badge className="gap-1 border-amber-400/40 bg-amber-400/15 text-amber-200">
                                             <Trophy className="h-3 w-3" /> Contemplada
                                         </Badge>
