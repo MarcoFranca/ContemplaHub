@@ -53,7 +53,7 @@ export async function GET(
         // 3) Busca org
         const { data: org, error: oErr } = await s
             .from("orgs")
-            .select("id, nome, slug")
+            .select("id, nome, slug, whatsapp_phone, brand")
             .eq("id", lp.org_id)
             .single();
 

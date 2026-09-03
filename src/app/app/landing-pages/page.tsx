@@ -186,6 +186,7 @@ minha-lp.vercel.app`}
                                     const publicUrl = lp.slug
                                         ? `${siteUrl}/lp/${lp.slug}`
                                         : `${siteUrl}/lp?h=${lp.public_hash}`;
+                                    const diagUrl = `${siteUrl}/diagnostico/${lp.slug ?? lp.public_hash}`;
                                     return (
                                         <li
                                             key={lp.id}
@@ -217,6 +218,11 @@ minha-lp.vercel.app`}
                                                 <div className="text-xs text-muted-foreground break-all flex items-center gap-2">
                                                     <span>{publicUrl}</span>
                                                     <CopyButton value={publicUrl} />
+                                                </div>
+                                                <div className="text-xs break-all flex items-center gap-2">
+                                                    <span className="text-emerald-400 font-medium">Diagnóstico:</span>
+                                                    <span className="text-muted-foreground">{diagUrl}</span>
+                                                    <CopyButton value={diagUrl} />
                                                 </div>
                                                 {lp.allowed_domains?.length ? (
                                                     <div className="text-[11px] text-muted-foreground">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import {
+    Ban,
     Banknote,
     Building2,
     CalendarDays,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { situacaoVisual } from "../lib/situacao-visual";
 import { Button } from "@/components/ui/button";
 import {
     Sheet,
@@ -69,9 +71,6 @@ function statusLabel(carta: CartaItem) {
     return carta.situacao || carta.status || "Sem status";
 }
 
-function isContemplada(carta: CartaItem) {
-    return (carta.situacao || carta.status || "").toLowerCase() === "contemplada";
-}
 
 export function ClienteCartasSheet({
                                        clienteNome,
@@ -144,10 +143,12 @@ export function ClienteCartasSheet({
                 </SheetHeader>
 
                 <div className="mt-6 space-y-3 overflow-y-auto pr-1">
-                    {cartas.map((carta, index) => (
+                    {cartas.map((carta, index) => {
+                        const sit = situacaoVisual(carta.situacao || carta.status);
+                        return (
                         <div
                             key={carta.cota_id || `carta-sheet-${index}`}
-                            className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                            className={`rounded-2xl border p-4 ${sit.cardClass || "border-white/10 bg-white/[0.03]"}`}
                         >
                             <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div className="min-w-0">
@@ -170,13 +171,10 @@ export function ClienteCartasSheet({
                                     </div>
                                     <Badge
                                         variant="outline"
-                                        className={
-                                            isContemplada(carta)
-                                                ? "mt-2 gap-1 border-amber-400/40 bg-amber-400/15 text-amber-200"
-                                                : "mt-2 capitalize"
-                                        }
+                                        className={`mt-2 gap-1 capitalize ${sit.badgeClass}`}
                                     >
-                                        {isContemplada(carta) ? <Trophy className="h-3 w-3" /> : null}
+                                        {sit.contemplada ? <Trophy className="h-3 w-3" /> : null}
+                                        {sit.cancelada ? <Ban className="h-3 w-3" /> : null}
                                         {statusLabel(carta)}
                                     </Badge>
                                     {carta.cota_id ? (
@@ -316,7 +314,8 @@ export function ClienteCartasSheet({
                                 </div>
                             ) : null}
                         </div>
-                    ))}
+                        );
+                    })}
 
                     {cartas.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-10 text-center text-sm text-muted-foreground">

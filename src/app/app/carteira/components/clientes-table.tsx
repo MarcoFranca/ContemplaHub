@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, FileText, Mail, MessageCircle, Phone, UserRound, Wallet } from "lucide-react";
+import { Ban, CalendarDays, FileText, Mail, MessageCircle, Phone, Trophy, UserRound, Wallet } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { buildWhatsAppLink } from "@/lib/formatters";
 import { EmptyState } from "./empty-state";
 import { ClienteRowActions } from "./clientes-row-actions";
 import { contratoBadgeVariant } from "../lib/badges";
+import { situacaoVisual } from "../lib/situacao-visual";
 import { fmtCurrency, fmtDate, fmtLeadEmail, fmtPhone } from "../lib/format";
 import type { CarteiraClienteCartaResumo, CarteiraClienteItem } from "../lib/types";
 
@@ -219,8 +220,10 @@ export function ClientesTable({
                                 </TableCell>
 
                                 <TableCell className="py-3 align-top">
-                                    {primaryCarta ? (
-                                        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                                    {primaryCarta ? (() => {
+                                        const sit = situacaoVisual(primaryCarta.situacao);
+                                        return (
+                                        <div className={`min-w-0 rounded-2xl border p-3 ${sit.cardClass || "border-white/10 bg-white/[0.03]"}`}>
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0">
                                                     <div className="flex min-w-0 items-center gap-2">
@@ -228,7 +231,12 @@ export function ClientesTable({
                                                             Cota {primaryCarta.numero_cota ?? "-"}
                                                         </span>
                                                         {primaryCarta.situacao ? (
-                                                            <Badge variant="outline" className="shrink-0 capitalize">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={`shrink-0 gap-1 capitalize ${sit.badgeClass}`}
+                                                            >
+                                                                {sit.cancelada ? <Ban className="h-3 w-3" /> : null}
+                                                                {sit.contemplada ? <Trophy className="h-3 w-3" /> : null}
                                                                 {primaryCarta.situacao}
                                                             </Badge>
                                                         ) : null}
@@ -302,7 +310,8 @@ export function ClientesTable({
                                                 </div>
                                             ) : null}
                                         </div>
-                                    ) : (
+                                        );
+                                    })() : (
                                         <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-3 py-4 text-sm text-muted-foreground">
                                             Sem cartas vinculadas no filtro atual.
                                         </div>
