@@ -106,6 +106,7 @@ export function LancesFilters({
 
     function updateParam(key: string, value?: string) {
         const params = new URLSearchParams(search.toString());
+        params.delete("page");
 
         if (!value) params.delete(key);
         else params.set(key, value);

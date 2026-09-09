@@ -3,6 +3,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 export function Pagination({ total, page, pageSize }: { total: number; page: number; pageSize: number }) {
     const pages = Math.max(1, Math.ceil(total / pageSize));
+    const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+    const end = Math.min(total, page * pageSize);
     const router = useRouter();
     const sp = useSearchParams();
 
@@ -13,22 +15,28 @@ export function Pagination({ total, page, pageSize }: { total: number; page: num
     };
 
     return (
-        <div className="flex items-center justify-end gap-2 text-sm">
-            <button
-                className="px-3 py-1 rounded bg-white/5 border border-white/10 disabled:opacity-50"
-                onClick={() => go(page - 1)}
-                disabled={page <= 1}
-            >
-                Anterior
-            </button>
-            <span className="opacity-70">Página {page} de {pages}</span>
-            <button
-                className="px-3 py-1 rounded bg-white/5 border border-white/10 disabled:opacity-50"
-                onClick={() => go(page + 1)}
-                disabled={page >= pages}
-            >
-                Próxima
-            </button>
+        <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-slate-400">
+                Mostrando <strong className="font-medium text-slate-200">{start}-{end}</strong> de{" "}
+                <strong className="font-medium text-slate-200">{total}</strong>
+            </span>
+            <div className="flex items-center justify-end gap-2">
+                <button
+                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 disabled:opacity-50"
+                    onClick={() => go(page - 1)}
+                    disabled={page <= 1}
+                >
+                    Anterior
+                </button>
+                <span className="text-slate-400">Página {page} de {pages}</span>
+                <button
+                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 disabled:opacity-50"
+                    onClick={() => go(page + 1)}
+                    disabled={page >= pages}
+                >
+                    Próxima
+                </button>
+            </div>
         </div>
     );
 }

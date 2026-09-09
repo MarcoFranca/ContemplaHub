@@ -18,6 +18,11 @@ histórico da carta para consultas futuras e justificativa de estratégia.
    Contemplar, Cancelar) e/ou edita a carta.
 5. Para contexto mais profundo, abre **"Detalhes & histórico"** (sheet) sem sair da tela.
 
+A listagem usa paginação por `page` na URL, com 50 cartas por página. Busca e filtros
+são preservados durante a navegação e voltam à primeira página quando alterados. Os
+cards de resumo usam o `overview` agregado do backend e, portanto, mostram os totais
+reais de toda a carteira filtrada, não apenas os itens da página visível.
+
 ## Layout: Cards x Lista
 
 `LancesTable` tem um alternador de layout (estado local `layout: "cards" | "lista"`):

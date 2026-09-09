@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { getCurrentProfile } from "@/lib/auth/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Pagination } from "@/components/commun/Pagination";
 import { listLancesCartas, listRegrasOperadora } from "./actions/carta-actions";
 import { LancesFilters } from "./components/lances-filters";
 import { LancesTable } from "./components/lances-table";
@@ -27,6 +28,11 @@ function getCompetenciaDefault() {
     return `${ano}-${mes}-01`;
 }
 
+function positiveInt(value: string | undefined, fallback: number) {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 export default async function LancesPage({ searchParams }: PageProps) {
     const me = await getCurrentProfile();
 
@@ -41,6 +47,8 @@ export default async function LancesPage({ searchParams }: PageProps) {
     const produto = first(sp, "produto") ?? "";
     const q = first(sp, "q") ?? "";
     const somente_autorizadas = first(sp, "somente_autorizadas") === "1";
+    const page = positiveInt(first(sp, "page"), 1);
+    const pageSize = 50;
 
     let error: string | null = null;
     let data: LanceCartaListResponse | null = null;
@@ -55,8 +63,8 @@ export default async function LancesPage({ searchParams }: PageProps) {
                 produto: produto || undefined,
                 q: q || undefined,
                 somente_autorizadas,
-                page: 1,
-                page_size: 50,
+                page,
+                page_size: pageSize,
             }),
             listRegrasOperadora(),
         ]);
@@ -70,7 +78,16 @@ export default async function LancesPage({ searchParams }: PageProps) {
                 <div className="flex h-full flex-col gap-4 overflow-hidden">
                     <div className="h-full overflow-y-auto pr-1">
                         <div className="flex flex-col gap-4 pb-4">
-                            <LancesOperacaoOverview items={data?.items ?? []} />
+                            <LancesOperacaoOverview
+                                overview={data?.overview ?? {
+                                    pendentes: 0,
+                                    planejados: 0,
+                                    baixados: 0,
+                                    sem_lance: 0,
+                                    contempladas: 0,
+                                    total: 0,
+                                }}
+                            />
 
                             <LancesFilters
                                 competencia={competencia}
@@ -97,6 +114,14 @@ export default async function LancesPage({ searchParams }: PageProps) {
                                     competencia={competencia}
                                 />
                             )}
+
+                            {!error && data ? (
+                                <Pagination
+                                    total={data.total}
+                                    page={data.page}
+                                    pageSize={data.page_size}
+                                />
+                            ) : null}
                         </div>
                     </div>
                 </div>

@@ -8,11 +8,10 @@ import {
     WalletCards,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { LanceCartaListItem } from "../types";
-import { getOperacaoCounts } from "../lib/operacao";
+import type { LanceOperacaoOverview } from "../types";
 
 type Props = {
-    items: LanceCartaListItem[];
+    overview: LanceOperacaoOverview;
 };
 
 type OverviewCard = {
@@ -21,16 +20,14 @@ type OverviewCard = {
     icon: LucideIcon;
 };
 
-export function LancesOperacaoOverview({ items }: Props) {
-    const counts = getOperacaoCounts(items);
-
+export function LancesOperacaoOverview({ overview }: Props) {
     const cards: OverviewCard[] = [
-        { label: "Pendentes", value: counts.pendentes, icon: ListTodo },
-        { label: "Planejados", value: counts.planejados, icon: WalletCards },
-        { label: "Baixados", value: counts.baixados, icon: ClipboardCheck },
-        { label: "Sem lance", value: counts.semLance, icon: CircleDashed },
-        { label: "Contempladas", value: counts.contempladas, icon: Trophy },
-        { label: "Total", value: counts.total, icon: CheckCheck },
+        { label: "Pendentes", value: overview.pendentes, icon: ListTodo },
+        { label: "Planejados", value: overview.planejados, icon: WalletCards },
+        { label: "Baixados", value: overview.baixados, icon: ClipboardCheck },
+        { label: "Sem lance", value: overview.sem_lance, icon: CircleDashed },
+        { label: "Contempladas", value: overview.contempladas, icon: Trophy },
+        { label: "Total", value: overview.total, icon: CheckCheck },
     ];
 
     return (

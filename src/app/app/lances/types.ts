@@ -53,6 +53,16 @@ export type LanceCartaListResponse = {
     page: number;
     page_size: number;
     total: number;
+    overview: LanceOperacaoOverview;
+};
+
+export type LanceOperacaoOverview = {
+    pendentes: number;
+    planejados: number;
+    baixados: number;
+    sem_lance: number;
+    contempladas: number;
+    total: number;
 };
 
 export type LancesCartaDetalhe = {
