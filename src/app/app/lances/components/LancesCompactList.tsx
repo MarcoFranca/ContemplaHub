@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Building2, CalendarDays } from "lucide-react";
+import { Ban, Building2, CalendarDays, Trophy } from "lucide-react";
 
 import { LanceActions } from "./lance-actions";
 import { CartaDetailsSheet } from "./CartaDetailsSheet";
@@ -42,9 +42,27 @@ function CompactRow({ item, competencia }: { item: LanceCartaListItem; competenc
     const PrefIcon = preferenciaLanceIcons[pref.value];
     const percent = resolveSuggestedPercent(item);
     const valor = resolveSuggestedValue(item);
+    const cancelada = item.status === "cancelada";
+    const contemplada = item.status === "contemplada";
+    const accent = cancelada
+        ? "bg-rose-500/80"
+        : contemplada
+            ? "bg-amber-400/80"
+            : "bg-transparent";
 
     return (
-        <div className="flex flex-col gap-3 border-b border-white/5 px-3 py-3 last:border-0 transition-colors hover:bg-white/3 lg:flex-row lg:items-center lg:gap-4">
+        <div
+            className={`relative flex flex-col gap-3 border-b border-white/5 px-3 py-3 pl-4 last:border-0 transition-all lg:flex-row lg:items-center lg:gap-4 ${
+                cancelada
+                    ? "bg-rose-500/[0.05] opacity-70 hover:bg-rose-500/[0.08] hover:opacity-100"
+                    : contemplada
+                        ? "bg-amber-400/[0.06] hover:bg-amber-400/[0.09]"
+                        : "hover:bg-white/3"
+            }`}
+        >
+            {(cancelada || contemplada) ? (
+                <span className={`absolute inset-y-2 left-0 w-[3px] rounded-r-full ${accent}`} aria-hidden />
+            ) : null}
             {/* Cliente / cota */}
             <div className="min-w-0 lg:w-56">
                 <div className="truncate text-sm font-semibold">
@@ -74,10 +92,22 @@ function CompactRow({ item, competencia }: { item: LanceCartaListItem; competenc
             </div>
 
             {/* Status */}
-            <div className="lg:w-28">
-                <Badge variant="outline" className={STATUS_BADGE[item.status_mes] ?? STATUS_BADGE.pendente}>
-                    {getExecucaoLabel(item)}
-                </Badge>
+            <div className="lg:w-32">
+                {cancelada ? (
+                    <Badge variant="outline" className="gap-1 border-rose-500/40 bg-rose-500/15 text-rose-300">
+                        <Ban className="h-3 w-3" />
+                        Cancelada
+                    </Badge>
+                ) : contemplada ? (
+                    <Badge variant="outline" className="gap-1 border-amber-400/40 bg-amber-400/15 text-amber-200">
+                        <Trophy className="h-3 w-3" />
+                        Contemplada
+                    </Badge>
+                ) : (
+                    <Badge variant="outline" className={STATUS_BADGE[item.status_mes] ?? STATUS_BADGE.pendente}>
+                        {getExecucaoLabel(item)}
+                    </Badge>
+                )}
             </div>
 
             {/* Ações */}

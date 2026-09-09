@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     ArrowUpRight,
+    Ban,
     Building2,
     CalendarDays,
     ClipboardCheck,
@@ -16,6 +17,7 @@ import {
     LayoutList,
     SendHorizonal,
     Target,
+    Trophy,
     UserRound,
     Wallet,
 } from "lucide-react";
@@ -77,6 +79,14 @@ function statusVariant(status: string) {
 }
 
 function cardClass(item: LanceCartaListItem) {
+    if (item.status === "cancelada") {
+        return "border-rose-500/35 bg-rose-500/[0.06] opacity-70 hover:border-rose-400/45 hover:bg-rose-500/[0.09] hover:opacity-100";
+    }
+
+    if (item.status === "contemplada") {
+        return "border-amber-400/35 bg-amber-400/[0.07] hover:border-amber-300/45 hover:bg-amber-400/[0.1]";
+    }
+
     if (item.status_mes === "feito") {
         return "border-emerald-500/40 bg-emerald-500/5";
     }
@@ -249,11 +259,25 @@ function CartaCard({
                             Grupo {item.grupo_codigo} • Cota {item.numero_cota}
                         </Badge>
 
-                        <Badge variant={statusVariant(item.status)}>{item.status}</Badge>
+                        {item.status === "cancelada" ? (
+                            <Badge className="gap-1 border-rose-500/40 bg-rose-500/15 text-rose-300">
+                                <Ban className="h-3 w-3" />
+                                Cancelada
+                            </Badge>
+                        ) : item.status === "contemplada" ? (
+                            <Badge className="gap-1 border-amber-400/40 bg-amber-400/15 text-amber-200">
+                                <Trophy className="h-3 w-3" />
+                                Contemplada
+                            </Badge>
+                        ) : (
+                            <Badge variant={statusVariant(item.status)}>Ativa</Badge>
+                        )}
 
-                        <Badge variant={statusVariant(item.status_mes)}>
-                            {getExecucaoLabel(item)}
-                        </Badge>
+                        {item.status === "ativa" ? (
+                            <Badge variant={statusVariant(item.status_mes)}>
+                                {getExecucaoLabel(item)}
+                            </Badge>
+                        ) : null}
                     </div>
                 </div>
 

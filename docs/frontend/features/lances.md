@@ -33,6 +33,11 @@ a página, mantendo a sequência alfabética entre páginas.
 
 `LanceActions` aceita `compact?: boolean` — na visão Lista os botões ficam **só com ícone** (rótulo no `title`), economizando espaço. A barra de filtros (`lances-filters`) e a toolbar (`OperacaoTabs` + alternador de layout + "Ocultar baixados") foram compactadas (controles `h-9`/`h-8`, sem o card descritivo) para ocupar menos espaço vertical.
 
+Nas visualizações Cards e Lista, cartas contempladas usam destaque âmbar com troféu;
+cartas canceladas usam destaque rosa, ícone de bloqueio e opacidade reduzida. Para
+evitar informação contraditória, o status operacional mensal não é exibido como
+"Pendente" quando a própria carta já está contemplada ou cancelada.
+
 Terminologia: a ação/aba "Sem lance" foi renomeada para **"Sorteio"** (ícone de dado `Dice5`) — representa a cota participando do mês apenas pelo sorteio, sem lance. O status interno continua `sem_lance`.
 
 ## Card x Sheet (decisão de UX)
