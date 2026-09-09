@@ -22,6 +22,8 @@ A listagem usa paginação por `page` na URL, com 50 cartas por página. Busca e
 são preservados durante a navegação e voltam à primeira página quando alterados. Os
 cards de resumo usam o `overview` agregado do backend e, portanto, mostram os totais
 reais de toda a carteira filtrada, não apenas os itens da página visível.
+A API ordena o conjunto completo por operadora, cliente, grupo e cota antes de recortar
+a página, mantendo a sequência alfabética entre páginas.
 
 ## Layout: Cards x Lista
 
@@ -63,6 +65,9 @@ a ser reutilizados dentro do sheet.
 
 Todas as mutações passam pelo backend (`/lances/cartas/...`); o frontend não escreve
 direto no banco.
+
+A ação de contemplar devolve um resultado serializável para a interface. Erros de
+validação ou negócio são exibidos no card sem derrubar a renderização da página.
 
 ## Componentes
 

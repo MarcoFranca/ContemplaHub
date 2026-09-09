@@ -46,6 +46,9 @@ type Props = {
     compact?: boolean;
 };
 
+type FormActionResult = void | { ok: boolean; error?: string };
+type FormAction = (formData: FormData) => Promise<FormActionResult>;
+
 /** Classe do ícone conforme o modo (com/sem rótulo ao lado). */
 function iconClass(compact?: boolean) {
     return compact ? "h-4 w-4" : "mr-1.5 h-3.5 w-3.5";
@@ -66,7 +69,7 @@ function PrimaryControleButton({
                                }: {
     item: LanceCartaListItem;
     competencia: string;
-    onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
+    onSubmit: (action: FormAction, formData: FormData) => void;
     compact?: boolean;
 }) {
     if (item.status !== "ativa") return null;
@@ -174,11 +177,15 @@ export function LanceActions({ item, competencia, compact }: Props) {
     const [pending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
 
-    function runAction(action: (formData: FormData) => Promise<void>, formData: FormData) {
+    function runAction(action: FormAction, formData: FormData) {
         setError(null);
         startTransition(async () => {
             try {
-                await action(formData);
+                const result = await action(formData);
+                if (result && !result.ok) {
+                    setError(result.error || "Erro ao executar ação.");
+                    return;
+                }
                 router.refresh();
             } catch (e: unknown) {
                 setError(e instanceof Error ? e.message : "Erro ao executar ação.");
@@ -265,7 +272,7 @@ function QuickControleButton({
     cotaId: string;
     competencia: string;
     statusMes: "planejado" | "sem_lance";
-    onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
+    onSubmit: (action: FormAction, formData: FormData) => void;
     compact?: boolean;
 }) {
     return (
@@ -294,7 +301,7 @@ function RegistrarLanceDialog({
                               }: {
     item: LanceCartaListItem;
     competencia: string;
-    onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
+    onSubmit: (action: FormAction, formData: FormData) => void;
     pending: boolean;
     compact?: boolean;
 }) {
@@ -803,7 +810,7 @@ function ContemplarDialog({
                           }: {
     cotaId: string;
     competencia: string;
-    onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
+    onSubmit: (action: FormAction, formData: FormData) => void;
     pending: boolean;
     compact?: boolean;
 }) {
@@ -867,7 +874,7 @@ function CancelarDialog({
                         }: {
     cotaId: string;
     competencia: string;
-    onSubmit: (action: (formData: FormData) => Promise<void>, formData: FormData) => void;
+    onSubmit: (action: FormAction, formData: FormData) => void;
     pending: boolean;
     compact?: boolean;
 }) {

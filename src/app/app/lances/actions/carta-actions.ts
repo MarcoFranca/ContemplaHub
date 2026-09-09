@@ -274,24 +274,37 @@ export async function contemplarCotaAction(formData: FormData) {
     const lance_percentual_raw = String(formData.get("lance_percentual") || "");
 
     if (!cotaId || !competencia || !data) {
-        throw new Error("Preencha os dados da contemplação.");
+        return { ok: false, error: "Preencha os dados da contemplação." };
     }
 
-    await backendAuthed(`/lances/cartas/${cotaId}/contemplar`, {
-        method: "POST",
-        body: JSON.stringify({
-            competencia,
-            data,
-            motivo,
-            lance_percentual:
-                lance_percentual_raw.trim() === ""
-                    ? null
-                    : Number(lance_percentual_raw.replace(",", ".")),
-        }),
-    });
+    try {
+        await backendAuthed(`/lances/cartas/${cotaId}/contemplar`, {
+            method: "POST",
+            body: JSON.stringify({
+                competencia,
+                data,
+                motivo,
+                lance_percentual:
+                    lance_percentual_raw.trim() === ""
+                        ? null
+                        : Number(lance_percentual_raw.replace(",", ".")),
+            }),
+        });
 
-    revalidatePath("/app/lances");
-    revalidatePath(`/app/lances/${cotaId}`);
+        revalidatePath("/app/lances");
+        revalidatePath(`/app/lances/${cotaId}`);
+        return { ok: true };
+    } catch (error: unknown) {
+        const rawMessage = error instanceof Error ? error.message : "";
+        let message = rawMessage || "Não foi possível contemplar a carta.";
+
+        try {
+            const parsed = JSON.parse(rawMessage) as { detail?: string; message?: string };
+            message = parsed.detail || parsed.message || message;
+        } catch {}
+
+        return { ok: false, error: message };
+    }
 }
 
 export async function cancelarCotaAction(formData: FormData) {
