@@ -17,6 +17,8 @@ import {
 import {
     Building2,
     CalendarDays,
+    ChevronDown,
+    CircleDollarSign,
     History,
     Loader2,
     PencilLine,
@@ -80,6 +82,12 @@ function resultadoLabel(value?: string | null) {
     }
 }
 
+function baseCalculoLabel(value?: string | null) {
+    if (value === "valor_carta") return "Valor da carta";
+    if (value === "saldo_devedor") return "Saldo devedor";
+    return "Não informada";
+}
+
 function HistoricoLances({ detalhe }: { detalhe: LancesCartaDetalhe | null }) {
     const lances = detalhe?.historico_lances ?? [];
 
@@ -97,8 +105,16 @@ function HistoricoLances({ detalhe }: { detalhe: LancesCartaDetalhe | null }) {
             {lances.map((lance) => {
                 const isSemLance =
                     lance.origem === "sem_lance" || lance.resultado === "sem_lance";
+                const composicao = lance.pagamento?.composicao;
+                const recursos = [
+                    { label: "Lance embutido", value: Number(composicao?.embutido ?? 0) },
+                    { label: "FGTS", value: Number(composicao?.fgts ?? 0) },
+                    { label: "Recurso próprio", value: Number(composicao?.proprio ?? 0) },
+                    { label: "Outros recursos", value: Number(composicao?.outro ?? 0) },
+                ];
+                const totalComposicao = recursos.reduce((total, recurso) => total + recurso.value, 0);
 
-                return (
+                return isSemLance ? (
                     <div
                         key={lance.id}
                         className="rounded-lg border border-white/10 bg-black/20 p-3"
@@ -117,11 +133,33 @@ function HistoricoLances({ detalhe }: { detalhe: LancesCartaDetalhe | null }) {
                             </Badge>
                         </div>
 
-                        {isSemLance ? (
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Sem lance no mês — foi para sorteio (decisão registrada).
-                            </p>
-                        ) : (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Sem lance no mês — foi para sorteio (decisão registrada).
+                        </p>
+                    </div>
+                ) : (
+                    <details
+                        key={lance.id}
+                        className="group rounded-lg border border-white/10 bg-black/20 transition-colors open:border-emerald-500/25 open:bg-emerald-500/[0.04]"
+                    >
+                        <summary className="cursor-pointer list-none p-3 [&::-webkit-details-marker]:hidden">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-100">
+                                    <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                                    {fmtDate(lance.assembleia_data)}
+                                </span>
+
+                                <div className="flex items-center gap-2">
+                                    <Badge
+                                        variant="outline"
+                                        className={resultadoStyle[lance.resultado ?? ""] ?? ""}
+                                    >
+                                        {resultadoLabel(lance.resultado)}
+                                    </Badge>
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                                </div>
+                            </div>
+
                             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                                 <span className="capitalize text-slate-200">
                                     {lance.tipo || "—"}
@@ -137,14 +175,61 @@ function HistoricoLances({ detalhe }: { detalhe: LancesCartaDetalhe | null }) {
                                     </>
                                 ) : null}
                             </div>
-                        )}
 
-                        {lance.observacoes ? (
-                            <p className="mt-1 text-xs text-muted-foreground/80">
-                                {lance.observacoes}
-                            </p>
-                        ) : null}
-                    </div>
+                            <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+                                <CircleDollarSign className="h-3.5 w-3.5" />
+                                Ver composição do lance
+                            </span>
+                        </summary>
+
+                        <div className="border-t border-white/10 px-3 py-3">
+                            {composicao ? (
+                                <>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {recursos.map((recurso) => (
+                                            <div
+                                                key={recurso.label}
+                                                className="rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                                            >
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    {recurso.label}
+                                                </p>
+                                                <p className={`mt-1 text-sm font-medium tabular-nums ${
+                                                    recurso.value > 0 ? "text-slate-100" : "text-slate-500"
+                                                }`}>
+                                                    {money(recurso.value)}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2 text-sm">
+                                        <span className="text-muted-foreground">Total da composição</span>
+                                        <strong className="tabular-nums text-emerald-300">
+                                            {money(totalComposicao)}
+                                        </strong>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Este lance antigo não possui composição financeira registrada.
+                                </p>
+                            )}
+
+                            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                                <span>Base de cálculo</span>
+                                <span className="font-medium text-slate-300">
+                                    {baseCalculoLabel(lance.base_calculo)}
+                                </span>
+                            </div>
+
+                            {(lance.pagamento?.observacoes || lance.observacoes) ? (
+                                <p className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-muted-foreground">
+                                    {lance.pagamento?.observacoes || lance.observacoes}
+                                </p>
+                            ) : null}
+                        </div>
+                    </details>
                 );
             })}
         </div>

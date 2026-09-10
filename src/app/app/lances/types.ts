@@ -119,7 +119,16 @@ export type LancesCartaDetalhe = {
         valor?: number | null;
         origem?: string | null;
         resultado?: string | null;
-        pagamento?: Record<string, unknown> | null;
+        base_calculo?: "saldo_devedor" | "valor_carta" | null;
+        pagamento?: {
+            composicao?: {
+                embutido?: number | null;
+                fgts?: number | null;
+                proprio?: number | null;
+                outro?: number | null;
+            } | null;
+            observacoes?: string | null;
+        } | null;
         created_at?: string | null;
         observacoes?: string | null;
     }>;

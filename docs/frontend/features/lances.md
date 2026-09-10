@@ -52,6 +52,9 @@ apenas dados fundamentais + ações. O conteúdo de apoio mora no sheet
 - contexto estratégico (`StrategyPanel`);
 - **histórico de lances já dados** (assembleia, tipo, %, valor, origem, resultado),
   carregado sob demanda via `getLanceCartaDetalhe(cotaId, competencia)`. O histórico
+  permite expandir cada lance para consultar a composição registrada (embutido, FGTS,
+  recurso próprio e outros recursos), total e base de cálculo. Registros antigos sem
+  `pagamento.composicao` exibem uma indicação explícita de indisponibilidade. O histórico
   também inclui os meses marcados como **"sem lance"** (sorteio intencional), permitindo
   distinguir, na análise, sorteio decidido de esquecimento (assembleia sem registro);
 - **edição da estratégia/objetivo** da carta (campo de texto), salvo por
