@@ -266,6 +266,52 @@ export async function registrarLanceAction(formData: FormData) {
     revalidatePath(`/app/lances/${cotaId}`);
 }
 
+export async function atualizarResultadoLanceAction(input: {
+    lanceId: string;
+    cotaId: string;
+    resultado: "contemplado" | "nao_contemplado";
+    assembleiaData: string;
+    competencia: string;
+    percentual?: number | null;
+}): Promise<{ ok: boolean; error?: string }> {
+    if (!input.lanceId || !input.cotaId || !input.assembleiaData || !input.competencia) {
+        return { ok: false, error: "Dados do lance incompletos." };
+    }
+
+    try {
+        if (input.resultado === "contemplado") {
+            await backendAuthed(`/lances/cartas/${input.cotaId}/contemplar`, {
+                method: "POST",
+                body: JSON.stringify({
+                    competencia: input.competencia,
+                    data: input.assembleiaData,
+                    motivo: "lance",
+                    lance_percentual: input.percentual ?? null,
+                }),
+            });
+        }
+
+        await backendAuthed(`/lances/${input.lanceId}/resultado`, {
+            method: "PATCH",
+            body: JSON.stringify({ resultado: input.resultado }),
+        });
+
+        revalidatePath("/app/lances");
+        revalidatePath(`/app/lances/${input.cotaId}`);
+        return { ok: true };
+    } catch (error: unknown) {
+        const rawMessage = error instanceof Error ? error.message : "";
+        let message = rawMessage || "Não foi possível atualizar o resultado do lance.";
+
+        try {
+            const parsed = JSON.parse(rawMessage) as { detail?: string; message?: string };
+            message = parsed.detail || parsed.message || message;
+        } catch {}
+
+        return { ok: false, error: message };
+    }
+}
+
 export async function contemplarCotaAction(formData: FormData) {
     const cotaId = String(formData.get("cota_id") || "");
     const competencia = String(formData.get("competencia") || "");

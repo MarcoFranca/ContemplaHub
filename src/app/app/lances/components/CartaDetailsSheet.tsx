@@ -7,6 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
     Sheet,
     SheetContent,
     SheetDescription,
@@ -18,6 +29,7 @@ import {
     Building2,
     CalendarDays,
     ChevronDown,
+    CheckCircle2,
     CircleDollarSign,
     History,
     Loader2,
@@ -26,11 +38,16 @@ import {
     ScrollText,
     Target,
     UserRound,
+    XCircle,
 } from "lucide-react";
 
 import { LanceMesCard } from "./LanceMesCard";
 import { StrategyPanel } from "./strategy-panel";
-import { getLanceCartaDetalhe, salvarEstrategiaCartaAction } from "../actions/carta-actions";
+import {
+    atualizarResultadoLanceAction,
+    getLanceCartaDetalhe,
+    salvarEstrategiaCartaAction,
+} from "../actions/carta-actions";
 import type { LanceCartaListItem, LancesCartaDetalhe } from "../types";
 import { formatPercent } from "../lib/operacao";
 
@@ -88,8 +105,55 @@ function baseCalculoLabel(value?: string | null) {
     return "Não informada";
 }
 
-function HistoricoLances({ detalhe }: { detalhe: LancesCartaDetalhe | null }) {
+function HistoricoLances({
+    detalhe,
+    cotaId,
+    onUpdated,
+}: {
+    detalhe: LancesCartaDetalhe | null;
+    cotaId: string;
+    onUpdated: () => Promise<void>;
+}) {
     const lances = detalhe?.historico_lances ?? [];
+    const [updatingId, setUpdatingId] = React.useState<string | null>(null);
+
+    async function updateResultado(
+        lance: LancesCartaDetalhe["historico_lances"][number],
+        resultado: "contemplado" | "nao_contemplado"
+    ) {
+        if (!lance.assembleia_data) {
+            toast.error("Este lance não possui data de assembleia.");
+            return;
+        }
+
+        setUpdatingId(lance.id);
+        try {
+            const result = await atualizarResultadoLanceAction({
+                lanceId: lance.id,
+                cotaId,
+                resultado,
+                assembleiaData: lance.assembleia_data,
+                competencia: `${lance.assembleia_data.slice(0, 7)}-01`,
+                percentual: lance.percentual,
+            });
+
+            if (!result.ok) {
+                toast.error(result.error || "Não foi possível atualizar o resultado.");
+                return;
+            }
+
+            toast.success(
+                resultado === "contemplado"
+                    ? "Lance e carta marcados como contemplados."
+                    : "Lance marcado como não contemplado."
+            );
+            await onUpdated();
+        } catch {
+            toast.error("Não foi possível confirmar a atualização. Reabra o histórico e verifique o resultado.");
+        } finally {
+            setUpdatingId(null);
+        }
+    }
 
     if (!lances.length) {
         return (
@@ -223,6 +287,58 @@ function HistoricoLances({ detalhe }: { detalhe: LancesCartaDetalhe | null }) {
                                 </span>
                             </div>
 
+                            {lance.resultado === "pendente" ? (
+                                <div className="mt-4 flex flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:justify-end">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10"
+                                        disabled={updatingId === lance.id}
+                                        onClick={() => updateResultado(lance, "nao_contemplado")}
+                                    >
+                                        {updatingId === lance.id ? (
+                                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                            <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                                        )}
+                                        Não contemplado
+                                    </Button>
+
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                                disabled={updatingId === lance.id}
+                                            >
+                                                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                                                Contemplado
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Confirmar contemplação?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    O lance de {fmtDate(lance.assembleia_data)} será marcado
+                                                    como contemplado e a carta sairá da carteira ativa.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                                    onClick={() => updateResultado(lance, "contemplado")}
+                                                >
+                                                    Confirmar contemplação
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            ) : null}
+
                             {(lance.pagamento?.observacoes || lance.observacoes) ? (
                                 <p className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-muted-foreground">
                                     {lance.pagamento?.observacoes || lance.observacoes}
@@ -245,6 +361,12 @@ export function CartaDetailsSheet({ item, competencia }: Props) {
     const [editStrategy, setEditStrategy] = React.useState(false);
     const [estrategia, setEstrategia] = React.useState(item.estrategia ?? "");
     const [saving, setSaving] = React.useState(false);
+
+    async function refreshDetalhe() {
+        const data = await getLanceCartaDetalhe(item.cota_id, competencia);
+        setDetalhe(data);
+        router.refresh();
+    }
 
     React.useEffect(() => {
         if (!open) return;
@@ -398,7 +520,11 @@ export function CartaDetailsSheet({ item, competencia }: Props) {
                                 Carregando histórico…
                             </p>
                         ) : (
-                            <HistoricoLances detalhe={detalhe} />
+                            <HistoricoLances
+                                detalhe={detalhe}
+                                cotaId={item.cota_id}
+                                onUpdated={refreshDetalhe}
+                            />
                         )}
                     </section>
                 </div>

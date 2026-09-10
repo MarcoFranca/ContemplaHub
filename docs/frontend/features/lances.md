@@ -55,6 +55,9 @@ apenas dados fundamentais + ações. O conteúdo de apoio mora no sheet
   permite expandir cada lance para consultar a composição registrada (embutido, FGTS,
   recurso próprio e outros recursos), total e base de cálculo. Registros antigos sem
   `pagamento.composicao` exibem uma indicação explícita de indisponibilidade. O histórico
+  permite concluir lances pendentes como **Não contemplado** ou **Contemplado**. A segunda
+  opção exige confirmação e também marca a carta como contemplada, usando a competência,
+  data e percentual do próprio lance para manter os estados consistentes. O histórico
   também inclui os meses marcados como **"sem lance"** (sorteio intencional), permitindo
   distinguir, na análise, sorteio decidido de esquecimento (assembleia sem registro);
 - **edição da estratégia/objetivo** da carta (campo de texto), salvo por
