@@ -25,6 +25,19 @@ reais de toda a carteira filtrada, não apenas os itens da página visível.
 A API ordena o conjunto completo por operadora, cliente, grupo e cota antes de recortar
 a página, mantendo a sequência alfabética entre páginas.
 
+## Segurança da preferência de lance
+
+`tipo_lance_preferencial` vazio é sempre exibido como **Preferência não definida**.
+O sistema não presume mais lance fixo pela simples existência de opções fixas ativas e
+também não presume sorteio. Sem uma escolha explícita, Cards, Lista e detalhe não exibem
+percentual nem valor sugerido e orientam o operador a configurar a carta antes de operar.
+
+No formulário **Registrar lance**, cartas sem preferência (ou configuradas para sorteio)
+abrem com o tipo de lance em branco. O operador precisa selecionar conscientemente Livre
+ou Fixo; para Fixo, continua obrigatório escolher uma opção ativa. Aplicar uma sugestão do
+diagnóstico só altera a preferência quando o próprio diagnóstico informa uma modalidade
+reconhecida; opções fixas cadastradas isoladamente nunca definem a preferência.
+
 ## Layout: Cards x Lista
 
 `LancesTable` tem um alternador de layout (estado local `layout: "cards" | "lista"`):

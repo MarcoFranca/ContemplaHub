@@ -41,8 +41,7 @@ function parseStrategyHighlights(text?: string | null): string[] {
 
 function sourceLabel(source: PreferenciaLanceSource) {
     if (source === "carta") return "definido na carta";
-    if (source === "fixo_ativo") return "sugerido por fixo ativo";
-    return "fallback operacional";
+    return "cadastro pendente";
 }
 
 export function StrategyPanel({ item }: Props) {
@@ -132,6 +131,8 @@ export function StrategyPanel({ item }: Props) {
                     <p className="text-sm text-muted-foreground">
                         {preferencia.value === "sorteio"
                             ? "Sem estratégia específica cadastrada. Operar com acompanhamento da assembleia e sorteio como cenário base."
+                            : preferencia.value === "nao_definida"
+                                ? "Defina a preferência da carta antes de orientar ou executar o lance do mês."
                             : "Nenhuma estratégia detalhada cadastrada para esta carta."}
                     </p>
                 )}

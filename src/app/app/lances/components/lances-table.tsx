@@ -224,6 +224,7 @@ function CartaCard({
     const sugestaoTipo = resolveSuggestedTipo(item);
     const sugestaoPercent = resolveSuggestedPercent(item);
     const sugestaoValor = resolveSuggestedValue(item);
+    const preferenciaAusente = preferencia.value === "nao_definida";
 
     return (
         <div
@@ -325,9 +326,15 @@ function CartaCard({
                         <Target className="h-3.5 w-3.5" />
                         Lance sugerido
                     </p>
-                    <p className="truncate text-sm font-medium text-white">
-                        {sugestaoTipo} · {formatPercent(sugestaoPercent)} · {money(sugestaoValor)}
-                    </p>
+                    {preferenciaAusente ? (
+                        <p className="text-sm font-semibold text-amber-300">
+                            Defina a preferência antes de operar esta carta
+                        </p>
+                    ) : (
+                        <p className="truncate text-sm font-medium text-white">
+                            {sugestaoTipo} · {formatPercent(sugestaoPercent)} · {money(sugestaoValor)}
+                        </p>
+                    )}
                     <p className="truncate text-xs text-muted-foreground">
                         {getExecucaoDescription(item)}
                     </p>

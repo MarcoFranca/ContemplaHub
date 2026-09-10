@@ -39,9 +39,7 @@ export function LanceMesCard({ item }: Props) {
 
     const origem = (item.tipo_lance_preferencial ?? "").trim()
         ? `Preferência da carta: ${item.tipo_lance_preferencial}`
-        : (item.opcoes_lance_fixo ?? []).some((op) => op.ativo)
-            ? "Sugestão por lance fixo ativo"
-            : "Ainda sem sugestão forte definida";
+        : "Preferência ainda não definida. Não operar sem confirmar.";
 
     return (
         <Card className="border-white/10 bg-white/5 shadow-sm">

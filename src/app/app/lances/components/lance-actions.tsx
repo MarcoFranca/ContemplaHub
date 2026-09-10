@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -126,13 +126,6 @@ function PrimaryControleButton({
             </Button>
         </form>
     );
-}
-
-function formatPercent(value: number) {
-    return new Intl.NumberFormat("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(Number.isFinite(value) ? value : 0) + "%";
 }
 
 function parseBrlCurrency(value: string) {
@@ -313,14 +306,20 @@ function RegistrarLanceDialog({
         .filter((op) => op.ativo)
         .sort((a, b) => a.ordem - b.ordem);
 
-    const suggestTipoLance = (): "livre" | "fixo" => {
+    type TipoLanceForm = "" | "livre" | "fixo";
+
+    const suggestTipoLance = (): TipoLanceForm => {
         const preferencial = (item.tipo_lance_preferencial ?? "").trim().toLowerCase();
 
         if (preferencial === "fixo" && opcoesFixo.length > 0) {
             return "fixo";
         }
 
-        return "livre";
+        if (preferencial === "livre" || preferencial === "embutido") {
+            return "livre";
+        }
+
+        return "";
     };
 
     const suggestFixoOpcaoId = (): string => {
@@ -328,7 +327,7 @@ function RegistrarLanceDialog({
         return firstActive?.id ?? "";
     };
 
-    const [tipoLance, setTipoLance] = useState<"livre" | "fixo">(suggestTipoLance);
+    const [tipoLance, setTipoLance] = useState<TipoLanceForm>(suggestTipoLance);
     const [fixoOpcaoId, setFixoOpcaoId] = useState<string>(suggestFixoOpcaoId);
 
     const [valor, setValor] = useState("R$ 0,00");
@@ -378,6 +377,7 @@ function RegistrarLanceDialog({
         valorNumber > 0 &&
         !excedeuTotal &&
         !excedeuEmbutido &&
+        Boolean(tipoLance) &&
         (tipoLance === "livre" || Boolean(fixoOpcaoId));
 
     function resetSuggestedState(nextOpen: boolean) {
@@ -417,7 +417,7 @@ function RegistrarLanceDialog({
 
                     <div className="mt-2 flex flex-wrap gap-2">
                         <Badge variant="secondary">
-                            Preferencial: {(item.tipo_lance_preferencial ?? "livre").toString()}
+                            Preferencial: {(item.tipo_lance_preferencial ?? "não definida").toString()}
                         </Badge>
 
                         {tipoLance === "fixo" && opcaoFixoSelecionada && (
@@ -536,7 +536,7 @@ function RegistrarLanceDialog({
                                             className="h-10 rounded-md border bg-background px-3 text-sm"
                                             value={tipoLance}
                                             onChange={(e) => {
-                                                const next = e.target.value as "livre" | "fixo";
+                                                const next = e.target.value as TipoLanceForm;
                                                 setTipoLance(next);
                                                 if (next !== "fixo") setFixoOpcaoId("");
                                                 if (next === "fixo" && !fixoOpcaoId) {
@@ -544,6 +544,7 @@ function RegistrarLanceDialog({
                                                 }
                                             }}
                                         >
+                                            <option value="">Selecione conscientemente</option>
                                             <option value="livre">Livre</option>
                                             <option value="fixo" disabled={!opcoesFixo.length}>
                                                 Fixo
@@ -575,7 +576,7 @@ function RegistrarLanceDialog({
                                                     Informe manualmente conforme a base de cálculo usada pela operadora.
                                                 </p>
                                             </>
-                                        ) : (
+                                        ) : tipoLance === "fixo" ? (
                                             <>
                                                 <select
                                                     className="h-10 rounded-md border bg-background px-3 text-sm"
@@ -604,6 +605,10 @@ function RegistrarLanceDialog({
                                                     O percentual do lance fixo é definido pela opção selecionada da carta.
                                                 </p>
                                             </>
+                                        ) : (
+                                            <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+                                                Selecione o tipo de lance antes de informar percentual e valor.
+                                            </p>
                                         )}
                                     </div>
                                 </div>

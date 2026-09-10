@@ -50,11 +50,7 @@ export function getStatusMesLabel(status?: string | null) {
 
 export function getPreferenciaResolvida(data: LancesCartaDetalhe) {
     const preferencial = normalizeTipo(data.cota.tipo_lance_preferencial);
-    const fixosAtivos = (data.opcoes_lance_fixo ?? []).filter((op) => op.ativo);
-
-    if (preferencial) return preferencial;
-    if (fixosAtivos.length > 0) return "fixo";
-    return "sorteio";
+    return preferencial;
 }
 
 export function getReadinessItems(data: LancesCartaDetalhe): ReadinessItem[] {
@@ -65,11 +61,7 @@ export function getReadinessItems(data: LancesCartaDetalhe): ReadinessItem[] {
         !!data.cota.estrategia?.trim() ||
         !!data.diagnostico?.estrategia_lance?.trim() ||
         !!data.cota.tipo_lance_preferencial?.trim();
-    const temModalidade =
-        !!data.cota.tipo_lance_preferencial ||
-        (data.opcoes_lance_fixo ?? []).some((op) => op.ativo) ||
-        data.cota.embutido_permitido ||
-        data.cota.fgts_permitido;
+    const temModalidade = !!data.cota.tipo_lance_preferencial;
     const semPendencia = !(
         data.tem_pendencia_configuracao ??
         !data.regra_assembleia?.assembleia_prevista
@@ -156,8 +148,8 @@ export function getOperationalRisk(data: LancesCartaDetalhe): "baixo" | "medio" 
     ) {
         pontos += 2;
     }
-    if (!data.cota.tipo_lance_preferencial && !(data.opcoes_lance_fixo ?? []).some((op) => op.ativo)) {
-        pontos += 1;
+    if (!data.cota.tipo_lance_preferencial) {
+        pontos += 2;
     }
 
     if (pontos >= 4) return "alto";
@@ -182,6 +174,10 @@ export function getPrimaryRecommendation(data: LancesCartaDetalhe) {
 
     if (!data.cota.autorizacao_gestao) {
         return "Validar autorização de gestão antes de registrar um lance.";
+    }
+
+    if (!preferencia) {
+        return "Definir a preferência de lance da carta antes de operar a assembleia.";
     }
 
     if (preferencia === "fixo") {

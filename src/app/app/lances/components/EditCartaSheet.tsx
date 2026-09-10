@@ -626,8 +626,7 @@ export function EditCartaSheet({
             hasActiveFixo);
 
     function applyDiagnosticoSuggestion() {
-        const suggestedTipo =
-            normalizePreferencial(diagnostico?.estrategia_lance) || (hasActiveFixo ? "fixo" : "sorteio");
+        const suggestedTipo = normalizePreferencial(diagnostico?.estrategia_lance);
 
         const suggestedObjetivo = buildSuggestedObjetivo(diagnostico, hasActiveFixo);
         const suggestedText = buildSuggestedStrategyText({
@@ -639,6 +638,7 @@ export function EditCartaSheet({
             fgtsPermitido,
         });
 
+        // Opções fixas disponíveis são capacidade operacional, não decisão do cliente.
         if (suggestedTipo) {
             setTipoLancePreferencial(suggestedTipo);
         }
