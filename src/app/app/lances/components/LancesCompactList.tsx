@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Ban, Building2, CalendarDays, Trophy } from "lucide-react";
+import { Ban, Building2, CalendarDays, Handshake, Trophy } from "lucide-react";
 
 import { LanceActions } from "./lance-actions";
 import { CartaDetailsSheet } from "./CartaDetailsSheet";
@@ -71,6 +71,12 @@ function CompactRow({ item, competencia }: { item: LanceCartaListItem; competenc
                 <div className="truncate text-xs text-muted-foreground">
                     {item.administradora_nome || "Operadora —"} · Grupo {item.grupo_codigo} · Cota {item.numero_cota}
                 </div>
+                {(item.parceiro_nomes?.length ?? 0) > 0 ? (
+                    <div className="mt-1 flex items-center gap-1 truncate text-xs text-cyan-200">
+                        <Handshake className="h-3.5 w-3.5 shrink-0" />
+                        Parceria: {item.parceiro_nomes?.join(", ")}
+                    </div>
+                ) : null}
             </div>
 
             {/* Lance sugerido */}

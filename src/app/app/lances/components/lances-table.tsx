@@ -13,6 +13,7 @@ import {
     Clock3,
     Dice5,
     FolderKanban,
+    Handshake,
     LayoutGrid,
     LayoutList,
     SendHorizonal,
@@ -279,6 +280,17 @@ function CartaCard({
                                 {getExecucaoLabel(item)}
                             </Badge>
                         ) : null}
+
+                        {(item.parceiro_nomes ?? []).map((nome) => (
+                            <Badge
+                                key={nome}
+                                variant="outline"
+                                className="gap-1 border-cyan-400/35 bg-cyan-400/10 text-cyan-200"
+                            >
+                                <Handshake className="h-3.5 w-3.5" />
+                                Parceria: {nome}
+                            </Badge>
+                        ))}
                     </div>
                 </div>
 

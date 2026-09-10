@@ -15,6 +15,7 @@ export type LanceCartaListItem = {
     cliente_nome?: string | null;
     administradora_id?: string | null;
     administradora_nome?: string | null;
+    parceiro_nomes?: string[];
     produto: Produto;
     grupo_codigo: string;
     numero_cota: string;

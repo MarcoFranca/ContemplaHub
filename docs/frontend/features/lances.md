@@ -13,7 +13,8 @@ histórico da carta para consultas futuras e justificativa de estratégia.
    Baixados, Sem lance, Todas).
 2. Navega por operadora (ex.: Porto) e cliente.
 3. No card da carta vê o essencial para decidir: operadora, cliente, grupo/cota,
-   **tipo de lance preferencial**, valor, assembleia e o **lance sugerido**.
+   **tipo de lance preferencial**, parceiros vinculados, valor, assembleia e o
+   **lance sugerido**.
 4. Executa a ação direto no card (Planejar lance, Sem lance, Registrar lance,
    Contemplar, Cancelar) e/ou edita a carta.
 5. Para contexto mais profundo, abre **"Detalhes & histórico"** (sheet) sem sair da tela.
@@ -24,6 +25,9 @@ cards de resumo usam o `overview` agregado do backend e, portanto, mostram os to
 reais de toda a carteira filtrada, não apenas os itens da página visível.
 A API ordena o conjunto completo por operadora, cliente, grupo e cota antes de recortar
 a página, mantendo a sequência alfabética entre páginas.
+Quando a carta foi vendida em parceria, a API entrega `parceiro_nomes` a partir de
+`cota_comissao_parceiros`. A visão em cards mostra um selo por parceiro e a lista
+compacta exibe os nomes abaixo da identificação da cota, facilitando o contato antes do lance.
 
 ## Segurança da preferência de lance
 
