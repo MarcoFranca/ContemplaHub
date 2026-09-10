@@ -5,7 +5,17 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -45,6 +55,7 @@ import { LanceMesCard } from "./LanceMesCard";
 import { StrategyPanel } from "./strategy-panel";
 import {
     atualizarResultadoLanceAction,
+    corrigirLanceAction,
     getLanceCartaDetalhe,
     salvarEstrategiaCartaAction,
 } from "../actions/carta-actions";
@@ -103,6 +114,272 @@ function baseCalculoLabel(value?: string | null) {
     if (value === "valor_carta") return "Valor da carta";
     if (value === "saldo_devedor") return "Saldo devedor";
     return "Não informada";
+}
+
+function parsePercent(value: string) {
+    const normalized = value.trim().replace(",", ".");
+    if (!normalized) return null;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseBrlCurrency(value: string) {
+    const digits = value.replace(/\D/g, "");
+    return digits ? Number(digits) / 100 : 0;
+}
+
+function formatBrlCurrency(value: number) {
+    return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+    }).format(Number.isFinite(value) ? value : 0);
+}
+
+function BrlInput({
+    value,
+    onValueChange,
+    disabled,
+}: {
+    value: number;
+    onValueChange: (value: number) => void;
+    disabled?: boolean;
+}) {
+    return (
+        <Input
+            value={formatBrlCurrency(value)}
+            disabled={disabled}
+            inputMode="numeric"
+            onChange={(event) => onValueChange(parseBrlCurrency(event.target.value))}
+        />
+    );
+}
+
+function CorrigirLanceDialog({
+    lance,
+    cota,
+    onUpdated,
+}: {
+    lance: LancesCartaDetalhe["historico_lances"][number];
+    cota: LancesCartaDetalhe["cota"];
+    onUpdated: () => Promise<void>;
+}) {
+    const [open, setOpen] = React.useState(false);
+    const [saving, setSaving] = React.useState(false);
+    const [assembleiaData, setAssembleiaData] = React.useState("");
+    const [tipo, setTipo] = React.useState<"livre" | "fixo">("livre");
+    const [percentual, setPercentual] = React.useState("");
+    const [valor, setValor] = React.useState(0);
+    const [baseCalculo, setBaseCalculo] = React.useState<"saldo_devedor" | "valor_carta">("saldo_devedor");
+    const [embutido, setEmbutido] = React.useState(0);
+    const [fgts, setFgts] = React.useState(0);
+    const [outro, setOutro] = React.useState(0);
+    const [observacoes, setObservacoes] = React.useState("");
+
+    const proprio = Math.max(valor - embutido - fgts - outro, 0);
+    const composicaoInformada = embutido + fgts + outro;
+    const excedeuTotal = composicaoInformada > valor;
+    const limiteEmbutido = cota.embutido_max_percent && cota.valor_carta
+        ? Number(cota.valor_carta) * (Number(cota.embutido_max_percent) / 100)
+        : null;
+    const embutidoNaoPermitido = !cota.embutido_permitido && embutido > 0;
+    const fgtsNaoPermitido = !cota.fgts_permitido && fgts > 0;
+    const excedeuEmbutido = limiteEmbutido != null && embutido > limiteEmbutido;
+    const percentualNumber = parsePercent(percentual);
+    const percentualInvalido = percentual.trim() !== "" && (
+        percentualNumber == null || percentualNumber < 0
+    );
+    const podeSalvar = Boolean(assembleiaData) && valor > 0 && !excedeuTotal &&
+        !excedeuEmbutido && !embutidoNaoPermitido && !fgtsNaoPermitido &&
+        !percentualInvalido;
+
+    function resetFromLance(nextOpen: boolean) {
+        setOpen(nextOpen);
+        if (!nextOpen) return;
+
+        const composicao = lance.pagamento?.composicao;
+        setAssembleiaData(lance.assembleia_data ?? "");
+        setTipo(lance.tipo === "fixo" ? "fixo" : "livre");
+        setPercentual(lance.percentual == null ? "" : String(lance.percentual).replace(".", ","));
+        setValor(Number(lance.valor ?? 0));
+        setBaseCalculo(lance.base_calculo === "valor_carta" ? "valor_carta" : "saldo_devedor");
+        setEmbutido(Number(composicao?.embutido ?? 0));
+        setFgts(Number(composicao?.fgts ?? 0));
+        setOutro(Number(composicao?.outro ?? 0));
+        setObservacoes(lance.pagamento?.observacoes ?? lance.observacoes ?? "");
+    }
+
+    async function handleSave() {
+        if (!podeSalvar) return;
+
+        setSaving(true);
+        try {
+            const result = await corrigirLanceAction({
+                lanceId: lance.id,
+                cotaId: cota.id,
+                assembleiaData,
+                tipo,
+                percentual: percentualNumber,
+                valor,
+                baseCalculo,
+                pagamento: {
+                    composicao: { embutido, fgts, proprio, outro },
+                    observacoes: observacoes.trim() || null,
+                },
+            });
+
+            if (!result.ok) {
+                toast.error(result.error || "Não foi possível corrigir o lance.");
+                return;
+            }
+
+            toast.success("Lance corrigido com sucesso.");
+            setOpen(false);
+            await onUpdated();
+        } catch {
+            toast.error("Não foi possível confirmar a correção. Reabra o histórico e verifique os dados.");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={resetFromLance}>
+            <DialogTrigger asChild>
+                <Button type="button" size="sm" variant="outline">
+                    <PencilLine className="mr-1.5 h-3.5 w-3.5" />
+                    Corrigir lance
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Corrigir lance</DialogTitle>
+                    <DialogDescription>
+                        Ajuste os dados lançados incorretamente. O resultado atual será preservado.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid gap-4 py-2 sm:grid-cols-2">
+                    <label className="grid gap-2 text-sm">
+                        Data da assembleia
+                        <Input
+                            type="date"
+                            value={assembleiaData}
+                            onChange={(event) => setAssembleiaData(event.target.value)}
+                        />
+                    </label>
+                    <label className="grid gap-2 text-sm">
+                        Tipo de lance
+                        <select
+                            className="h-10 rounded-md border bg-background px-3 text-sm"
+                            value={tipo}
+                            onChange={(event) => setTipo(event.target.value as "livre" | "fixo")}
+                        >
+                            <option value="livre">Livre</option>
+                            <option value="fixo">Fixo</option>
+                        </select>
+                    </label>
+                    <label className="grid gap-2 text-sm">
+                        Valor total do lance
+                        <BrlInput value={valor} onValueChange={setValor} />
+                    </label>
+                    <label className="grid gap-2 text-sm">
+                        Percentual do lance
+                        <Input
+                            value={percentual}
+                            inputMode="decimal"
+                            placeholder="Ex.: 40,00"
+                            onChange={(event) => setPercentual(event.target.value)}
+                        />
+                        {percentualInvalido ? (
+                            <span className="text-xs text-rose-400">Informe um percentual válido.</span>
+                        ) : null}
+                    </label>
+                    <label className="grid gap-2 text-sm sm:col-span-2">
+                        Base de cálculo
+                        <select
+                            className="h-10 rounded-md border bg-background px-3 text-sm"
+                            value={baseCalculo}
+                            onChange={(event) => setBaseCalculo(event.target.value as typeof baseCalculo)}
+                        >
+                            <option value="saldo_devedor">Saldo devedor</option>
+                            <option value="valor_carta">Valor da carta</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div className="rounded-xl border border-white/10 p-4">
+                    <p className="text-sm font-medium">Composição do pagamento</p>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <label className="grid gap-2 text-sm">
+                            Lance embutido
+                            <BrlInput
+                                value={embutido}
+                                onValueChange={setEmbutido}
+                                disabled={!cota.embutido_permitido && embutido === 0}
+                            />
+                        </label>
+                        <label className="grid gap-2 text-sm">
+                            FGTS
+                            <BrlInput
+                                value={fgts}
+                                onValueChange={setFgts}
+                                disabled={!cota.fgts_permitido && fgts === 0}
+                            />
+                        </label>
+                        <label className="grid gap-2 text-sm">
+                            Outros recursos
+                            <BrlInput value={outro} onValueChange={setOutro} />
+                        </label>
+                        <div className="grid gap-2 text-sm">
+                            <span>Recurso próprio (automático)</span>
+                            <Input value={formatBrlCurrency(proprio)} readOnly />
+                        </div>
+                    </div>
+
+                    {excedeuTotal ? (
+                        <p className="mt-3 text-sm text-rose-400">
+                            Embutido, FGTS e outros recursos ultrapassam o valor total do lance.
+                        </p>
+                    ) : null}
+                    {excedeuEmbutido ? (
+                        <p className="mt-3 text-sm text-rose-400">
+                            O embutido ultrapassa o limite de {formatBrlCurrency(limiteEmbutido ?? 0)} desta carta.
+                        </p>
+                    ) : null}
+                    {embutidoNaoPermitido ? (
+                        <p className="mt-3 text-sm text-rose-400">
+                            A configuração atual da carta não permite embutido. Zere esse campo para salvar.
+                        </p>
+                    ) : null}
+                    {fgtsNaoPermitido ? (
+                        <p className="mt-3 text-sm text-rose-400">
+                            A configuração atual da carta não permite FGTS. Zere esse campo para salvar.
+                        </p>
+                    ) : null}
+                </div>
+
+                <label className="grid gap-2 text-sm">
+                    Observações
+                    <Textarea value={observacoes} onChange={(event) => setObservacoes(event.target.value)} />
+                </label>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+                        Voltar
+                    </Button>
+                    <Button
+                        type="button"
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                        disabled={!podeSalvar || saving}
+                        onClick={handleSave}
+                    >
+                        {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+                        Salvar correção
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function HistoricoLances({
@@ -287,8 +564,17 @@ function HistoricoLances({
                                 </span>
                             </div>
 
-                            {lance.resultado === "pendente" ? (
-                                <div className="mt-4 flex flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:justify-end">
+                            <div className="mt-4 flex flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:justify-end">
+                                {detalhe?.cota ? (
+                                    <CorrigirLanceDialog
+                                        lance={lance}
+                                        cota={detalhe.cota}
+                                        onUpdated={onUpdated}
+                                    />
+                                ) : null}
+
+                                {lance.resultado === "pendente" ? (
+                                    <>
                                     <Button
                                         type="button"
                                         size="sm"
@@ -336,8 +622,9 @@ function HistoricoLances({
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
-                                </div>
-                            ) : null}
+                                    </>
+                                ) : null}
+                            </div>
 
                             {(lance.pagamento?.observacoes || lance.observacoes) ? (
                                 <p className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-muted-foreground">

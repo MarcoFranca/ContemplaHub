@@ -58,7 +58,11 @@ apenas dados fundamentais + ações. O conteúdo de apoio mora no sheet
   permite concluir lances pendentes como **Não contemplado** ou **Contemplado**. A segunda
   opção exige confirmação e também marca a carta como contemplada, usando a competência,
   data e percentual do próprio lance para manter os estados consistentes. O histórico
-  também inclui os meses marcados como **"sem lance"** (sorteio intencional), permitindo
+  também oferece **Corrigir lance**, com formulário pré-preenchido para data, tipo,
+  percentual, valor, base de cálculo, composição financeira e observações. A interface
+  recalcula o recurso próprio, respeita os limites atuais de embutido/FGTS e preserva o
+  resultado já registrado. O histórico também inclui os meses marcados como **"sem lance"**
+  (sorteio intencional), permitindo
   distinguir, na análise, sorteio decidido de esquecimento (assembleia sem registro);
 - **edição da estratégia/objetivo** da carta (campo de texto), salvo por
   `salvarEstrategiaCartaAction` (PATCH parcial, só `estrategia`/`objetivo`).
@@ -70,7 +74,7 @@ a ser reutilizados dentro do sheet.
 
 - `listLancesCartas`, `getLanceCartaDetalhe` — leitura (via backend FastAPI).
 - `salvarControleMensalAction`, `registrarLanceAction`, `contemplarCotaAction`,
-  `cancelarCotaAction`, `reativarCotaAction` — operação mensal.
+  `corrigirLanceAction`, `cancelarCotaAction`, `reativarCotaAction` — operação mensal.
 - `updateCartaAction` — edição completa da carta (`EditCartaSheet`).
 - `salvarEstrategiaCartaAction` — edição focada de estratégia/objetivo a partir do sheet.
 

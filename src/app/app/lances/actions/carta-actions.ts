@@ -14,6 +14,10 @@ import {
     formNullableString,
     parseJsonArray,
 } from "../utils/form-parsers";
+import {
+    corrigirLanceSchema,
+    type CorrigirLanceInput,
+} from "../schemas/corrigir-lance.schema";
 
 type LanceFixoPayload = {
     id?: string | null;
@@ -302,6 +306,45 @@ export async function atualizarResultadoLanceAction(input: {
     } catch (error: unknown) {
         const rawMessage = error instanceof Error ? error.message : "";
         let message = rawMessage || "Não foi possível atualizar o resultado do lance.";
+
+        try {
+            const parsed = JSON.parse(rawMessage) as { detail?: string; message?: string };
+            message = parsed.detail || parsed.message || message;
+        } catch {}
+
+        return { ok: false, error: message };
+    }
+}
+
+export async function corrigirLanceAction(
+    input: CorrigirLanceInput
+): Promise<{ ok: boolean; error?: string }> {
+    const parsed = corrigirLanceSchema.safeParse(input);
+    if (!parsed.success) {
+        return { ok: false, error: parsed.error.issues[0]?.message || "Revise os dados do lance." };
+    }
+
+    const data = parsed.data;
+
+    try {
+        await backendAuthed(`/lances/${data.lanceId}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                assembleia_data: data.assembleiaData,
+                tipo: data.tipo,
+                percentual: data.percentual,
+                valor: data.valor,
+                base_calculo: data.baseCalculo,
+                pagamento: data.pagamento,
+            }),
+        });
+
+        revalidatePath("/app/lances");
+        revalidatePath(`/app/lances/${data.cotaId}`);
+        return { ok: true };
+    } catch (error: unknown) {
+        const rawMessage = error instanceof Error ? error.message : "";
+        let message = rawMessage || "Não foi possível corrigir o lance.";
 
         try {
             const parsed = JSON.parse(rawMessage) as { detail?: string; message?: string };
