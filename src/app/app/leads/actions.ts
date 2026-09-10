@@ -485,10 +485,34 @@ export async function deleteLead(leadId: string) {
         throw new Error("Org inválida");
     }
 
-    await backendFetch(`/leads/${leadId}`, {
-        method: "DELETE",
-        orgId: profile.orgId,
-    });
+    try {
+        await backendFetch(`/leads/${leadId}`, {
+            method: "DELETE",
+            orgId: profile.orgId,
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        const conflictPrefix = "Backend error 409:";
 
-    return { ok: true };
+        if (message.startsWith(conflictPrefix)) {
+            const responseBody = message.slice(conflictPrefix.length).trim();
+            try {
+                const parsed = JSON.parse(responseBody) as { detail?: unknown };
+                if (typeof parsed.detail === "string") {
+                    return { ok: false, error: parsed.detail } as const;
+                }
+            } catch {
+                // Mantem uma mensagem segura caso o backend retorne corpo nao JSON.
+            }
+
+            return {
+                ok: false,
+                error: "Este cliente possui histórico financeiro e não pode ser excluído diretamente.",
+            } as const;
+        }
+
+        throw error;
+    }
+
+    return { ok: true } as const;
 }

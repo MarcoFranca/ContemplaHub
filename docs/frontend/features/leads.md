@@ -71,6 +71,7 @@ Não há um schema Zod único do domínio de leads concentrado como em contratos
 5. Leads capturados por Meta Lead Ads entram na mesma feature já em `etapa = novo`, mas a configuração dessa captura vive em `/app/meta-integracoes`.
 6. No detalhe do lead, consulta interesse, cotas, propostas, diagnóstico e, quando houver, a origem Meta Ads com destaque para o criativo/anúncio, campanha/formulário e respostas iniciais do formulário.
 7. A partir do lead, pode iniciar proposta ou formalização de contrato.
+8. A exclusão direta é bloqueada quando alguma carta possui lançamento de comissão; o aviso orienta transferir a carta para o cadastro correto antes de remover uma duplicidade.
 
 ## Integrações com backend
 
@@ -82,6 +83,7 @@ Não há um schema Zod único do domínio de leads concentrado como em contratos
 - ingestões externas como Meta Lead Ads passam pelo backend e aterrissam na mesma tabela `leads`
 - o kanban agora também consome resumo de `lead_diagnosticos.extras.meta_ads` para exibir origem, criativo (`ad_name`) e objetivo/faixa declarada sem poluir o card
 - ações rápidas no card permitem marcar `Contatado`, `Sem resposta` (`frio`) e `Perdido` sem sair do quadro
+- `deleteLead` trata o `409` do backend como resultado operacional esperado, permitindo que `DeleteLeadButton` apresente a causa sem expor erro de Server Components em produção
 - o estado local do Kanban mantém todas as etapas (`novo` até `perdido`) mesmo quando `frios` e `perdidos` estão ocultos; assim, mover um card para uma coluna escondida remove o item da visão ativa sem quebrar o drag & drop nem exigir ativar o toggle
 - os cards priorizam leitura vertical: nome, contato, bloco de origem Meta Ads/criativo, chips compactos de diagnóstico inicial e ações rápidas em `flex-wrap`
 

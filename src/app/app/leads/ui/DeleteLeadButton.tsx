@@ -33,7 +33,15 @@ export function DeleteLeadButton({
     function handleDelete() {
         startTransition(async () => {
             try {
-                await deleteLead(leadId);
+                const result = await deleteLead(leadId);
+                if (!result.ok) {
+                    toast.warning("Exclusão bloqueada para proteger o histórico", {
+                        description: result.error,
+                        duration: 8000,
+                    });
+                    return;
+                }
+
                 toast.success("Lead deletado", {
                     description:
                         "O lead e todos os dados relacionados foram removidos do sistema.",
@@ -71,13 +79,19 @@ export function DeleteLeadButton({
                         <span className="font-semibold">
               {leadName || "sem nome"}
             </span>{" "}
-                        e <strong>tudo relacionado a ele</strong> será removido:
+                        e os dados comerciais dependentes serão removidos:
                         <br />
                         <br />
                         • Diagnósticos<br />
                         • Propostas<br />
-                        • Cotas / contratos vinculados<br />
+                        • Cotas / contratos sem histórico financeiro<br />
                         • Qualquer outro registro dependente
+                        <br />
+                        <br />
+                        Se houver comissão vinculada a alguma carta, a exclusão será
+                        bloqueada para preservar o histórico financeiro. Nesse caso,
+                        transfira a carta para o cadastro correto antes de excluir a
+                        duplicidade.
                         <br />
                         <br />
                         Confirme apenas se você tiver certeza absoluta.
