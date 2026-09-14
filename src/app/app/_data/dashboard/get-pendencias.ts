@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentProfile } from "@/lib/auth/server";
-import { getContratosSemLancamentoEmpresa } from "./comissao-pendencias";
+import { collectSupabasePages, getContratosSemLancamentoEmpresa } from "./comissao-pendencias";
 
 export type PendenciaSeverity = "high" | "medium";
 
@@ -47,21 +47,6 @@ export async function getPendencias(): Promise<PendenciasData | null> {
     const supa = getAdminClient();
     const orgId = profile.orgId;
 
-    const [cotasRes, configRes, contratosRes, lancamentosRes, leadsRes] = await Promise.all([
-        supa.from("cotas").select("id, numero_cota, grupo_codigo, status, lead_id, assembleia_dia").eq("org_id", orgId),
-        supa.from("cota_comissao_config").select("cota_id").eq("org_id", orgId),
-        supa.from("contratos").select("id, numero, cota_id, status").eq("org_id", orgId),
-        supa
-            .from("comissao_lancamentos")
-            .select(
-                "id, contrato_id, cota_id, parceiro_id, beneficiario_tipo, repasse_status, valor_liquido,"
-                + " competencia_prevista, status, observacoes,"
-                + " parceiros_corretores(nome), contratos(numero), cotas(numero_cota, grupo_codigo)"
-            )
-            .eq("org_id", orgId),
-        supa.from("leads").select("id, nome").eq("org_id", orgId),
-    ]);
-
     type LancRow = {
         id: string;
         contrato_id: string | null;
@@ -78,10 +63,31 @@ export async function getPendencias(): Promise<PendenciasData | null> {
         cotas: { numero_cota?: string | null; grupo_codigo?: string | null } | null;
     };
 
+    const [cotasRes, configRes, contratosRes, lancamentos, leadsRes] = await Promise.all([
+        supa.from("cotas").select("id, numero_cota, grupo_codigo, status, lead_id, assembleia_dia").eq("org_id", orgId),
+        supa.from("cota_comissao_config").select("cota_id").eq("org_id", orgId),
+        supa.from("contratos").select("id, numero, cota_id, status").eq("org_id", orgId),
+        collectSupabasePages<LancRow>(async (from, to) => {
+            const result = await supa
+                .from("comissao_lancamentos")
+                .select(
+                    "id, contrato_id, cota_id, parceiro_id, beneficiario_tipo, repasse_status, valor_liquido,"
+                    + " competencia_prevista, status, observacoes,"
+                    + " parceiros_corretores(nome), contratos(numero), cotas(numero_cota, grupo_codigo)"
+                )
+                .eq("org_id", orgId)
+                .range(from, to);
+            return {
+                data: (result.data ?? []) as unknown as LancRow[],
+                error: result.error,
+            };
+        }),
+        supa.from("leads").select("id, nome").eq("org_id", orgId),
+    ]);
+
     const cotas = cotasRes.data ?? [];
     const configIds = new Set((configRes.data ?? []).map((r) => r.cota_id));
     const contratos = contratosRes.data ?? [];
-    const lancamentos = (lancamentosRes.data ?? []) as unknown as LancRow[];
     const leadNome = new Map<string, string>((leadsRes.data ?? []).map((l) => [l.id, l.nome ?? ""]));
 
     const cotaLabel = (numero?: string | null, grupo?: string | null) =>
@@ -147,6 +153,7 @@ export async function getPendencias(): Promise<PendenciasData | null> {
         (l) =>
             l.beneficiario_tipo === "parceiro" &&
             l.repasse_status === "pendente" &&
+            (l.status === "disponivel" || l.status === "pago") &&
             (!l.competencia_prevista || l.competencia_prevista.slice(0, 7) <= mesVigente),
     );
     const repassesVencidos: PendenciaItem[] = repassesBase

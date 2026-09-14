@@ -9,6 +9,30 @@ export type LancamentoComissaoVinculo = {
     beneficiario_tipo: string | null;
 };
 
+type SupabasePage<T> = {
+    data: T[] | null;
+    error: { message: string } | null;
+};
+
+const SUPABASE_PAGE_SIZE = 1000;
+
+export async function collectSupabasePages<T>(
+    fetchPage: (from: number, to: number) => PromiseLike<SupabasePage<T>>
+): Promise<T[]> {
+    const rows: T[] = [];
+
+    for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+        const result = await fetchPage(from, from + SUPABASE_PAGE_SIZE - 1);
+        if (result.error) throw new Error(result.error.message);
+
+        const page = result.data ?? [];
+        rows.push(...page);
+        if (page.length < SUPABASE_PAGE_SIZE) break;
+    }
+
+    return rows;
+}
+
 export function getContratosSemLancamentoEmpresa<T extends ContratoComCota>(
     contratos: readonly T[],
     lancamentos: readonly LancamentoComissaoVinculo[]

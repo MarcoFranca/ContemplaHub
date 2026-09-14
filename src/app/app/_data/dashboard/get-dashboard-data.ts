@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentProfile } from "@/lib/auth/server";
-import { getContratosSemLancamentoEmpresa } from "./comissao-pendencias";
+import { collectSupabasePages, getContratosSemLancamentoEmpresa } from "./comissao-pendencias";
 
 export type DashboardSummary = {
     leadsNovos: number;
@@ -340,8 +340,8 @@ export async function getDashboardData(): Promise<DashboardData> {
         contratosPrevResp,
         cotasResp,
         contemplacoesRecentResp,
-        contratosResp,
-        comissaoLancamentosResp,
+        contratos,
+        lancamentos,
         operadorasResp,
         activitiesResp,
         profilesResp,
@@ -420,17 +420,24 @@ export async function getDashboardData(): Promise<DashboardData> {
             .order("data", { ascending: false })
             .limit(5),
 
-        supa
-            .from("contratos")
-            .select("id, numero, cota_id, status, created_at")
-            .eq("org_id", orgId)
-            .order("created_at", { ascending: false })
-            .limit(10),
+        collectSupabasePages<ContratoRow>(async (from, to) => {
+            const result = await supa
+                .from("contratos")
+                .select("id, numero, cota_id, status, created_at")
+                .eq("org_id", orgId)
+                .order("created_at", { ascending: false })
+                .range(from, to);
+            return { data: result.data as ContratoRow[] | null, error: result.error };
+        }),
 
-        supa
-            .from("comissao_lancamentos")
-            .select("id, contrato_id, cota_id, status, repasse_status, beneficiario_tipo, valor_bruto, valor_liquido, competencia_prevista, created_at")
-            .eq("org_id", orgId),
+        collectSupabasePages<LancamentoRow>(async (from, to) => {
+            const result = await supa
+                .from("comissao_lancamentos")
+                .select("id, contrato_id, cota_id, status, repasse_status, beneficiario_tipo, valor_bruto, valor_liquido, competencia_prevista, created_at")
+                .eq("org_id", orgId)
+                .range(from, to);
+            return { data: result.data as LancamentoRow[] | null, error: result.error };
+        }),
 
         supa
             .from("administradoras")
@@ -468,9 +475,7 @@ export async function getDashboardData(): Promise<DashboardData> {
 
     const kanbanMetrics = (kanbanMetricsResp.data ?? []) as KanbanMetricRow[];
     const cotas = (cotasResp.data ?? []) as CotaRow[];
-    const contratos = (contratosResp.data ?? []) as ContratoRow[];
     const contemplacoesRecentes = contemplacoesRecentResp.data ?? [];
-    const lancamentos = (comissaoLancamentosResp.data ?? []) as LancamentoRow[];
     const administradoras = (operadorasResp.data ?? []) as AdministradoraRow[];
     const activities = (activitiesResp.data ?? []) as ActivityRow[];
     const profiles = (profilesResp.data ?? []) as ProfileRow[];
@@ -518,7 +523,8 @@ export async function getDashboardData(): Promise<DashboardData> {
         .filter(
             (l) =>
                 l.beneficiario_tipo === "parceiro" &&
-                l.repasse_status === "pendente"
+                l.repasse_status === "pendente" &&
+                (l.status === "disponivel" || l.status === "pago")
         )
         .reduce((acc, item) => acc + toNumber(item.valor_liquido), 0);
 
