@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentProfile } from "@/lib/auth/server";
+import { getContratosSemLancamentoEmpresa } from "./comissao-pendencias";
 
 export type DashboardSummary = {
     leadsNovos: number;
@@ -613,8 +614,9 @@ export async function getDashboardData(): Promise<DashboardData> {
             href: "/app/carteira",
         }));
 
-    const contratosSemLancamentos = contratos.filter(
-        (contrato) => !lancamentos.some((l) => l.contrato_id === contrato.id)
+    const contratosSemLancamentos = getContratosSemLancamentoEmpresa(
+        contratos.filter((contrato) => (contrato.status ?? "").toLowerCase() !== "cancelado"),
+        lancamentos
     );
 
     const attentionItems: AttentionItem[] = [];
@@ -632,8 +634,8 @@ export async function getDashboardData(): Promise<DashboardData> {
     if (contratosSemLancamentos.length > 0) {
         attentionItems.push({
             id: "contratos-sem-lancamento",
-            title: "Contratos sem geração de lançamentos",
-            description: `${contratosSemLancamentos.length} contrato(s) ainda não geraram financeiro de comissão.`,
+            title: "Contratos sem comissão gerada",
+            description: `${contratosSemLancamentos.length} contrato(s) ainda não possuem lançamentos da comissão da empresa.`,
             href: "/app/pendencias?cat=contrato_sem_lancamento",
             severity: "high",
         });

@@ -58,7 +58,7 @@ Header e topo:
 pendências **item a item** (não só contagens), agrupadas por categoria: cartas ativas sem comissão
 configurada (→ `/app/financeiro/pagamentos?item_id=…` já com a carta do cliente pré-selecionada;
 usa o contrato quando existe, senão `cota:{cotaId}`, mesma regra de `selection_id` do módulo),
-contratos sem lançamentos (→ `/app/contratos/{id}`),
+contratos sem lançamentos da empresa (→ `/app/contratos/{id}`),
 **comissões em cobrança** (lançamentos com `observacoes` contendo "INADIMPLENTE" → contrato),
 **repasses vencidos** (competência anterior ao mês vigente → alta/vermelho) e **repasses do mês**
 (→ `/app/comissoes?tab=repasses`), **cartas sem dia de assembleia**
@@ -77,6 +77,12 @@ subcategoria certa.
 
 Regra dos repasses: só contam como pendência os de competência **até o mês vigente**; competências
 futuras são apenas provisão (ainda não venceram) e ficam de fora.
+
+Regra de contratos sem lançamentos: considera apenas lançamentos com
+`beneficiario_tipo = empresa` e reconhece o vínculo tanto por `contrato_id` quanto pela
+`cota_id` do contrato quando o lançamento legado não possui `contrato_id`. A ausência de
+parceiro é válida e não gera pendência de repasse;
+nesse caso, a comissão pertence integralmente à empresa.
 
 Acesso e contadores no Sidebar: "Pendências" (Operação, ícone de sino) tem **badge com o total** e
 **subitens por subcategoria** (Sem comissão, Sem lançamentos, Em cobrança, Repasses, Sem assembleia),

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentProfile } from "@/lib/auth/server";
+import { getContratosSemLancamentoEmpresa } from "./comissao-pendencias";
 
 export type PendenciaSeverity = "high" | "medium";
 
@@ -107,16 +108,20 @@ export async function getPendencias(): Promise<PendenciasData | null> {
             href: `/app/financeiro/pagamentos?item_id=${financeiroSelection(c.id)}`,
         }));
 
-    // 2) Contratos sem geração de lançamentos
-    const contratoIdsComLanc = new Set(lancamentos.map((l) => l.contrato_id).filter(Boolean));
-    const contratosSemLanc: PendenciaItem[] = contratos
-        .filter((c) => (c.status ?? "").toLowerCase() !== "cancelado" && !contratoIdsComLanc.has(c.id))
+    // 2) Contratos sem comissão da empresa, vinculada pelo contrato ou pela cota.
+    const contratosAtivos = contratos.filter(
+        (c) => (c.status ?? "").toLowerCase() !== "cancelado"
+    );
+    const contratosSemLanc: PendenciaItem[] = getContratosSemLancamentoEmpresa(
+        contratosAtivos,
+        lancamentos
+    )
         .map((c) => ({
             id: `contrato-${c.id}`,
             categoria: "contrato_sem_lancamento",
             severity: "high" as const,
             title: `Contrato ${c.numero || "sem número"}`,
-            subtitle: "Ainda não gerou o financeiro de comissão",
+            subtitle: "Ainda não possui lançamentos da comissão da empresa",
             acaoLabel: "Gerar lançamentos",
             href: `/app/contratos/${c.id}`,
         }));
@@ -217,8 +222,8 @@ export async function getPendencias(): Promise<PendenciasData | null> {
         },
         {
             categoria: "contrato_sem_lancamento",
-            label: "Contratos sem lançamentos",
-            descricao: "Gere o financeiro de comissão do contrato.",
+            label: "Contratos sem comissão gerada",
+            descricao: "Gere os lançamentos da comissão da empresa para o contrato.",
             severity: "high" as const,
             items: contratosSemLanc,
         },
