@@ -9,6 +9,7 @@ import { formatPhoneBR } from "@/lib/formatters";
 import { InterestSummaryRow } from "./InterestSummaryRow";
 import { InterestDetailsDialog } from "./InterestDetailsDialog";
 import { DiagnosticSheet } from "@/app/app/leads/ui/DiagnosticSheet";
+import { DiagnosticoFunilSheet } from "@/app/app/leads/ui/DiagnosticoFunilSheet";
 import { DeleteLeadButton } from "@/app/app/leads/ui/DeleteLeadButton";
 import { updateContractStatus } from "@/app/app/leads/actions";
 import type { LeadCard, ContractStatus, Stage } from "@/app/app/leads/types";
@@ -287,6 +288,8 @@ export function LeadCardItem({
                     >
                         Ver lead
                     </Link>
+
+                    <DiagnosticoFunilSheet leadId={lead.id} />
 
                     {canShowQuickMoves ? (
                         <>

@@ -36,15 +36,16 @@ type Estado = {
     nome: string;
     whatsapp: string;
     estado: string;
-    especialidade: string;
     estado_civil: EstadoCivil | "";
     tem_filhos: boolean | null;
-    idade_filhos: string;
-    regime: RegimeId[];
-    atuacao: AtuacaoId | "";
+    qtd_filhos: number;
+    filhos_idades: string[];
+    regime: RegimeId | "";
+    atuacao: AtuacaoId[];
     momento_carreira: MomentoId[];
     objetivos: ObjetivoId[];
     possui_imovel_quitado: boolean | null;
+    valor_imovel: number;
     possui_cnpj: boolean | null;
     possui_holding: boolean | null;
     renda_mensal: number;
@@ -63,15 +64,16 @@ const INICIAL: Estado = {
     nome: "",
     whatsapp: "",
     estado: "",
-    especialidade: "",
     estado_civil: "",
     tem_filhos: null,
-    idade_filhos: "",
-    regime: [],
-    atuacao: "",
+    qtd_filhos: 1,
+    filhos_idades: [""],
+    regime: "",
+    atuacao: [],
     momento_carreira: [],
     objetivos: [],
     possui_imovel_quitado: null,
+    valor_imovel: 300000,
     possui_cnpj: null,
     possui_holding: null,
     renda_mensal: 25000,
@@ -96,6 +98,20 @@ export function DiagnosticoFunnel({ slug, orgNome, orgWhatsapp, accent }: Props)
 
     const set = <K extends keyof Estado>(k: K, v: Estado[K]) => setF((p) => ({ ...p, [k]: v }));
 
+    const setQtdFilhos = (q: number) =>
+        setF((p) => {
+            const qtd = Math.max(1, Math.min(8, q));
+            const idades = Array.from({ length: qtd }, (_, i) => p.filhos_idades[i] ?? "");
+            return { ...p, qtd_filhos: qtd, filhos_idades: idades };
+        });
+
+    const setIdadeFilho = (i: number, v: string) =>
+        setF((p) => {
+            const idades = [...p.filhos_idades];
+            idades[i] = v;
+            return { ...p, filhos_idades: idades };
+        });
+
     function toggleLimited<T>(arr: T[], id: T, limit: number): T[] {
         if (arr.includes(id)) return arr.filter((x) => x !== id);
         if (arr.length >= limit) return arr;
@@ -111,8 +127,8 @@ export function DiagnosticoFunnel({ slug, orgNome, orgWhatsapp, accent }: Props)
             if (f.tem_filhos === null) return "Informe se tem filhos.";
         }
         if (s === 2) {
-            if (f.regime.length === 0) return "Selecione ao menos um regime de trabalho.";
-            if (!f.atuacao) return "Selecione sua atuação principal.";
+            if (!f.regime) return "Selecione seu regime de trabalho.";
+            if (f.atuacao.length === 0) return "Selecione ao menos uma atuação.";
             if (f.momento_carreira.length === 0) return "Selecione seu momento de carreira.";
             if (f.objetivos.length === 0) return "Escolha pelo menos um objetivo.";
         }
@@ -156,15 +172,16 @@ export function DiagnosticoFunnel({ slug, orgNome, orgWhatsapp, accent }: Props)
                     nome: f.nome,
                     whatsapp: f.whatsapp.replace(/\D/g, ""),
                     estado: f.estado,
-                    especialidade: f.especialidade,
                     estado_civil: f.estado_civil,
                     tem_filhos: f.tem_filhos,
-                    idade_filhos: f.idade_filhos,
+                    qtd_filhos: f.tem_filhos ? f.qtd_filhos : 0,
+                    filhos_idades: f.tem_filhos ? f.filhos_idades : [],
                     regime: f.regime,
                     atuacao: f.atuacao,
                     momento_carreira: f.momento_carreira,
                     objetivos: f.objetivos,
                     possui_imovel_quitado: f.possui_imovel_quitado,
+                    valor_imovel: f.possui_imovel_quitado ? f.valor_imovel : 0,
                     possui_cnpj: f.possui_cnpj,
                     possui_holding: f.possui_holding,
                     renda_mensal: f.renda_mensal,
@@ -253,17 +270,12 @@ export function DiagnosticoFunnel({ slug, orgNome, orgWhatsapp, accent }: Props)
                     <Campo label="WhatsApp">
                         <input className={inputCls} inputMode="numeric" placeholder="(11) 99999-9999" value={f.whatsapp} onChange={(e) => set("whatsapp", maskPhone(e.target.value))} />
                     </Campo>
-                    <div className="grid grid-cols-2 gap-3">
-                        <Campo label="Estado">
-                            <select className={inputCls} value={f.estado} onChange={(e) => set("estado", e.target.value)}>
-                                <option value="">Selecione</option>
-                                {UFS.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
-                            </select>
-                        </Campo>
-                        <Campo label="Especialidade">
-                            <input className={inputCls} placeholder="Opcional" value={f.especialidade} onChange={(e) => set("especialidade", e.target.value)} />
-                        </Campo>
-                    </div>
+                    <Campo label="Estado">
+                        <select className={inputCls} value={f.estado} onChange={(e) => set("estado", e.target.value)}>
+                            <option value="">Selecione</option>
+                            {UFS.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
+                        </select>
+                    </Campo>
                     <Campo label="Estado civil">
                         <div className="grid grid-cols-2 gap-2">
                             {ESTADO_CIVIL_OPCOES.map((o) => (
@@ -273,14 +285,25 @@ export function DiagnosticoFunnel({ slug, orgNome, orgWhatsapp, accent }: Props)
                             ))}
                         </div>
                     </Campo>
-                    <div className="grid grid-cols-2 gap-3">
-                        <ToggleCard label="Tem filhos?" value={f.tem_filhos} onChange={(v) => set("tem_filhos", v)} accent={cor} />
-                        {f.tem_filhos ? (
-                            <Campo label="Idade dos filhos">
-                                <input className={inputCls} placeholder="ex.: 8 e 12" value={f.idade_filhos} onChange={(e) => set("idade_filhos", e.target.value)} />
-                            </Campo>
-                        ) : <div />}
-                    </div>
+                    <ToggleCard label="Tem filhos?" value={f.tem_filhos} onChange={(v) => set("tem_filhos", v)} accent={cor} full />
+                    {f.tem_filhos ? (
+                        <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                            <label className="text-xs font-bold uppercase tracking-wider text-neutral-500">Quantos filhos?</label>
+                            <div className="mt-2 flex items-center gap-3">
+                                <button type="button" onClick={() => setQtdFilhos(f.qtd_filhos - 1)} className="h-10 w-10 rounded-xl border border-neutral-200 text-lg font-bold text-neutral-600">-</button>
+                                <span className="min-w-8 text-center text-xl font-extrabold text-neutral-900">{f.qtd_filhos}</span>
+                                <button type="button" onClick={() => setQtdFilhos(f.qtd_filhos + 1)} className="h-10 w-10 rounded-xl border border-neutral-200 text-lg font-bold text-neutral-600">+</button>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                                {f.filhos_idades.map((idade, i) => (
+                                    <div key={i}>
+                                        <label className="text-[11px] text-neutral-400">Idade do filho {i + 1}</label>
+                                        <input className={inputCls} inputMode="numeric" placeholder="anos" value={idade} onChange={(e) => setIdadeFilho(i, e.target.value.replace(/\D/g, "").slice(0, 2))} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
                     <p className="text-xs text-neutral-400">Ao continuar, você concorda em receber o resultado por WhatsApp.</p>
                 </div>
             )}
@@ -288,19 +311,19 @@ export function DiagnosticoFunnel({ slug, orgNome, orgWhatsapp, accent }: Props)
             {step === 2 && (
                 <div className="space-y-6">
                     <Header etapa="Etapa 2 · Seu momento na carreira" titulo="Onde você está agora?" accent={cor} />
-                    <Campo label="Regime de trabalho (marque quantas se aplicam)">
+                    <Campo label="Regime de trabalho">
                         <div className="grid gap-2">
                             {REGIME_OPCOES.map((o) => (
-                                <OptionCard key={o.id} active={f.regime.includes(o.id)} onClick={() => set("regime", toggleLimited(f.regime, o.id, 3))} accent={cor}>
+                                <OptionCard key={o.id} active={f.regime === o.id} onClick={() => set("regime", o.id)} accent={cor}>
                                     {o.label}
                                 </OptionCard>
                             ))}
                         </div>
                     </Campo>
-                    <Campo label="Principal atuação no momento">
+                    <Campo label="Suas atuações no momento (escolha ate 3)">
                         <div className="grid gap-2">
                             {ATUACAO_OPCOES.map((o) => (
-                                <OptionCard key={o.id} active={f.atuacao === o.id} onClick={() => set("atuacao", o.id)} accent={cor}>
+                                <OptionCard key={o.id} active={f.atuacao.includes(o.id)} onClick={() => set("atuacao", toggleLimited(f.atuacao, o.id, 3))} accent={cor}>
                                     {o.label}
                                 </OptionCard>
                             ))}
@@ -331,6 +354,9 @@ export function DiagnosticoFunnel({ slug, orgNome, orgWhatsapp, accent }: Props)
                 <div className="space-y-5">
                     <Header etapa="Etapa 3 · Sua situação patrimonial" titulo="Alguns pontos importantes." accent={cor} />
                     <ToggleCard label="Você já tem imóvel quitado?" value={f.possui_imovel_quitado} onChange={(v) => set("possui_imovel_quitado", v)} accent={cor} full />
+                    {f.possui_imovel_quitado ? (
+                        <CurrencyField label="Valor aproximado do imóvel" value={f.valor_imovel} min={0} max={10000000} step={10000} onChange={(v) => set("valor_imovel", v)} accent={cor} />
+                    ) : null}
                     <ToggleCard label="Você tem CNPJ / PJ ativo?" value={f.possui_cnpj} onChange={(v) => set("possui_cnpj", v)} accent={cor} full />
                     <ToggleCard label="Você já tem holding ou estrutura de proteção?" value={f.possui_holding} onChange={(v) => set("possui_holding", v)} accent={cor} full />
                 </div>

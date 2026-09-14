@@ -52,19 +52,20 @@ export type DiagnosticoInputs = {
     whatsapp: string;
     estado: string;
     email?: string | null;
-    especialidade?: string | null;
     estado_civil: EstadoCivil;
     tem_filhos: boolean;
-    idade_filhos?: string | null;
+    qtd_filhos?: number | null;
+    filhos_idades?: string[] | null;
 
     // Etapa 2 — momento na carreira
-    regime: RegimeId[]; // múltipla
-    atuacao: AtuacaoId; // única
+    regime: RegimeId; // única
+    atuacao: AtuacaoId[]; // até 3
     momento_carreira: MomentoId[]; // até 3
     objetivos: ObjetivoId[]; // até 3
 
     // Etapa 3 — situação patrimonial
     possui_imovel_quitado: boolean;
+    valor_imovel?: number | null;
     possui_cnpj: boolean;
     possui_holding: boolean;
 

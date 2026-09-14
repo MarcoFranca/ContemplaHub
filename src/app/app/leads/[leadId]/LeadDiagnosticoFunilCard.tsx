@@ -1,3 +1,5 @@
+"use client";
+
 import {
     Sparkles,
     Gauge,
@@ -83,10 +85,20 @@ export function LeadDiagnosticoFunilCard({ registro }: { registro: Registro }) {
                     <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Perfil</p>
                     <div className="grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
                         <Linha k="Estado civil" v={label(ESTADO_CIVIL_OPCOES, inp.estado_civil)} />
-                        <Linha k="Filhos" v={inp.tem_filhos ? `Sim${inp.idade_filhos ? ` (${inp.idade_filhos})` : ""}` : "Não"} />
-                        <Linha k="Especialidade" v={inp.especialidade || "Não informada"} />
-                        <Linha k="Regime" v={labels(REGIME_OPCOES, inp.regime).join(", ") || "-"} />
-                        <Linha k="Atuação" v={label(ATUACAO_OPCOES, inp.atuacao)} />
+                        <Linha
+                            k="Filhos"
+                            v={
+                                inp.tem_filhos
+                                    ? `${inp.qtd_filhos ?? (inp.filhos_idades?.length ?? 0)}${
+                                          (inp.filhos_idades ?? []).filter(Boolean).length
+                                              ? ` (${(inp.filhos_idades ?? []).filter(Boolean).join(", ")} anos)`
+                                              : ""
+                                      }`
+                                    : "Não"
+                            }
+                        />
+                        <Linha k="Regime" v={label(REGIME_OPCOES, inp.regime)} />
+                        <Linha k="Atuação" v={labels(ATUACAO_OPCOES, inp.atuacao).join(", ") || "-"} />
                         <Linha k="Momento" v={labels(MOMENTO_OPCOES, inp.momento_carreira).join(", ") || "-"} />
                     </div>
                     <div className="mt-3 flex flex-wrap gap-1.5">
@@ -107,6 +119,7 @@ export function LeadDiagnosticoFunilCard({ registro }: { registro: Registro }) {
                         <Linha k="Aporte mensal" v={brl(inp.aporte_mensal)} />
                         <Linha k="Capital disponível" v={brl(inp.capital_disponivel)} />
                         <Linha k="Patrimônio atual" v={brl(inp.patrimonio_atual)} />
+                        {inp.possui_imovel_quitado && inp.valor_imovel ? <Linha k="Imóvel quitado" v={brl(inp.valor_imovel)} /> : null}
                         <Linha k="Renda passiva hoje" v={brl(inp.renda_passiva_atual)} />
                         <Linha k="Renda passiva desejada" v={brl(inp.renda_passiva_desejada)} destaque />
                         {inp.plantoes_mes != null ? <Linha k="Plantões por mês" v={String(inp.plantoes_mes)} /> : null}

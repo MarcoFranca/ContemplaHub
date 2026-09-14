@@ -49,7 +49,7 @@ const ESTAGIOS = [
 ];
 
 function calcEstagio(inp: DiagnosticoInputs) {
-    const ehResidente = inp.atuacao === "residente" || inp.momento_carreira.includes("residente");
+    const ehResidente = inp.atuacao.includes("residente") || inp.momento_carreira.includes("residente");
     if (ehResidente) return ESTAGIOS[0];
 
     const pontos = n(inp.patrimonio_atual) + n(inp.capital_disponivel) + n(inp.aporte_mensal) * 60;
@@ -79,7 +79,7 @@ function alocacaoIdeal(inp: DiagnosticoInputs): Alocacao {
         renda_variavel += 3;
         imoveis -= 3;
     }
-    if (inp.objetivos.includes("clinica") || inp.atuacao === "socio") {
+    if (inp.objetivos.includes("clinica") || inp.atuacao.includes("socio")) {
         equity += 4;
         imoveis -= 4;
     }
@@ -231,7 +231,7 @@ function calcPlano(
 export function computeDiagnostico(inputRaw: DiagnosticoInputs): DiagnosticoResultado {
     const inp: DiagnosticoInputs = {
         ...inputRaw,
-        regime: inputRaw.regime ?? [],
+        atuacao: inputRaw.atuacao ?? [],
         momento_carreira: inputRaw.momento_carreira ?? [],
         objetivos: inputRaw.objetivos ?? [],
         renda_mensal: n(inputRaw.renda_mensal),

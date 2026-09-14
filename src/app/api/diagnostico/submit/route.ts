@@ -34,14 +34,14 @@ const InputsSchema = z.object({
     whatsapp: z.string().min(8),
     estado: z.string().optional().nullable(),
     email: z.string().email().optional().nullable(),
-    especialidade: z.string().optional().nullable(),
     estado_civil: z.enum(["solteiro", "casado", "divorciado", "viuvo"]),
     tem_filhos: z.coerce.boolean().default(false),
-    idade_filhos: z.string().optional().nullable(),
+    qtd_filhos: z.coerce.number().min(0).max(12).optional().nullable(),
+    filhos_idades: z.array(z.string()).optional().nullable(),
 
     // Etapa 2
-    regime: z.array(z.enum(["clt", "autonomo", "concursado"])).default([]),
-    atuacao: z.enum(["plantonista", "residente", "especialista", "socio"]),
+    regime: z.enum(["clt", "autonomo", "concursado"]),
+    atuacao: z.array(z.enum(["plantonista", "residente", "especialista", "socio"])).default([]),
     momento_carreira: z
         .array(z.enum(["reduzindo", "consultorio_consolidado", "crescendo_consultorio", "residente"]))
         .default([]),
@@ -49,6 +49,7 @@ const InputsSchema = z.object({
 
     // Etapa 3
     possui_imovel_quitado: z.coerce.boolean().default(false),
+    valor_imovel: z.coerce.number().min(0).optional().nullable(),
     possui_cnpj: z.coerce.boolean().default(false),
     possui_holding: z.coerce.boolean().default(false),
 
@@ -126,15 +127,16 @@ export async function POST(req: Request) {
             whatsapp: telefone,
             estado: parsed.estado ?? "",
             email: parsed.email ?? null,
-            especialidade: parsed.especialidade ?? null,
             estado_civil: parsed.estado_civil as EstadoCivil,
             tem_filhos: parsed.tem_filhos,
-            idade_filhos: parsed.idade_filhos ?? null,
-            regime: parsed.regime as RegimeId[],
-            atuacao: parsed.atuacao as AtuacaoId,
+            qtd_filhos: parsed.qtd_filhos ?? 0,
+            filhos_idades: parsed.filhos_idades ?? [],
+            regime: parsed.regime as RegimeId,
+            atuacao: parsed.atuacao as AtuacaoId[],
             momento_carreira: parsed.momento_carreira as MomentoId[],
             objetivos: parsed.objetivos as ObjetivoId[],
             possui_imovel_quitado: parsed.possui_imovel_quitado,
+            valor_imovel: parsed.valor_imovel ?? 0,
             possui_cnpj: parsed.possui_cnpj,
             possui_holding: parsed.possui_holding,
             renda_mensal: parsed.renda_mensal,
