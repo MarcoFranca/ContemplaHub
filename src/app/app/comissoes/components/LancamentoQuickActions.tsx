@@ -349,7 +349,13 @@ export function LancamentoQuickActions({ item }: { item: ComissaoLancamento }) {
         </>
       )}
 
-      {(isPago || isCancelado) && (
+      {isPago && (
+        <ActionBtn onClick={() => setConfirmCobranca(true)} disabled={busy} variant="orange" title="Corrigir: cliente não pagou; bloquear comissão e repasse">
+          <Bell className="h-3.5 w-3.5" />
+        </ActionBtn>
+      )}
+
+      {isCancelado && (
         <ActionBtn onClick={() => run(() => reverterPrevistoAction(item.id))} disabled={busy} variant="ghost" title="Desfazer — reverter para Previsto">
           <RotateCcw className="h-3.5 w-3.5" />
         </ActionBtn>

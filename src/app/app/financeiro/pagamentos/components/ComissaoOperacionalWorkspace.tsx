@@ -872,8 +872,9 @@ export function ComissaoOperacionalWorkspace({
               <div className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
                 <p>
                   <strong className="text-slate-300">Operação mensal:</strong>{" "}
-                  use o menu <span className="text-slate-200">▾</span> de cada linha para marcar como pago,
-                  inadimplente, reverter para previsto, pular ou editar detalhes da parcela.
+                  parcelas vencidas são baixadas automaticamente. Use o menu{" "}
+                  <span className="text-slate-200">▾</span> somente para registrar não pagamento,
+                  regularizar, pular ou editar detalhes da parcela.
                 </p>
                 {pagamentos.length > 0 && (
                   <p className="mt-1">
@@ -946,12 +947,7 @@ export function ComissaoOperacionalWorkspace({
                         </span>
                         <ComissaoStatusBadge status={item.status} />
                         <span className="text-xs text-slate-400">
-                          {item.competencia_prevista
-                            ? new Date(item.competencia_prevista + "-15").toLocaleDateString(
-                                "pt-BR",
-                                { month: "short", year: "numeric" }
-                              )
-                            : "—"}
+                          {fmtMesPulo(item.competencia_prevista)}
                         </span>
                         <span className="text-right text-xs font-medium">{fmt(item.valor_liquido)}</span>
                       </div>

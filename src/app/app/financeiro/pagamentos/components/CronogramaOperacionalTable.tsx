@@ -386,6 +386,13 @@ export function CronogramaOperacionalTable({
                         </DropdownMenuItem>
                       )}
 
+                      {paid && (
+                        <DropdownMenuItem onClick={() => onStatusChange(item, "inadimplente")} className="gap-2 text-sm text-amber-300">
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          Corrigir: não pagou
+                        </DropdownMenuItem>
+                      )}
+
                       {(item.status === "inadimplente" || item.status === "atrasado" || item.status === "emitido") && (
                         <DropdownMenuItem onClick={() => onStatusChange(item, "previsto")} className="gap-2 text-sm text-slate-300">
                           <RotateCcw className="h-3.5 w-3.5" />

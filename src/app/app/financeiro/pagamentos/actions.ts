@@ -333,7 +333,7 @@ export async function updateFinanceiroPagamentoStatusAction(
             pagamentos_afetados: 1,
             message:
                 status === "pago"
-                    ? "Parcela marcada como paga e comissão reprocessada."
+                    ? "Parcela e comissão marcadas como recebidas."
                     : status === "inadimplente"
                       ? "Parcela marcada como inadimplente e comissão bloqueada."
                       : status === "cancelado"

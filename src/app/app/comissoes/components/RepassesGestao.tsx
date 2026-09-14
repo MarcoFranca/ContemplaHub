@@ -82,7 +82,9 @@ export function RepassesGestao({ items, refreshPath }: Props) {
     });
 
   const parc = items.filter((i) => i.beneficiario_tipo === "parceiro");
-  const pendentes = parc.filter((i) => i.repasse_status === "pendente");
+  const pendentes = parc.filter(
+    (i) => i.repasse_status === "pendente" && (i.status === "disponivel" || i.status === "pago"),
+  );
   const pagos = parc.filter((i) => i.repasse_status === "pago");
 
   const atraso = pendentes.filter((i) => bucketOf(i) === "atraso");

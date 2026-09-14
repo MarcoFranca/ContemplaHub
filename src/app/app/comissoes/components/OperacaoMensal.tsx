@@ -440,7 +440,13 @@ function LancamentoRow({
           </>
         )}
 
-        {(isPago || isCancelado) && (
+        {isPago && (
+          <ActionBtn onClick={onCobranca} disabled={busy} variant="orange" title="Corrigir: cliente não pagou; bloquear comissão e repasse">
+            <Bell className="h-3.5 w-3.5" />
+          </ActionBtn>
+        )}
+
+        {isCancelado && (
           <ActionBtn onClick={onReverter} disabled={busy} variant="ghost" title="Desfazer — reverter para Previsto">
             <RotateCcw className="h-3.5 w-3.5" />
           </ActionBtn>

@@ -61,6 +61,11 @@ As actions são o principal contrato do frontend:
 4. Atualiza status financeiro ou repasse.
 5. Em detalhes de contrato, consulta visão específica por contrato.
 
+Na operacao mensal, comissoes vencidas sao baixadas por presuncao. A equipe registra apenas as
+excecoes: `Corrigir: cliente nao pagou` atualiza a parcela financeira de origem, bloqueia todos os
+lancamentos daquela competencia e remove o parceiro da fila de repasse. Ao regularizar, o mesmo
+pagamento volta a quitar empresa e parceiro, mantendo o repasse como uma baixa separada.
+
 ## Integrações com backend
 
 - `/comissoes/lancamentos`

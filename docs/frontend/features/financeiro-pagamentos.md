@@ -82,7 +82,8 @@ Os dados nascem da leitura consolidada de `listComissaoLancamentosAction()` e sa
    - reprocessa `comissao_lancamentos`;
    - atualiza a projecao segura do backend.
 8. A aba `Operacao mensal` mostra a carteira prevista mes a mes e permite atuar so nas excecoes:
-   - marcar como pago;
+   - corrigir uma baixa presumida quando o cliente nao pagou;
+   - regularizar um pagamento atrasado;
    - marcar como inadimplente;
    - reverter para previsto;
    - pular a competencia;
@@ -94,6 +95,9 @@ Os dados nascem da leitura consolidada de `listComissaoLancamentosAction()` e sa
 - O painel de operacao mensal ganhou mais largura e scroll horizontal controlado para nao esmagar as colunas.
 - O bloco de preview/operacao fica fixo em telas muito largas para reduzir rolagem.
 - As tabs da operacao aceitam quebra de linha quando faltar espaco horizontal.
+- A competencia dos lancamentos usa a data ISO ja retornada pelo backend, sem concatenar um segundo dia e gerar `Invalid Date`.
+- Parcelas vencidas neutras sao presumidas pagas pelo backend; a tela mensal concentra o trabalho em atrasos, inadimplencias, pulos e cancelamentos.
+- A acao `Corrigir: nao pagou` desfaz a baixa da comissao da empresa e do parceiro e bloqueia o repasse ate a regularizacao.
 
 ## Integracao com backend
 

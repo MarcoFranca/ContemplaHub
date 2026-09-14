@@ -282,12 +282,11 @@ export async function undoSkipComissaoLancamentoAction(lancamentoId: string) {
  * Mantém o lançamento como "previsto" mas sinaliza com flag de inadimplência.
  */
 export async function marcarParaCobrancaAction(lancamentoId: string, motivo = "") {
-  const obs = `⚠ INADIMPLENTE${motivo ? `: ${motivo}` : ""}`;
-  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/status`, {
-    method: "PATCH",
+  const obs = `INADIMPLENTE${motivo ? `: ${motivo}` : ""}`;
+  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/registrar-inadimplencia`, {
+    method: "POST",
     body: JSON.stringify({
       status: "previsto",
-      competencia_real: null,
       observacoes: obs,
     }),
   });
@@ -298,13 +297,8 @@ export async function marcarParaCobrancaAction(lancamentoId: string, motivo = ""
  * Remove o flag de inadimplência de um lançamento (cliente regularizou).
  */
 export async function removerFlagCobrancaAction(lancamentoId: string) {
-  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/status`, {
-    method: "PATCH",
-    body: JSON.stringify({
-      status: "previsto",
-      competencia_real: null,
-      observacoes: null,
-    }),
+  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/regularizar`, {
+    method: "POST",
   });
   revalidatePath("/app/comissoes");
 }
@@ -317,9 +311,9 @@ export async function marcarPagoAction(
   lancamentoId: string,
   obs = "Baixa registrada na operação mensal."
 ) {
-  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/status`, {
-    method: "PATCH",
-    body: JSON.stringify({ status: "pago", competencia_real: null, observacoes: obs }),
+  await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/regularizar`, {
+    method: "POST",
+    body: JSON.stringify({ observacoes: obs }),
   });
   revalidatePath("/app/comissoes");
 }
