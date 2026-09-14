@@ -166,7 +166,7 @@ export default async function DiagnosticoPage() {
 
                                     {!primary.active && (
                                         <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-                                            O link está inativo — quem abrir verá um aviso e não conseguirá enviar. Ative para começar a captar.
+                                            O link está inativo. Quem abrir verá um aviso e não conseguirá enviar. Ative para começar a captar.
                                         </p>
                                     )}
                                     <p className="text-xs text-muted-foreground">

@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { LeadHeader } from "./LeadHeader";
 import { LeadDiagnosticCard } from "./LeadDiagnosticCard";
+import { LeadDiagnosticoFunilCard } from "./LeadDiagnosticoFunilCard";
 import { LeadPropostasCard } from "./LeadPropostasCard";
 import { LeadInfoCard } from "./LeadInfoCard";
 import { LeadStrategiesCard } from "./LeadStrategiesCard";
@@ -47,6 +48,19 @@ async function loadDiagnostic(leadId: string, orgId: string) {
 
     if (error) throw error;
     return data;
+}
+
+async function loadDiagnosticoFunil(leadId: string, orgId: string) {
+    const supabase = await supabaseServer();
+    const { data, error } = await supabase
+        .from("diagnostico_investidor")
+        .select("id, inputs, resultado, estagio, score, created_at")
+        .eq("org_id", orgId)
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+    if (error) throw error;
+    return data?.[0] ?? null;
 }
 
 async function loadCotas(leadId: string, orgId: string) {
@@ -206,6 +220,7 @@ export default async function LeadDetailsPage({
         throw new Error("Org inválida");
     }
 
+    const diagnosticoFunil = await loadDiagnosticoFunil(leadId, profile.orgId);
     const [lead, diagnostic, cotas, contractOptions, interesse] = await Promise.all([
         loadLead(leadId, profile.orgId),
         loadDiagnostic(leadId, profile.orgId),
@@ -311,6 +326,8 @@ export default async function LeadDetailsPage({
                 <LeadHeader lead={lead} interesse={interesse} pf={pfCadastro} />
 
                 <ClienteResumoExecutivo resumo={resumo} />
+
+                {diagnosticoFunil ? <LeadDiagnosticoFunilCard registro={diagnosticoFunil} /> : null}
 
                 <Separator />
 

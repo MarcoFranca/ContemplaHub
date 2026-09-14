@@ -3,7 +3,7 @@
 import * as React from "react";
 import type { DiagnosticoResultado, Alocacao } from "@/features/diagnostico/types";
 
-const ESTAGIO_LABELS = ["Iniciante", "Construtor", "Acelerador", "Multiplicador", "Sênior"];
+const ESTAGIO_LABELS = ["Residente", "Recém formado", "Consolidado", "Investidor", "Livre de plantão"];
 
 const brl = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v || 0);
@@ -150,25 +150,35 @@ export function DiagnosticoResult({ resultado: r, nome, orgWhatsapp, accent, onR
                     </div>
                 </section>
 
-                {/* INDEPENDÊNCIA */}
+                {/* META DE RENDA PASSIVA */}
                 <section className="px-5 pt-10">
                     <div className="rounded-3xl border border-neutral-200 p-5">
-                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#5c8a12" }}>◎ Independência financeira</p>
+                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#5c8a12" }}>Sua meta de renda passiva</p>
                         <p className="mt-2 text-neutral-600">
-                            Sua renda passiva projetada em 10 anos:{" "}
-                            <span className="font-extrabold text-neutral-900">{brl(r.independencia.renda_passiva_10a)}/mês</span> — cobre{" "}
-                            <strong>{r.independencia.cobertura_pct_10a}%</strong> do seu custo de vida atual ({brl(r.custo_vida)}/mês).
+                            Sua renda passiva projetada em 10 anos fica em{" "}
+                            <span className="font-extrabold text-neutral-900">{brl(r.independencia.renda_passiva_10a)}/mês</span>, o
+                            equivalente a <strong>{r.meta.cobertura_meta_pct_10a}%</strong> da meta que você definiu ({brl(r.meta.renda_passiva_desejada)}/mês).
                         </p>
-                        <div className="mt-3">
+
+                        {r.plantoes.substituidos_10a > 0 && (
+                            <div className="mt-4 flex items-center gap-3 rounded-2xl bg-neutral-50 p-4">
+                                <span className="text-3xl font-extrabold" style={{ color: "#4d7c0f" }}>{r.plantoes.substituidos_10a}</span>
+                                <span className="text-sm text-neutral-600">
+                                    plantões por mês que essa renda passiva pode substituir
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="mt-4">
                             <div className="flex justify-between text-xs text-neutral-500">
-                                <span>Cobertura</span>
-                                <span className="font-bold" style={{ color: "#4d7c0f" }}>{r.independencia.cobertura_pct_10a}%</span>
+                                <span>Cobertura da meta</span>
+                                <span className="font-bold" style={{ color: "#4d7c0f" }}>{r.meta.cobertura_meta_pct_10a}%</span>
                             </div>
                             <div className="mt-1 h-3 overflow-hidden rounded-full bg-neutral-100">
-                                <div className="h-full rounded-full" style={{ width: `${Math.min(r.independencia.cobertura_pct_10a, 100)}%`, background: accent }} />
+                                <div className="h-full rounded-full" style={{ width: `${Math.min(r.meta.cobertura_meta_pct_10a, 100)}%`, background: accent }} />
                             </div>
                             <div className="mt-1 flex justify-between text-[11px] text-neutral-400">
-                                <span>Em 5 anos: {r.independencia.cobertura_pct_5a}%</span>
+                                <span>Em 5 anos: {r.meta.cobertura_meta_pct_5a}%</span>
                                 <span>Meta = 100%</span>
                             </div>
                         </div>

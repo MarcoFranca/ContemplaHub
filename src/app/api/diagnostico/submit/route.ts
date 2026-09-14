@@ -9,7 +9,14 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { computeDiagnostico } from "@/features/diagnostico/engine";
-import type { DiagnosticoInputs, ObjetivoId, Profissao } from "@/features/diagnostico/types";
+import type {
+    DiagnosticoInputs,
+    ObjetivoId,
+    RegimeId,
+    AtuacaoId,
+    MomentoId,
+    EstadoCivil,
+} from "@/features/diagnostico/types";
 
 const toDigits = (s?: string | null) => (s ? String(s).replace(/\D+/g, "") : "");
 
@@ -22,23 +29,38 @@ const InputsSchema = z.object({
     slug: z.string().min(1), // slug ou public_hash da landing
     company: z.string().optional(), // honeypot
 
+    // Etapa 1
     nome: z.string().min(2),
     whatsapp: z.string().min(8),
     estado: z.string().optional().nullable(),
     email: z.string().email().optional().nullable(),
+    especialidade: z.string().optional().nullable(),
+    estado_civil: z.enum(["solteiro", "casado", "divorciado", "viuvo"]),
+    tem_filhos: z.coerce.boolean().default(false),
+    idade_filhos: z.string().optional().nullable(),
 
-    idade: z.coerce.number().min(16).max(110),
-    profissao: z.enum(["clt", "servidor", "empresario", "liberal", "outro"]),
+    // Etapa 2
+    regime: z.array(z.enum(["clt", "autonomo", "concursado"])).default([]),
+    atuacao: z.enum(["plantonista", "residente", "especialista", "socio"]),
+    momento_carreira: z
+        .array(z.enum(["reduzindo", "consultorio_consolidado", "crescendo_consultorio", "residente"]))
+        .default([]),
     objetivos: z.array(z.string()).default([]),
-    possui_imovel_quitado: z.coerce.boolean().default(false),
-    possui_terreno: z.coerce.boolean().default(false),
 
+    // Etapa 3
+    possui_imovel_quitado: z.coerce.boolean().default(false),
+    possui_cnpj: z.coerce.boolean().default(false),
+    possui_holding: z.coerce.boolean().default(false),
+
+    // Etapa 4
     renda_mensal: z.coerce.number().min(0).default(0),
-    aporte_mensal: z.coerce.number().min(0).default(0),
     custo_vida: z.coerce.number().min(0).default(0),
+    aporte_mensal: z.coerce.number().min(0).default(0),
     capital_disponivel: z.coerce.number().min(0).default(0),
     patrimonio_atual: z.coerce.number().min(0).default(0),
     renda_passiva_atual: z.coerce.number().min(0).default(0),
+    renda_passiva_desejada: z.coerce.number().min(0).default(0),
+    plantoes_mes: z.coerce.number().min(0).max(60).optional().nullable(),
     pct_imoveis_atual: z.coerce.number().min(0).max(100).optional().nullable(),
 
     consentimento: z.union([z.boolean(), z.string()]).transform((v) => v === true || v === "true"),
@@ -104,17 +126,25 @@ export async function POST(req: Request) {
             whatsapp: telefone,
             estado: parsed.estado ?? "",
             email: parsed.email ?? null,
-            idade: parsed.idade,
-            profissao: parsed.profissao as Profissao,
+            especialidade: parsed.especialidade ?? null,
+            estado_civil: parsed.estado_civil as EstadoCivil,
+            tem_filhos: parsed.tem_filhos,
+            idade_filhos: parsed.idade_filhos ?? null,
+            regime: parsed.regime as RegimeId[],
+            atuacao: parsed.atuacao as AtuacaoId,
+            momento_carreira: parsed.momento_carreira as MomentoId[],
             objetivos: parsed.objetivos as ObjetivoId[],
             possui_imovel_quitado: parsed.possui_imovel_quitado,
-            possui_terreno: parsed.possui_terreno,
+            possui_cnpj: parsed.possui_cnpj,
+            possui_holding: parsed.possui_holding,
             renda_mensal: parsed.renda_mensal,
-            aporte_mensal: parsed.aporte_mensal,
             custo_vida: parsed.custo_vida,
+            aporte_mensal: parsed.aporte_mensal,
             capital_disponivel: parsed.capital_disponivel,
             patrimonio_atual: parsed.patrimonio_atual,
             renda_passiva_atual: parsed.renda_passiva_atual,
+            renda_passiva_desejada: parsed.renda_passiva_desejada,
+            plantoes_mes: parsed.plantoes_mes ?? null,
             pct_imoveis_atual: parsed.pct_imoveis_atual ?? null,
         };
         const resultado = computeDiagnostico(inputs);
