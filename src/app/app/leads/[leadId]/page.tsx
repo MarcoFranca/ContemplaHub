@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 import { Separator } from "@/components/ui/separator";
 
 import { LeadHeader } from "./LeadHeader";
@@ -51,8 +52,8 @@ async function loadDiagnostic(leadId: string, orgId: string) {
 }
 
 async function loadDiagnosticoFunil(leadId: string, orgId: string) {
-    const supabase = await supabaseServer();
-    const { data, error } = await supabase
+    // Service role escopado por org_id (RLS de diagnostico_investidor bloqueia via supabaseServer)
+    const { data, error } = await supabaseAdmin
         .from("diagnostico_investidor")
         .select("id, inputs, resultado, estagio, score, created_at")
         .eq("org_id", orgId)
