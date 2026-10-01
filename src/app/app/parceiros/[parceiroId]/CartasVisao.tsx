@@ -1,6 +1,6 @@
 import { LayoutGrid } from "lucide-react";
 
-export type CellStatus = "pago" | "pendente" | "atrasado" | "a_receber";
+export type CellStatus = "pago" | "pendente" | "atrasado" | "a_receber" | "pulo";
 
 export type CartaCell = {
     mes: string; // YYYY-MM
@@ -36,6 +36,7 @@ const CELL: Record<CellStatus, { cls: string; label: string }> = {
     pendente: { cls: "border-amber-400/40 bg-amber-400/25 text-amber-100", label: "Este mês" },
     atrasado: { cls: "border-rose-500/40 bg-rose-500/25 text-rose-100", label: "Atrasado" },
     a_receber: { cls: "border-white/10 bg-white/[0.04] text-muted-foreground", label: "A receber" },
+    pulo: { cls: "border-sky-500/40 bg-sky-500/20 text-sky-200 line-through decoration-sky-300/60", label: "Pulado" },
 };
 
 function Legenda() {
@@ -69,7 +70,7 @@ export function CartasVisao({ cartas }: { cartas: CartaTimeline[] }) {
                 <Legenda />
                 <div className="space-y-4">
                     {cartas.map((c) => {
-                        const cont = { pago: 0, pendente: 0, atrasado: 0, a_receber: 0 } as Record<CellStatus, number>;
+                        const cont = { pago: 0, pendente: 0, atrasado: 0, a_receber: 0, pulo: 0 } as Record<CellStatus, number>;
                         c.cells.forEach((cell) => (cont[cell.status] += 1));
                         return (
                             <div key={c.cota_id} className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
@@ -80,6 +81,7 @@ export function CartasVisao({ cartas }: { cartas: CartaTimeline[] }) {
                                     </div>
                                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                                         {cont.atrasado > 0 && <span className="text-rose-300">{cont.atrasado} atrasado{cont.atrasado !== 1 ? "s" : ""}</span>}
+                                        {cont.pulo > 0 && <span className="text-sky-300">{cont.pulo} pulado{cont.pulo !== 1 ? "s" : ""}</span>}
                                         {cont.pendente > 0 && <span className="text-amber-300">{cont.pendente} este mês</span>}
                                         <span className="text-emerald-300">{cont.pago} pago{cont.pago !== 1 ? "s" : ""}</span>
                                         <span>{cont.a_receber} a receber</span>

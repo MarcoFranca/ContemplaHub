@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Mail, Phone, ShieldCheck, Users } from "lucide-react";
 
 import { getCurrentProfile } from "@/lib/auth/server";
+import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 import { Badge } from "@/components/ui/badge";
 import { getParceiroExtratoAction, listPartnerUsersAction } from "../actions";
 import type { ComissaoLancamento } from "../../comissoes/types";
@@ -98,6 +99,8 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
         return "a_receber";
     };
     const cartaMapa = new Map<string, CartaTimeline>();
+    const cartaContrato = new Map<string, string>();
+    const mesesComCell = new Map<string, Set<string>>(); // cota_id -> meses já com célula
     for (const it of items) {
         if (it.repasse_status === "cancelado" || it.status === "cancelado") continue;
         const c =
@@ -109,9 +112,44 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
                 grupo_codigo: it.grupo_codigo || "—",
                 cells: [],
             } as CartaTimeline);
-        c.cells.push({ mes: compMonth(it), valor: Number(it.valor_liquido || 0), status: cellStatus(it) });
+        const mk = compMonth(it);
+        c.cells.push({ mes: mk, valor: Number(it.valor_liquido || 0), status: cellStatus(it) });
         cartaMapa.set(it.cota_id, c);
+        if (it.contrato_id) cartaContrato.set(it.cota_id, it.contrato_id);
+        const set = mesesComCell.get(it.cota_id) ?? new Set<string>();
+        set.add(mk);
+        mesesComCell.set(it.cota_id, set);
     }
+
+    // Pulos (competências puladas) por contrato, para marcar na timeline
+    const contratoIds = Array.from(new Set(items.map((i) => i.contrato_id).filter(Boolean)));
+    if (contratoIds.length > 0) {
+        const { data: pulos } = await supabaseAdmin
+            .from("cota_pagamento_pulos")
+            .select("contrato_id, competencia")
+            .eq("org_id", me.orgId)
+            .in("contrato_id", contratoIds);
+        const pulosPorContrato = new Map<string, Set<string>>();
+        for (const p of pulos ?? []) {
+            const k = (p.competencia || "").slice(0, 7);
+            if (!k || !p.contrato_id) continue;
+            const s = pulosPorContrato.get(p.contrato_id) ?? new Set<string>();
+            s.add(k);
+            pulosPorContrato.set(p.contrato_id, s);
+        }
+        for (const carta of cartaMapa.values()) {
+            const contratoId = cartaContrato.get(carta.cota_id);
+            if (!contratoId) continue;
+            const pulosMeses = pulosPorContrato.get(contratoId);
+            if (!pulosMeses) continue;
+            const jaTem = mesesComCell.get(carta.cota_id) ?? new Set<string>();
+            for (const mk of pulosMeses) {
+                if (jaTem.has(mk)) continue;
+                carta.cells.push({ mes: mk, valor: 0, status: "pulo" });
+            }
+        }
+    }
+
     const cartas = Array.from(cartaMapa.values())
         .map((c) => ({ ...c, cells: c.cells.sort((a, b) => a.mes.localeCompare(b.mes)) }))
         .sort((a, b) => a.cliente_nome.localeCompare(b.cliente_nome));
