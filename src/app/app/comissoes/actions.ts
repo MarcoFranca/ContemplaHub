@@ -467,3 +467,26 @@ export async function marcarRepassePagoAction(formData: FormData) {
   revalidatePath("/app/comissoes");
   revalidatePath(refreshPath);
 }
+
+/**
+ * Recálculo COMPLETO das comissões de um contrato.
+ * forcar=true corrige os valores inclusive de comissões já recebidas/baixadas
+ * (ex.: ajuste do percentual de repasse). Preserva apenas repasses já pagos ao parceiro.
+ */
+export async function recalcularComissoesContratoAction(
+  contratoId: string,
+  forcar = false,
+  refreshPath = "/app/comissoes",
+): Promise<{ ok: boolean; competencias_processadas?: number; error?: string }> {
+  try {
+    const data = await backendAuthed<{ ok: boolean; competencias_processadas?: unknown[] }>(
+      `/comissoes/contratos/${contratoId}/reprocessar-competencias?forcar=${forcar ? "true" : "false"}`,
+      { method: "POST" },
+    );
+    revalidatePath("/app/comissoes");
+    revalidatePath(refreshPath);
+    return { ok: true, competencias_processadas: data?.competencias_processadas?.length };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erro ao recalcular." };
+  }
+}

@@ -35,7 +35,7 @@ import { ContratoSearchSelect } from "./ContratoSearchSelect";
 import { ComissaoStatusBadge } from "@/app/app/comissoes/components/status-badges";
 import type { CotaComissaoPayload, CotaComissaoResponse } from "@/app/app/lances/types";
 import type { ComissaoModelo } from "@/app/app/comissoes/types";
-import { listModelosComissaoAction } from "@/app/app/comissoes/actions";
+import { listModelosComissaoAction, recalcularComissoesContratoAction } from "@/app/app/comissoes/actions";
 
 import {
   cancelFinanceiroFuturePaymentsAction,
@@ -97,6 +97,8 @@ export function ComissaoOperacionalWorkspace({
   const initialPayload = normalizeComissaoPayload(comissaoAtual);
   const router = useRouter();
   const [showConfig, setShowConfig] = useState(!embedded);
+  const [confirmFull, setConfirmFull] = useState(false);
+  const [isRecalc, startRecalc] = useTransition();
   const [isSaving, startSaving] = useTransition();
   const [isProjecting, startProjecting] = useTransition();
   const [isUpdatingNumber, startUpdatingNumber] = useTransition();
@@ -263,6 +265,24 @@ export function ComissaoOperacionalWorkspace({
     });
   };
 
+  const handleRecalcularTudo = () => {
+    const contratoId = contratoSelecionado?.contrato_id;
+    if (!contratoId) {
+      toast.error("Selecione um contrato válido.");
+      return;
+    }
+    setConfirmFull(false);
+    startRecalc(async () => {
+      const res = await recalcularComissoesContratoAction(contratoId, true, basePath);
+      if (!res.ok) {
+        toast.error(res.error || "Não foi possível recalcular.");
+        return;
+      }
+      toast.success("Comissões recalculadas e corrigidas em todas as competências.");
+      router.refresh();
+    });
+  };
+
   const handleGenerateProjection = () => {
     if (!contratoSelecionado?.tem_contrato || !contratoSelecionado?.contrato_id) {
       toast.error("Selecione um contrato válido antes de gerar o cronograma.");
@@ -384,6 +404,31 @@ export function ComissaoOperacionalWorkspace({
 
   return (
     <div className="grid gap-6">
+      {confirmFull && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-amber-500/20 bg-slate-900 p-6 shadow-2xl">
+            <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-amber-400" />
+            <h3 className="text-center text-base font-semibold text-white">Recalcular tudo?</h3>
+            <p className="mt-2 text-center text-sm text-slate-400">
+              Isso recalcula e <strong className="text-slate-200">corrige os valores de todas as competências</strong>,
+              inclusive das comissões que o cliente já pagou (dadas baixa). Ex.: se a empresa não fica mais com nada,
+              a parte dela é zerada e o parceiro passa a receber o total.
+            </p>
+            <p className="mt-2 text-center text-xs text-slate-500">
+              O que já foi efetivamente <strong className="text-slate-300">repassado ao parceiro</strong> é preservado e não muda.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1 border-white/10 text-slate-300 hover:bg-white/10" onClick={() => setConfirmFull(false)}>
+                Cancelar
+              </Button>
+              <Button size="sm" className="flex-1 border border-amber-500/20 bg-amber-500/20 text-amber-100 hover:bg-amber-500/30" onClick={handleRecalcularTudo}>
+                Sim, recalcular tudo
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Header: seletor de carta + contexto ── */}
       {!embedded && (
       <section className="grid gap-4 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.45)]">
@@ -760,6 +805,25 @@ export function ComissaoOperacionalWorkspace({
               {pagamentos.length > 0 ? "Reprocessar cronograma" : "Confirmar cronograma"}
             </Button>
           </div>
+
+          {pagamentos.length > 0 && (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-3">
+              <p className="text-xs text-amber-200/90">
+                Corrigiu a regra (ex.: percentual de repasse) e precisa aplicar nos meses passados?
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2 border-amber-500/30 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+                onClick={() => setConfirmFull(true)}
+                disabled={isRecalc}
+              >
+                {isRecalc && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Corrigir comissão (recálculo completo)
+              </Button>
+            </div>
+          )}
         </section>
         )}
 
