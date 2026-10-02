@@ -43,6 +43,7 @@ import {
   generateFinanceiroProjectionAction,
   listFinanceiroPulosAction,
   persistFinanceiroCronogramaAction,
+  refazerCronogramaDoZeroAction,
   saveFinanceiroComissaoConfigAction,
   skipFinanceiroPagamentoAction,
   updateFinanceiroContratoNumeroAction,
@@ -99,6 +100,9 @@ export function ComissaoOperacionalWorkspace({
   const [showConfig, setShowConfig] = useState(!embedded);
   const [confirmFull, setConfirmFull] = useState(false);
   const [isRecalc, startRecalc] = useTransition();
+  const [confirmRefazer, setConfirmRefazer] = useState(false);
+  const [refazerTexto, setRefazerTexto] = useState("");
+  const [isRefazer, startRefazer] = useTransition();
   const [isSaving, startSaving] = useTransition();
   const [isProjecting, startProjecting] = useTransition();
   const [isUpdatingNumber, startUpdatingNumber] = useTransition();
@@ -283,6 +287,25 @@ export function ComissaoOperacionalWorkspace({
     });
   };
 
+  const handleRefazerDoZero = () => {
+    const contratoId = contratoSelecionado?.contrato_id;
+    if (!contratoId) {
+      toast.error("Selecione um contrato válido.");
+      return;
+    }
+    setConfirmRefazer(false);
+    setRefazerTexto("");
+    startRefazer(async () => {
+      const res = await refazerCronogramaDoZeroAction(contratoId, basePath);
+      if (!res.ok) {
+        toast.error(res.error || "Não foi possível refazer.");
+        return;
+      }
+      toast.success(res.message || "Cronograma refeito do zero.");
+      router.refresh();
+    });
+  };
+
   const handleGenerateProjection = () => {
     if (!contratoSelecionado?.tem_contrato || !contratoSelecionado?.contrato_id) {
       toast.error("Selecione um contrato válido antes de gerar o cronograma.");
@@ -431,6 +454,42 @@ export function ComissaoOperacionalWorkspace({
               </Button>
               <Button size="sm" className="flex-1 border border-amber-500/20 bg-amber-500/20 text-amber-100 hover:bg-amber-500/30" onClick={handleRecalcularTudo}>
                 Sim, recalcular tudo
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmRefazer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/30 bg-slate-900 p-6 shadow-2xl">
+            <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-rose-400" />
+            <h3 className="text-center text-base font-semibold text-white">Refazer tudo do zero?</h3>
+            <p className="mt-2 text-center text-sm text-slate-400">
+              Isso vai <strong className="text-rose-300">excluir todos os lançamentos e parcelas</strong> deste contrato,
+              inclusive os que foram marcados como pagos, e recriar o cronograma do zero pela regra atual (ex.: 10x).
+              Nada fica cancelado para trás. É <strong className="text-rose-300">irreversível</strong>.
+            </p>
+            <p className="mt-3 text-center text-xs text-slate-500">
+              Digite <strong className="text-slate-300">REFAZER</strong> para confirmar.
+            </p>
+            <Input
+              value={refazerTexto}
+              onChange={(e) => setRefazerTexto(e.target.value)}
+              placeholder="REFAZER"
+              className="mt-2 border-white/10 bg-slate-950 text-center text-white"
+            />
+            <div className="mt-4 flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1 border-white/10 text-slate-300 hover:bg-white/10" onClick={() => setConfirmRefazer(false)}>
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 border border-rose-500/30 bg-rose-500/20 text-rose-100 hover:bg-rose-500/30 disabled:opacity-40"
+                disabled={refazerTexto.trim().toUpperCase() !== "REFAZER"}
+                onClick={handleRefazerDoZero}
+              >
+                Refazer do zero
               </Button>
             </div>
           </div>
@@ -830,6 +889,22 @@ export function ComissaoOperacionalWorkspace({
                 {isRecalc && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Corrigir comissão (recálculo completo)
               </Button>
+              <div className="mt-3 border-t border-amber-500/15 pt-2">
+                <p className="text-xs text-rose-300/90">
+                  Errou feio (ex.: era 10x e não 12x, e baixou/repassou sem querer)?
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
+                  onClick={() => { setRefazerTexto(""); setConfirmRefazer(true); }}
+                  disabled={isRefazer}
+                >
+                  {isRefazer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Refazer do zero
+                </Button>
+              </div>
             </div>
           )}
         </section>

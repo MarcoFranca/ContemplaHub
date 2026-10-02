@@ -21,6 +21,7 @@ import {
     marcarRepassesPagosLoteAction,
     marcarParaCobrancaAction,
     removerFlagCobrancaAction,
+    reverterRepassePagoAction,
 } from "@/app/app/comissoes/actions";
 
 export type RepasseItem = {
@@ -31,12 +32,14 @@ export type RepasseItem = {
     contrato_id: string;
     competencia: string | null;
     valor: number;
+    leadId?: string | null;
 };
 
 export type ClienteGrupo = {
     cliente_nome: string;
     total: number;
     items: RepasseItem[];
+    leadId?: string | null;
 };
 
 type Props = {
@@ -98,8 +101,22 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
             setBusy(null);
         }
     };
-    const pagar = (ids: string[], msg: string) =>
-        run(ids.join(","), () => marcarRepassesPagosLoteAction(ids, refreshPath), msg);
+    const pagar = async (ids: string[], msg: string) => {
+        setBusy(ids.join(","));
+        try {
+            const res = await marcarRepassesPagosLoteAction(ids, refreshPath, true);
+            if (!res.ok) {
+                toast.error(res.error || `Não foi possível dar baixa em ${res.falhas} repasse(s).`);
+            } else {
+                toast.success(msg);
+            }
+            router.refresh();
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Erro.");
+        } finally {
+            setBusy(null);
+        }
+    };
 
     const todosIds = aPagar.flatMap((g) => g.items.map((i) => i.id));
     const totalCotas = new Set(aPagar.flatMap((g) => g.items.map((i) => i.numero_cota))).size;
@@ -141,7 +158,17 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
                         <div key={cliente.cliente_nome} className="space-y-2">
                             {/* Cabeçalho do cliente */}
                             <div className="flex items-center justify-between gap-3 px-1">
-                                <h3 className="truncate text-base font-semibold text-foreground">{cliente.cliente_nome}</h3>
+                                {cliente.leadId ? (
+                                    <Link
+                                        href={`/app/leads/${cliente.leadId}`}
+                                        className="truncate text-base font-semibold text-foreground hover:text-emerald-300 hover:underline"
+                                        title="Abrir cliente"
+                                    >
+                                        {cliente.cliente_nome}
+                                    </Link>
+                                ) : (
+                                    <h3 className="truncate text-base font-semibold text-foreground">{cliente.cliente_nome}</h3>
+                                )}
                                 <div className="flex shrink-0 items-center gap-3">
                                     <span className="text-sm font-semibold tabular-nums text-muted-foreground">{money(cliente.total)}</span>
                                     <Button
@@ -256,7 +283,13 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
                         {emAtraso.map((it) => (
                             <div key={it.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                                 <div className="min-w-0 text-sm">
-                                    <div className="truncate font-medium text-foreground">{it.cliente_nome}</div>
+                                    {it.leadId ? (
+                                        <Link href={`/app/leads/${it.leadId}`} className="truncate font-medium text-foreground hover:text-emerald-300 hover:underline">
+                                            {it.cliente_nome}
+                                        </Link>
+                                    ) : (
+                                        <div className="truncate font-medium text-foreground">{it.cliente_nome}</div>
+                                    )}
                                     <div className="text-xs text-muted-foreground">
                                         {monthLabel(monthKey(it.competencia))} · Cota {it.numero_cota} · {money(it.valor)}
                                     </div>
@@ -280,9 +313,27 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
     );
 }
 
-export function HistoricoRepasses({ pagos }: { pagos: RepasseItem[] }) {
+export function HistoricoRepasses({ pagos, refreshPath }: { pagos: RepasseItem[]; refreshPath: string }) {
+    const router = useRouter();
     const [aberto, setAberto] = React.useState(false);
     const [mesAberto, setMesAberto] = React.useState<Record<string, boolean>>({});
+    const [desfazendo, setDesfazendo] = React.useState<string | null>(null);
+
+    const desfazer = async (id: string) => {
+        setDesfazendo(id);
+        try {
+            const res = await reverterRepassePagoAction(id, refreshPath);
+            if (!res.ok) {
+                toast.error(res.error || "Não foi possível desfazer.");
+                return;
+            }
+            toast.success("Repasse desfeito. Voltou para a lista de pagar.");
+            router.refresh();
+        } finally {
+            setDesfazendo(null);
+        }
+    };
+
     if (pagos.length === 0) return null;
 
     const total = pagos.reduce((s, i) => s + i.valor, 0);
@@ -328,7 +379,19 @@ export function HistoricoRepasses({ pagos }: { pagos: RepasseItem[] }) {
                                                 <span className="truncate text-muted-foreground">
                                                     {it.cliente_nome} · Cota {it.numero_cota}
                                                 </span>
-                                                <span className="tabular-nums text-foreground">{money(it.valor)}</span>
+                                                <span className="flex items-center gap-2">
+                                                    <span className="tabular-nums text-foreground">{money(it.valor)}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => desfazer(it.id)}
+                                                        disabled={desfazendo !== null}
+                                                        title="Desfazer este repasse (pago por engano)"
+                                                        className="inline-flex items-center gap-1 rounded-md border border-rose-500/25 px-2 py-0.5 text-[11px] text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
+                                                    >
+                                                        {desfazendo === it.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
+                                                        Desfazer
+                                                    </button>
+                                                </span>
                                             </div>
                                         ))}
                                     </div>

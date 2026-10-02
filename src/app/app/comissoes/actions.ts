@@ -355,20 +355,26 @@ export async function marcarLotePagoAction(lancamentoIds: string[]) {
 export async function marcarRepassesPagosLoteAction(
   ids: string[],
   refreshPath = "/app/comissoes",
-): Promise<{ ok: boolean; count: number; falhas: number }> {
+  forcar = false,
+): Promise<{ ok: boolean; count: number; falhas: number; error?: string }> {
   const pagoEm = new Date().toISOString();
   const results = await Promise.allSettled(
     ids.map((id) =>
       backendAuthed(`/comissoes/lancamentos/${id}/marcar-repasse-pago`, {
         method: "POST",
-        body: JSON.stringify({ pago_em: pagoEm, observacoes: null }),
+        body: JSON.stringify({ pago_em: pagoEm, observacoes: null, forcar }),
       }),
     ),
   );
-  const falhas = results.filter((r) => r.status === "rejected").length;
+  const rejeitadas = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
+  const falhas = rejeitadas.length;
   revalidatePath("/app/comissoes");
   revalidatePath(refreshPath);
-  return { ok: falhas === 0, count: ids.length - falhas, falhas };
+  const error =
+    falhas > 0
+      ? (rejeitadas[0].reason instanceof Error ? rejeitadas[0].reason.message : String(rejeitadas[0].reason))
+      : undefined;
+  return { ok: falhas === 0, count: ids.length - falhas, falhas, error };
 }
 
 export async function createRepasseLoteAction(
@@ -488,5 +494,24 @@ export async function recalcularComissoesContratoAction(
     return { ok: true, competencias_processadas: data?.competencias_processadas?.length };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Erro ao recalcular." };
+  }
+}
+
+/**
+ * Desfaz um repasse marcado como pago por engano (volta para pendente).
+ */
+export async function reverterRepassePagoAction(
+  lancamentoId: string,
+  refreshPath = "/app/comissoes",
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/reverter-repasse`, {
+      method: "POST",
+    });
+    revalidatePath("/app/comissoes");
+    revalidatePath(refreshPath);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erro ao desfazer repasse." };
   }
 }

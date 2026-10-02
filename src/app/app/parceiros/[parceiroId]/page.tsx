@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Mail, Phone, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, Mail, Phone, ShieldCheck, Users, FileText } from "lucide-react";
 
 import { getCurrentProfile } from "@/lib/auth/server";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
@@ -35,7 +35,7 @@ const mesVigente = () => {
 
 const compMonth = (it: ComissaoLancamento) => (it.competencia_prevista || "").slice(0, 7);
 const isAtraso = (it: ComissaoLancamento) => (it.observacoes || "").includes("INADIMPLENTE");
-const toLite = (it: ComissaoLancamento): RepasseItem => ({
+const toLite = (it: ComissaoLancamento, leadMap?: Map<string, string | null>): RepasseItem => ({
     id: it.id,
     cliente_nome: it.cliente_nome || "Cliente sem nome",
     numero_cota: it.numero_cota || "—",
@@ -43,6 +43,7 @@ const toLite = (it: ComissaoLancamento): RepasseItem => ({
     contrato_id: it.contrato_id,
     competencia: it.competencia_prevista ?? null,
     valor: Number(it.valor_liquido || 0),
+    leadId: leadMap?.get(it.cota_id) ?? null,
 });
 
 export default async function ParceiroDetalhePage({ params }: PageProps) {
@@ -63,6 +64,18 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
     const mes = mesVigente();
     const refreshPath = `/app/parceiros/${parceiroId}`;
 
+    // Mapa cota -> lead_id para linkar o nome do cliente à página dele
+    const cotaIds = Array.from(new Set(items.map((i) => i.cota_id).filter(Boolean)));
+    const cotaLead = new Map<string, string | null>();
+    if (cotaIds.length > 0) {
+        const { data: cotasData } = await supabaseAdmin
+            .from("cotas")
+            .select("id, lead_id")
+            .eq("org_id", me.orgId)
+            .in("id", cotaIds);
+        for (const r of cotasData ?? []) cotaLead.set(r.id, r.lead_id ?? null);
+    }
+
     // Até o mês vigente, pendentes (nada de futuro)
     const atabular = items.filter(
         (it) =>
@@ -72,15 +85,15 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
             compMonth(it) <= mes,
     );
     const aPagarItems = atabular.filter((it) => !isAtraso(it));
-    const emAtraso = atabular.filter(isAtraso).map(toLite);
-    const pagos = items.filter((it) => it.repasse_status === "pago").map(toLite);
+    const emAtraso = atabular.filter(isAtraso).map((it) => toLite(it, cotaLead));
+    const pagos = items.filter((it) => it.repasse_status === "pago").map((it) => toLite(it, cotaLead));
 
     // Agrupa "a pagar" por cliente
     const mapa = new Map<string, ClienteGrupo>();
     for (const it of aPagarItems) {
         const nome = it.cliente_nome || "Cliente sem nome";
-        const g = mapa.get(nome) ?? { cliente_nome: nome, total: 0, items: [] };
-        const lite = toLite(it);
+        const g = mapa.get(nome) ?? { cliente_nome: nome, total: 0, items: [], leadId: cotaLead.get(it.cota_id) ?? null };
+        const lite = toLite(it, cotaLead);
         g.items.push(lite);
         g.total += lite.valor;
         mapa.set(nome, g);
@@ -171,6 +184,14 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                         <h1 className="text-2xl font-semibold">{parceiro.nome}</h1>
                         <Badge variant={parceiro.ativo ? "default" : "secondary"}>{parceiro.ativo ? "Ativo" : "Inativo"}</Badge>
+                        <Link
+                            href={`/app/parceiros/${parceiroId}/repasses/print`}
+                            target="_blank"
+                            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-sm text-emerald-300 hover:bg-emerald-500/20"
+                        >
+                            <FileText className="h-4 w-4" />
+                            Gerar PDF
+                        </Link>
                         {acesso ? (
                             <Badge variant={acesso.ativo ? "default" : "outline"} className="gap-1">
                                 <ShieldCheck className="h-3 w-3" />
@@ -201,7 +222,7 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
                 />
 
                 {/* Histórico */}
-                <HistoricoRepasses pagos={pagos} />
+                <HistoricoRepasses pagos={pagos} refreshPath={refreshPath} />
             </main>
         </div>
     );

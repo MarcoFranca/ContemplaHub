@@ -575,3 +575,25 @@ export async function updatePagamentoAction(_: PagamentoActionState, formData: F
         };
     }
 }
+
+/**
+ * DESTRUTIVO: desfaz todas as baixas e repasses do contrato (inclusive os marcados como
+ * pagos por engano) e reconstrói o cronograma pela regra atual (ex.: 12x -> 10x).
+ */
+export async function refazerCronogramaDoZeroAction(
+    contratoId: string,
+    refreshPath = "/app/financeiro/pagamentos",
+): Promise<{ ok: boolean; message?: string; error?: string }> {
+    try {
+        const data = await backendAuthed<{ ok: boolean; message?: string }>(
+            `/financeiro/contratos/${contratoId}/refazer-do-zero`,
+            { method: "POST" },
+        );
+        revalidatePath("/app/financeiro/pagamentos");
+        revalidatePath("/app/comissoes");
+        revalidatePath(refreshPath);
+        return { ok: true, message: data?.message };
+    } catch (e) {
+        return { ok: false, error: e instanceof Error ? e.message : "Erro ao refazer." };
+    }
+}
