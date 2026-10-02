@@ -403,10 +403,11 @@ export async function editFinanceiroPagamentoAction(
 
 export async function skipFinanceiroPagamentoAction(
     pagamentoId: string,
+    forcar = false,
 ): Promise<FinanceiroPagamentoOperacaoResult> {
     try {
         const result = await backendAuthed<{ ok: boolean; pagamento_id: string; pagamentos_afetados: number; message?: string }>(
-            `/financeiro/pagamentos/${pagamentoId}/pular`,
+            `/financeiro/pagamentos/${pagamentoId}/pular?forcar=${forcar ? "true" : "false"}`,
             { method: "POST" },
         );
         revalidatePath("/app/financeiro/pagamentos");

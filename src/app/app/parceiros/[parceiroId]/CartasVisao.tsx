@@ -39,6 +39,16 @@ const CELL: Record<CellStatus, { cls: string; label: string }> = {
     pulo: { cls: "border-sky-500/40 bg-sky-500/20 text-sky-200 line-through decoration-sky-300/60", label: "Pulado" },
 };
 
+function TotalBox({ label, valor, tone }: { label: string; valor: number; tone?: "pago" | "receber" }) {
+    const valorCls = tone === "pago" ? "text-emerald-300" : tone === "receber" ? "text-amber-300" : "text-foreground";
+    return (
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+            <div className={`mt-0.5 text-base font-bold tabular-nums ${valorCls}`}>{money(valor)}</div>
+        </div>
+    );
+}
+
 function Legenda() {
     return (
         <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
@@ -55,15 +65,33 @@ function Legenda() {
 export function CartasVisao({ cartas }: { cartas: CartaTimeline[] }) {
     if (cartas.length === 0) return null;
 
+    let total = 0;
+    let pago = 0;
+    for (const c of cartas) {
+        for (const cell of c.cells) {
+            if (cell.status === "pulo") continue;
+            total += cell.valor;
+            if (cell.status === "pago") pago += cell.valor;
+        }
+    }
+    const aReceber = total - pago;
+
     return (
         <details className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <LayoutGrid className="h-4 w-4 text-emerald-400" />
-                    Visão das cartas ({cartas.length})
-                </span>
-                <span className="text-xs text-muted-foreground group-open:hidden">abrir panorama</span>
-                <span className="hidden text-xs text-muted-foreground group-open:inline">fechar</span>
+            <summary className="cursor-pointer list-none px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <LayoutGrid className="h-4 w-4 text-emerald-400" />
+                        Visão das cartas ({cartas.length})
+                    </span>
+                    <span className="text-xs text-muted-foreground group-open:hidden">abrir panorama</span>
+                    <span className="hidden text-xs text-muted-foreground group-open:inline">fechar</span>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                    <TotalBox label="Total" valor={total} />
+                    <TotalBox label="Já pago" valor={pago} tone="pago" />
+                    <TotalBox label="A receber" valor={aReceber} tone="receber" />
+                </div>
             </summary>
 
             <div className="space-y-4 border-t border-white/5 p-4">

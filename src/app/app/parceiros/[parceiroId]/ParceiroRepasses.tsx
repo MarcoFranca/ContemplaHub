@@ -45,6 +45,7 @@ type Props = {
     emAtraso: RepasseItem[];
     totalAPagar: number;
     qtdAPagar: number;
+    cartasSlot?: React.ReactNode;
 };
 
 const money = (v: number) =>
@@ -79,7 +80,7 @@ function agruparPorMes(items: RepasseItem[]): MesGrupo[] {
     return Array.from(mapa.values()).sort((a, b) => a.key.localeCompare(b.key));
 }
 
-export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, qtdAPagar }: Props) {
+export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, qtdAPagar, cartasSlot }: Props) {
     const router = useRouter();
     const [busy, setBusy] = React.useState<string | null>(null);
     const [mesAberto, setMesAberto] = React.useState<Record<string, boolean>>({});
@@ -126,6 +127,8 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
                     </Button>
                 )}
             </div>
+
+            {cartasSlot}
 
             {aPagar.length === 0 ? (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-10 text-center text-sm text-muted-foreground">
@@ -279,30 +282,60 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
 
 export function HistoricoRepasses({ pagos }: { pagos: RepasseItem[] }) {
     const [aberto, setAberto] = React.useState(false);
+    const [mesAberto, setMesAberto] = React.useState<Record<string, boolean>>({});
     if (pagos.length === 0) return null;
+
     const total = pagos.reduce((s, i) => s + i.valor, 0);
+    // Agrupa por mês, do mais recente para o mais antigo
+    const meses = agruparPorMes(pagos).sort((a, b) => b.key.localeCompare(a.key));
+
     return (
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
             <button type="button" onClick={() => setAberto((v) => !v)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
-                <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Wallet className="h-4 w-4" />
-                    Histórico de repasses pagos ({pagos.length})
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Wallet className="h-4 w-4 text-emerald-400" />
+                    Histórico de repasses pagos
+                    <span className="text-muted-foreground">({pagos.length})</span>
                 </span>
-                <span className="flex items-center gap-2 text-sm tabular-nums text-muted-foreground">
+                <span className="flex items-center gap-2 text-sm font-semibold tabular-nums text-foreground">
                     {money(total)}
-                    {aberto ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    {aberto ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                 </span>
             </button>
+
             {aberto && (
-                <div className="divide-y divide-white/5 border-t border-white/5">
-                    {pagos.map((it) => (
-                        <div key={it.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
-                            <span className="truncate text-muted-foreground">
-                                {it.cliente_nome} · {monthLabel(monthKey(it.competencia))} · Cota {it.numero_cota}
-                            </span>
-                            <span className="tabular-nums text-foreground">{money(it.valor)}</span>
-                        </div>
-                    ))}
+                <div className="space-y-1.5 border-t border-white/5 p-3">
+                    {meses.map((m) => {
+                        const open = mesAberto[m.key] ?? false;
+                        return (
+                            <div key={m.key} className="overflow-hidden rounded-xl border border-white/8 bg-white/[0.02]">
+                                <button
+                                    type="button"
+                                    onClick={() => setMesAberto((p) => ({ ...p, [m.key]: !open }))}
+                                    className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left"
+                                >
+                                    <span className="flex items-center gap-2 text-sm">
+                                        {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+                                        <span className="font-medium text-foreground">{monthLabel(m.key)}</span>
+                                        <span className="text-xs text-muted-foreground">{m.items.length} repasse{m.items.length !== 1 ? "s" : ""}</span>
+                                    </span>
+                                    <span className="font-semibold tabular-nums text-emerald-200/90">{money(m.total)}</span>
+                                </button>
+                                {open && (
+                                    <div className="divide-y divide-white/5 border-t border-white/5 bg-black/10">
+                                        {m.items.map((it) => (
+                                            <div key={it.id} className="flex items-center justify-between gap-3 px-4 py-2 pl-9 text-sm">
+                                                <span className="truncate text-muted-foreground">
+                                                    {it.cliente_nome} · Cota {it.numero_cota}
+                                                </span>
+                                                <span className="tabular-nums text-foreground">{money(it.valor)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

@@ -197,10 +197,8 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
                     emAtraso={emAtraso}
                     totalAPagar={totalAPagar}
                     qtdAPagar={qtdAPagar}
+                    cartasSlot={<CartasVisao cartas={cartas} />}
                 />
-
-                {/* Visão das cartas (panorama visual, recolhível) */}
-                <CartasVisao cartas={cartas} />
 
                 {/* Histórico */}
                 <HistoricoRepasses pagos={pagos} />

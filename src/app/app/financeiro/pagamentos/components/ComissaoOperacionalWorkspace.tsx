@@ -342,10 +342,18 @@ export function ComissaoOperacionalWorkspace({
     });
   };
 
-  const handleSkipPagamento = (item: PagamentoItem) => {
+  const handleSkipPagamento = (item: PagamentoItem, forcar = false) => {
+    if (forcar && typeof window !== "undefined") {
+      const ok = window.confirm(
+        "Esta competência está marcada como paga (ex.: carta cadastrada já em andamento). " +
+          "Pular vai reabrir a baixa deste mês, reprogramar o cronograma (+1 mês) e corrigir os valores. " +
+          "Repasses já pagos ao parceiro são protegidos. Confirmar?",
+      );
+      if (!ok) return;
+    }
     startOperating(async () => {
       setBusyPagamentoId(item.id);
-      const result = await skipFinanceiroPagamentoAction(item.id);
+      const result = await skipFinanceiroPagamentoAction(item.id, forcar);
       setBusyPagamentoId(null);
       if (!result.ok) {
         toast.error(result.error || "Não foi possível pular a competência.");

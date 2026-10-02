@@ -32,7 +32,7 @@ type Props = {
   pagamentos: PagamentoItem[];
   busyPagamentoId?: string | null;
   onStatusChange: (item: PagamentoItem, status: PagamentoStatus) => void;
-  onSkip: (item: PagamentoItem) => void;
+  onSkip: (item: PagamentoItem, forcar?: boolean) => void;
   onCancelFuture: (item: PagamentoItem) => void;
   onRefresh?: () => void;
 };
@@ -403,9 +403,16 @@ export function CronogramaOperacionalTable({
                       <DropdownMenuSeparator className="bg-white/10" />
 
                       {!locked && !paid && (
-                        <DropdownMenuItem onClick={() => onSkip(item)} className="gap-2 text-sm text-slate-300">
+                        <DropdownMenuItem onClick={() => onSkip(item, false)} className="gap-2 text-sm text-slate-300">
                           <CornerDownRight className="h-3.5 w-3.5" />
                           Pular competencia
+                        </DropdownMenuItem>
+                      )}
+
+                      {!locked && paid && (
+                        <DropdownMenuItem onClick={() => onSkip(item, true)} className="gap-2 text-sm text-sky-300">
+                          <CornerDownRight className="h-3.5 w-3.5" />
+                          Pular competência (corrigir)
                         </DropdownMenuItem>
                       )}
 
