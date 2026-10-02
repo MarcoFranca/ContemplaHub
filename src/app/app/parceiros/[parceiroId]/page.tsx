@@ -17,6 +17,8 @@ import {
     type ClienteGrupo,
 } from "./ParceiroRepasses";
 import { CartasVisao, type CartaTimeline, type CellStatus } from "./CartasVisao";
+import { ParceiroGestao } from "./ParceiroGestao";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type PageProps = { params: Promise<{ parceiroId: string }> };
 
@@ -64,16 +66,20 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
     const mes = mesVigente();
     const refreshPath = `/app/parceiros/${parceiroId}`;
 
-    // Mapa cota -> lead_id para linkar o nome do cliente à página dele
+    // Mapa cota -> lead_id (link do cliente) + valor_carta (gestão)
     const cotaIds = Array.from(new Set(items.map((i) => i.cota_id).filter(Boolean)));
     const cotaLead = new Map<string, string | null>();
+    const cotaValor = new Map<string, number>();
     if (cotaIds.length > 0) {
         const { data: cotasData } = await supabaseAdmin
             .from("cotas")
-            .select("id, lead_id")
+            .select("id, lead_id, valor_carta")
             .eq("org_id", me.orgId)
             .in("id", cotaIds);
-        for (const r of cotasData ?? []) cotaLead.set(r.id, r.lead_id ?? null);
+        for (const r of cotasData ?? []) {
+            cotaLead.set(r.id, r.lead_id ?? null);
+            cotaValor.set(r.id, Number(r.valor_carta ?? 0));
+        }
     }
 
     // Até o mês vigente, pendentes (nada de futuro)
@@ -172,6 +178,59 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
         [...aPagarItems, ...atabular.filter(isAtraso)].map((i) => i.cliente_nome).filter(Boolean),
     ).size;
 
+    // ── Dados da aba Gestão ──────────────────────────────────────────────
+    type GestaoAcc = {
+        cliente_nome: string;
+        leadId?: string | null;
+        cotas: Set<string>;
+        valorCartas: number;
+        comissaoLiq: number;
+        repassado: number;
+        aRepassar: number;
+    };
+    const gestaoMap = new Map<string, GestaoAcc>();
+    const cotasContabilizadas = new Set<string>(); // para somar valor_carta uma vez por cota
+    for (const it of items.filter((x) => x.status !== "cancelado")) {
+        const nome = it.cliente_nome || "Cliente sem nome";
+        const acc =
+            gestaoMap.get(nome) ??
+            ({ cliente_nome: nome, leadId: cotaLead.get(it.cota_id) ?? null, cotas: new Set(), valorCartas: 0, comissaoLiq: 0, repassado: 0, aRepassar: 0 } as GestaoAcc);
+        const liq = Number(it.valor_liquido || 0);
+        acc.comissaoLiq += liq;
+        if (it.repasse_status === "pago") acc.repassado += liq;
+        else if (it.repasse_status === "pendente") acc.aRepassar += liq;
+        if (it.cota_id && !acc.cotas.has(it.cota_id)) {
+            acc.cotas.add(it.cota_id);
+            if (!cotasContabilizadas.has(it.cota_id)) {
+                acc.valorCartas += cotaValor.get(it.cota_id) ?? 0;
+                cotasContabilizadas.add(it.cota_id);
+            }
+        }
+        gestaoMap.set(nome, acc);
+    }
+    const gestaoClientes = Array.from(gestaoMap.values())
+        .map((a) => ({
+            cliente_nome: a.cliente_nome,
+            leadId: a.leadId,
+            cartas: a.cotas.size,
+            valorCartas: a.valorCartas,
+            comissaoLiq: a.comissaoLiq,
+            repassado: a.repassado,
+            aRepassar: a.aRepassar,
+        }))
+        .sort((a, b) => b.valorCartas - a.valorCartas);
+    const gestaoTotalCartas = gestaoClientes.reduce((s, c) => s + c.cartas, 0);
+    const gestaoValorCartas = gestaoClientes.reduce((s, c) => s + c.valorCartas, 0);
+    const gestaoKpis = {
+        clientes: gestaoClientes.length,
+        cartas: gestaoTotalCartas,
+        valorCartas: gestaoValorCartas,
+        comissaoLiq: gestaoClientes.reduce((s, c) => s + c.comissaoLiq, 0),
+        repassado: gestaoClientes.reduce((s, c) => s + c.repassado, 0),
+        aRepassar: gestaoClientes.reduce((s, c) => s + c.aRepassar, 0),
+        ticketMedio: gestaoTotalCartas > 0 ? gestaoValorCartas / gestaoTotalCartas : 0,
+    };
+
     return (
         <div className="h-full overflow-y-auto">
             <main className="mx-auto max-w-4xl space-y-6 p-6">
@@ -211,18 +270,28 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
                     </div>
                 </div>
 
-                {/* Repasses (o foco) */}
-                <ParceiroRepasses
-                    refreshPath={refreshPath}
-                    aPagar={aPagar}
-                    emAtraso={emAtraso}
-                    totalAPagar={totalAPagar}
-                    qtdAPagar={qtdAPagar}
-                    cartasSlot={<CartasVisao cartas={cartas} />}
-                />
+                <Tabs defaultValue="repasses" className="w-full">
+                    <TabsList>
+                        <TabsTrigger value="repasses">Repasses</TabsTrigger>
+                        <TabsTrigger value="gestao">Gestão</TabsTrigger>
+                    </TabsList>
 
-                {/* Histórico */}
-                <HistoricoRepasses pagos={pagos} refreshPath={refreshPath} />
+                    <TabsContent value="repasses" className="mt-4 space-y-6">
+                        <ParceiroRepasses
+                            refreshPath={refreshPath}
+                            aPagar={aPagar}
+                            emAtraso={emAtraso}
+                            totalAPagar={totalAPagar}
+                            qtdAPagar={qtdAPagar}
+                            cartasSlot={<CartasVisao cartas={cartas} />}
+                        />
+                        <HistoricoRepasses pagos={pagos} refreshPath={refreshPath} />
+                    </TabsContent>
+
+                    <TabsContent value="gestao" className="mt-4">
+                        <ParceiroGestao kpis={gestaoKpis} clientes={gestaoClientes} />
+                    </TabsContent>
+                </Tabs>
             </main>
         </div>
     );
