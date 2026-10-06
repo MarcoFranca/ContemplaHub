@@ -354,7 +354,18 @@ export function ComissaoOperacionalWorkspace({
   const handlePagamentoStatus = (item: PagamentoItem, status: PagamentoStatus) => {
     startOperating(async () => {
       setBusyPagamentoId(item.id);
-      const result = await updateFinanceiroPagamentoStatusAction(item, status);
+      let result = await updateFinanceiroPagamentoStatusAction(item, status);
+      // Bloqueado porque o repasse já foi pago: oferece desfazer o repasse e refazer.
+      if (!result.ok && status !== "pago" && /repasse/i.test(result.error || "")) {
+        const ok =
+          typeof window !== "undefined" &&
+          window.confirm(
+            "O repasse desta competência já foi feito ao parceiro. Deseja desfazer o repasse e marcar como não paga mesmo assim?",
+          );
+        if (ok) {
+          result = await updateFinanceiroPagamentoStatusAction(item, status, true);
+        }
+      }
       setBusyPagamentoId(null);
       if (!result.ok) {
         toast.error(result.error || "Não foi possível atualizar a parcela.");

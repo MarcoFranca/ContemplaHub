@@ -308,9 +308,10 @@ export async function desfazerPuloAction(
 export async function updateFinanceiroPagamentoStatusAction(
     item: PagamentoItem,
     status: PagamentoStatus,
+    forcar = false,
 ): Promise<FinanceiroPagamentoOperacaoResult> {
     try {
-        await backendAuthed(`/financeiro/pagamentos/${item.id}`, {
+        await backendAuthed(`/financeiro/pagamentos/${item.id}?forcar=${forcar ? "true" : "false"}`, {
             method: "PUT",
             body: JSON.stringify({
                 contrato_id: item.contrato_id,
