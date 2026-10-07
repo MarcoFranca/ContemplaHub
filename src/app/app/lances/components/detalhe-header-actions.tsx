@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { ReajustarCartaDialog } from "./ReajustarCartaDialog";
 
 
 type Props = {
@@ -56,7 +57,12 @@ export function DetalheHeaderActions({
     // );
 
     return (
-        <>
+        <div className="flex items-center gap-2">
+            <ReajustarCartaDialog
+                cotaId={cotaId}
+                valorAtual={Number(cota.valor_carta ?? 0)}
+                valorParcelaAtual={Number(cota.valor_parcela ?? 0)}
+            />
             <Button onClick={() => setOpen(true)}>Editar carta</Button>
 
             {/*<EditCartaSheetV2*/}
@@ -65,6 +71,6 @@ export function DetalheHeaderActions({
             {/*    data={data}*/}
             {/*    onSuccess={() => window.location.reload()}*/}
             {/*/>*/}
-        </>
+        </div>
     );
 }

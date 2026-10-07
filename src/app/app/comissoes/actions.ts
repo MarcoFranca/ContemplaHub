@@ -515,3 +515,39 @@ export async function reverterRepassePagoAction(
     return { ok: false, error: e instanceof Error ? e.message : "Erro ao desfazer repasse." };
   }
 }
+
+/**
+ * Marca o PAGAMENTO do cliente (competência) como inadimplente a partir de um lançamento.
+ * Usado no painel do parceiro para "Não pagou" sem ir ao Financeiro.
+ */
+export async function registrarInadimplenciaPorLancamentoAction(
+  lancamentoId: string,
+  refreshPath = "/app/comissoes",
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/registrar-inadimplencia`, {
+      method: "POST",
+      body: JSON.stringify({ status: "previsto", observacoes: "Cliente não pagou." }),
+    });
+    revalidatePath("/app/comissoes");
+    revalidatePath(refreshPath);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erro ao marcar não pago." };
+  }
+}
+
+/** Regulariza (cliente pagou) a competência a partir de um lançamento. */
+export async function regularizarPorLancamentoAction(
+  lancamentoId: string,
+  refreshPath = "/app/comissoes",
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/regularizar`, { method: "POST" });
+    revalidatePath("/app/comissoes");
+    revalidatePath(refreshPath);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erro ao regularizar." };
+  }
+}

@@ -19,8 +19,8 @@ import {
 import { Button } from "@/components/ui/button";
 import {
     marcarRepassesPagosLoteAction,
-    marcarParaCobrancaAction,
-    removerFlagCobrancaAction,
+    registrarInadimplenciaPorLancamentoAction,
+    regularizarPorLancamentoAction,
     reverterRepassePagoAction,
 } from "@/app/app/comissoes/actions";
 
@@ -89,18 +89,6 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
     const [mesAberto, setMesAberto] = React.useState<Record<string, boolean>>({});
     const mesAtual = nowMonth();
 
-    const run = async (key: string, fn: () => Promise<unknown>, okMsg?: string) => {
-        setBusy(key);
-        try {
-            await fn();
-            if (okMsg) toast.success(okMsg);
-            router.refresh();
-        } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Erro.");
-        } finally {
-            setBusy(null);
-        }
-    };
     const pagar = async (ids: string[], msg: string) => {
         setBusy(ids.join(","));
         try {
@@ -113,6 +101,42 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
             router.refresh();
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "Erro.");
+        } finally {
+            setBusy(null);
+        }
+    };
+
+    // Ação que retorna { ok, error } (inadimplência / regularização)
+    const runRes = async (key: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => {
+        setBusy(key);
+        try {
+            const res = await fn();
+            if (!res.ok) {
+                toast.error(res.error || "Não foi possível concluir.");
+                return;
+            }
+            toast.success(okMsg);
+            router.refresh();
+        } finally {
+            setBusy(null);
+        }
+    };
+
+    const naoPagou = async (ids: string[]) => {
+        setBusy("naopagou-" + ids.join(","));
+        try {
+            let falhas = 0;
+            let ultimoErro = "";
+            for (const id of ids) {
+                const res = await registrarInadimplenciaPorLancamentoAction(id, refreshPath);
+                if (!res.ok) {
+                    falhas += 1;
+                    ultimoErro = res.error || "";
+                }
+            }
+            if (falhas > 0) toast.error(ultimoErro || `Falha em ${falhas} item(ns).`);
+            else toast.success("Marcado como não pago (cliente em atraso).");
+            router.refresh();
         } finally {
             setBusy(null);
         }
@@ -212,7 +236,7 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
                                                         </div>
                                                     </div>
                                                 </button>
-                                                <div className="flex shrink-0 items-center gap-3">
+                                                <div className="flex shrink-0 items-center gap-2">
                                                     <span className="text-lg font-bold tabular-nums text-foreground">{money(m.total)}</span>
                                                     <Button
                                                         size="sm"
@@ -221,6 +245,16 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
                                                         disabled={busy !== null}
                                                     >
                                                         {busy === ids.join(",") ? <Loader2 className="h-4 w-4 animate-spin" /> : "Pagar mês"}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
+                                                        title="Cliente não pagou este mês"
+                                                        onClick={() => naoPagou(ids)}
+                                                        disabled={busy !== null}
+                                                    >
+                                                        {busy === "naopagou-" + ids.join(",") ? <Loader2 className="h-4 w-4 animate-spin" /> : "Não pagou"}
                                                     </Button>
                                                 </div>
                                             </div>
@@ -252,7 +286,7 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
                                                                     variant="ghost"
                                                                     className="h-7 w-7 text-amber-300 hover:bg-amber-500/15"
                                                                     title="Cliente em atraso"
-                                                                    onClick={() => run("atraso-" + it.id, () => marcarParaCobrancaAction(it.id), "Marcado em atraso.")}
+                                                                    onClick={() => runRes("atraso-" + it.id, () => registrarInadimplenciaPorLancamentoAction(it.id, refreshPath), "Marcado como não pago.")}
                                                                     disabled={busy !== null}
                                                                 >
                                                                     {busy === "atraso-" + it.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
@@ -299,7 +333,7 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
                                     variant="outline"
                                     className="h-8 border-white/10"
                                     title="Cliente regularizou, volta para a lista de pagar"
-                                    onClick={() => run("voltar-" + it.id, () => removerFlagCobrancaAction(it.id), "Voltou para a lista de pagar.")}
+                                    onClick={() => runRes("voltar-" + it.id, () => regularizarPorLancamentoAction(it.id, refreshPath), "Regularizado. Voltou para a lista de pagar.")}
                                     disabled={busy !== null}
                                 >
                                     {busy === "voltar-" + it.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Undo2 className="mr-1 h-3.5 w-3.5" /> Regularizou</>}
