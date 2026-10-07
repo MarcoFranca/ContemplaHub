@@ -25,6 +25,7 @@ import {
 
 import { LanceActions } from "./lance-actions";
 import { EditCartaQuickAction } from "./edit-carta-quick-action";
+import { ReajustarCartaDialog } from "./ReajustarCartaDialog";
 import { CartaDetailsSheet } from "./CartaDetailsSheet";
 import { LancesCompactList } from "./LancesCompactList";
 import type { LanceCartaListItem } from "../types";
@@ -355,6 +356,11 @@ function CartaCard({
                 <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                     <CartaDetailsSheet item={item} competencia={competencia} />
                     <EditCartaQuickAction item={item} competencia={competencia} />
+                    <ReajustarCartaDialog
+                        cotaId={item.cota_id}
+                        valorAtual={Number(item.valor_carta ?? 0)}
+                        valorParcelaAtual={Number(item.valor_parcela ?? 0)}
+                    />
                     <LanceActions item={item} competencia={competencia} />
                 </div>
             </div>
