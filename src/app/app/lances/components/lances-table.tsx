@@ -26,6 +26,7 @@ import {
 import { LanceActions } from "./lance-actions";
 import { EditCartaQuickAction } from "./edit-carta-quick-action";
 import { ReajustarCartaDialog } from "./ReajustarCartaDialog";
+import { RepetirLanceDialog } from "./RepetirLanceDialog";
 import { CartaDetailsSheet } from "./CartaDetailsSheet";
 import { LancesCompactList } from "./LancesCompactList";
 import type { LanceCartaListItem } from "../types";
@@ -361,6 +362,13 @@ function CartaCard({
                         valorAtual={Number(item.valor_carta ?? 0)}
                         valorParcelaAtual={Number(item.valor_parcela ?? 0)}
                     />
+                    {item.status === "ativa" && item.status_mes !== "feito" && (
+                        <RepetirLanceDialog
+                            cotaId={item.cota_id}
+                            competencia={competencia}
+                            assembleiaPrevista={item.assembleia_prevista}
+                        />
+                    )}
                     <LanceActions item={item} competencia={competencia} />
                 </div>
             </div>
