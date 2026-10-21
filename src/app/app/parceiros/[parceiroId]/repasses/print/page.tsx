@@ -11,9 +11,20 @@ import { RepasseDocument, type LinhaDoc } from "./RepasseDocument";
 
 type PageProps = { params: Promise<{ parceiroId: string }> };
 
-const mesVigente = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const TZ = "America/Sao_Paulo";
+// Partes de data/hora no fuso de São Paulo (evita virar o dia por conta do UTC do servidor).
+const nowBR = () => {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: TZ,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+    }).formatToParts(new Date());
+    const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+    return { y: g("year"), m: g("month"), d: g("day"), hh: g("hour"), mm: g("minute") };
 };
 const monthKey = (iso?: string | null) => (iso || "").slice(0, 7);
 const monthLabel = (key: string) => {
@@ -22,13 +33,12 @@ const monthLabel = (key: string) => {
     const s = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(Number(y), Number(m) - 1, 1));
     return s.charAt(0).toUpperCase() + s.slice(1);
 };
+// Formata a partir da porção de data (YYYY-MM-DD), sem conversão de fuso.
 const dateLabel = (iso?: string | null) => {
-    if (!iso) return null;
-    try {
-        return new Intl.DateTimeFormat("pt-BR").format(new Date(iso));
-    } catch {
-        return null;
-    }
+    const d = (iso || "").slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+    const [y, m, dd] = d.split("-");
+    return `${dd}/${m}/${y}`;
 };
 const isAtraso = (it: ComissaoLancamento) => (it.observacoes || "").includes("INADIMPLENTE");
 
@@ -42,7 +52,8 @@ export default async function RepassePrintPage({ params }: PageProps) {
 
     const parceiro = extrato.parceiro;
     const items: ComissaoLancamento[] = extrato.items ?? [];
-    const mes = mesVigente();
+    const br = nowBR();
+    const mes = `${br.y}-${br.m}`;
 
     const { data: org } = await supabaseAdmin.from("orgs").select("nome").eq("id", me.orgId).maybeSingle();
 
@@ -94,16 +105,19 @@ export default async function RepassePrintPage({ params }: PageProps) {
     // Pagos: repasses já efetivados.
     const pagos = items.filter((it) => it.repasse_status === "pago").map(toLinha);
 
-    const agora = new Date();
-    const emitidoEm = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(agora);
+    const emitidoEm = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long", timeZone: TZ }).format(new Date());
     const voltarHref = `/app/parceiros/${parceiroId}`;
-    const carimbo = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}-${String(agora.getDate()).padStart(2, "0")}_${String(agora.getHours()).padStart(2, "0")}${String(agora.getMinutes()).padStart(2, "0")}`;
+    const carimbo = `${br.y}-${br.m}-${br.d}_${br.hh}${br.mm}`;
     const nomeSanitizado = (parceiro.nome || "parceiro").replace(/[\\/:*?"<>|]+/g, "").trim();
     const docTitleBase = `Repasses - ${nomeSanitizado} - ${mes} - ${carimbo}`;
 
     return (
         <div style={{ background: "#eef0f2" }} className="h-full overflow-y-auto p-4 text-neutral-900">
             <style>{`
+                #repasse-print, #repasse-print * {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
                 @media print {
                     body * { visibility: hidden !important; }
                     #repasse-print, #repasse-print * { visibility: visible !important; }

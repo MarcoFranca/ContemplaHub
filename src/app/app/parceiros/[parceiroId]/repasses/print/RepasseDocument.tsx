@@ -129,7 +129,41 @@ export function RepasseDocument({
 
     const isPagos = modo === "pagos";
     const tituloSecao = isPagos ? "Repasses pagos" : "A pagar neste mês";
-    const corResumo = isPagos ? "neutral" : "emerald";
+
+    // Paleta por modo (classes literais p/ o Tailwind não purgar).
+    const theme = isPagos
+        ? {
+              accent: "#0284c7", // sky-600
+              band: "bg-sky-600",
+              badge: "bg-sky-100 text-sky-700",
+              boxBorder: "border-sky-200",
+              boxBg: "bg-sky-50",
+              boxLabel: "text-sky-700",
+              boxValue: "text-sky-700",
+              boxSub: "text-sky-700/70",
+              head: "text-sky-700",
+              theadBg: "bg-sky-50",
+              theadRule: "border-sky-200",
+              subtotalBg: "bg-sky-50/60",
+              totalRule: "border-sky-600",
+              totalText: "text-sky-700",
+          }
+        : {
+              accent: "#059669", // emerald-600
+              band: "bg-emerald-600",
+              badge: "bg-emerald-100 text-emerald-700",
+              boxBorder: "border-emerald-200",
+              boxBg: "bg-emerald-50",
+              boxLabel: "text-emerald-700",
+              boxValue: "text-emerald-700",
+              boxSub: "text-emerald-700/70",
+              head: "text-emerald-700",
+              theadBg: "bg-emerald-50",
+              theadRule: "border-emerald-200",
+              subtotalBg: "bg-emerald-50/60",
+              totalRule: "border-emerald-600",
+              totalText: "text-emerald-700",
+          };
 
     return (
         <div className="mx-auto max-w-[800px]">
@@ -215,9 +249,13 @@ export function RepasseDocument({
                 </div>
             )}
 
-            <div id="repasse-print" className="mx-auto max-w-[800px] rounded-lg bg-white p-8 shadow-sm">
+            <div id="repasse-print" className="mx-auto max-w-[800px] overflow-hidden rounded-lg bg-white shadow-sm">
+                {/* Faixa colorida do topo */}
+                <div className={`h-2 w-full ${theme.band}`} />
+
+                <div className="p-8">
                 {/* Cabeçalho */}
-                <div className="flex items-start justify-between border-b border-neutral-200 pb-4">
+                <div className="flex items-start justify-between border-b-2 pb-4" style={{ borderColor: theme.accent }}>
                     <div>
                         <h1 className="text-xl font-bold text-neutral-900">Demonstrativo de Repasses</h1>
                         <p className="mt-0.5 text-sm text-neutral-500">{orgNome}</p>
@@ -231,7 +269,7 @@ export function RepasseDocument({
                         ) : (
                             <div>Competência: {mesLabel}</div>
                         )}
-                        <div className="mt-0.5 font-semibold text-neutral-600">
+                        <div className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${theme.badge}`}>
                             {isPagos ? "Repasses pagos" : "A pagar neste mês"}
                         </div>
                     </div>
@@ -246,14 +284,14 @@ export function RepasseDocument({
 
                 {/* Resumo */}
                 <div className="mt-5">
-                    <div className={`rounded-lg border p-4 ${corResumo === "emerald" ? "border-emerald-200 bg-emerald-50" : "border-neutral-200 bg-neutral-50"}`}>
-                        <div className={`text-[11px] font-semibold uppercase tracking-wider ${corResumo === "emerald" ? "text-emerald-700" : "text-neutral-600"}`}>
+                    <div className={`rounded-lg border p-4 ${theme.boxBorder} ${theme.boxBg}`}>
+                        <div className={`text-[11px] font-semibold uppercase tracking-wider ${theme.boxLabel}`}>
                             {isPagos ? "Total pago" : "A pagar neste mês"}
                         </div>
-                        <div className={`mt-1 text-2xl font-bold ${corResumo === "emerald" ? "text-emerald-700" : "text-neutral-800"}`}>
+                        <div className={`mt-1 text-2xl font-bold ${theme.boxValue}`}>
                             {money(total)}
                         </div>
-                        <div className={`text-xs ${corResumo === "emerald" ? "text-emerald-700/70" : "text-neutral-500"}`}>
+                        <div className={`text-xs ${theme.boxSub}`}>
                             {linhasBase.length} repasse(s)
                             {isPagos && pagoFiltro ? ` · pago em ${dateKeyLabel(pagoFiltro)}` : ""}
                             {foiEditado ? " · valores ajustados manualmente" : ""}
@@ -263,7 +301,7 @@ export function RepasseDocument({
 
                 {/* Tabela */}
                 <div className="mt-6">
-                    <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-neutral-700">{tituloSecao}</h2>
+                    <h2 className={`mb-2 text-sm font-bold uppercase tracking-wide ${theme.head}`}>{tituloSecao}</h2>
                     {porCliente.length === 0 ? (
                         <p className="text-sm text-neutral-400">
                             {isPagos ? "Nenhum repasse pago ainda." : "Nenhum repasse a pagar até este mês."}
@@ -271,13 +309,13 @@ export function RepasseDocument({
                     ) : (
                         <table className="w-full border-collapse text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-300 text-left text-[11px] uppercase tracking-wider text-neutral-400">
-                                    <th className="py-1.5 pr-2">Cliente</th>
+                                <tr className={`border-b-2 text-left text-[11px] uppercase tracking-wider ${theme.theadBg} ${theme.theadRule} ${theme.head}`}>
+                                    <th className="rounded-l-md py-1.5 pl-2 pr-2">Cliente</th>
                                     <th className="py-1.5 px-2">Grupo / Cota</th>
                                     <th className="py-1.5 px-2">Competência</th>
                                     {isPagos && <th className="py-1.5 px-2">Pago em</th>}
                                     <th className="py-1.5 px-2 text-center">Parcela</th>
-                                    <th className="py-1.5 pl-2 text-right">Valor</th>
+                                    <th className="rounded-r-md py-1.5 pl-2 pr-2 text-right">Valor</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -306,19 +344,19 @@ export function RepasseDocument({
                                                 </tr>
                                             ))}
                                             {linhas.length > 1 ? (
-                                                <tr className="border-b border-neutral-200 text-xs">
-                                                    <td className="py-1 pr-2 text-neutral-400" colSpan={colBeforeValor}>Subtotal {cliente}</td>
-                                                    <td className="py-1 pl-2 text-right font-semibold tabular-nums text-neutral-700">{money(sub)}</td>
+                                                <tr className={`border-b border-neutral-200 text-xs ${theme.subtotalBg}`}>
+                                                    <td className={`py-1 pl-2 pr-2 font-medium ${theme.boxLabel}`} colSpan={colBeforeValor}>Subtotal {cliente}</td>
+                                                    <td className={`py-1 pl-2 pr-2 text-right font-semibold tabular-nums ${theme.totalText}`}>{money(sub)}</td>
                                                 </tr>
                                             ) : null}
                                         </Fragment>
                                     );
                                 })}
-                                <tr className="border-t-2 border-neutral-800">
+                                <tr className={`border-t-2 ${theme.totalRule}`}>
                                     <td className="py-2 pr-2 font-bold text-neutral-900" colSpan={isPagos ? 5 : 4}>
                                         {isPagos ? "Total pago" : "Total a pagar"}
                                     </td>
-                                    <td className={`py-2 pl-2 text-right text-base font-bold tabular-nums ${isPagos ? "text-neutral-900" : "text-emerald-700"}`}>
+                                    <td className={`py-2 pl-2 text-right text-base font-bold tabular-nums ${theme.totalText}`}>
                                         {money(total)}
                                     </td>
                                 </tr>
@@ -333,6 +371,7 @@ export function RepasseDocument({
                         ? " Relação de repasses já efetivados ao parceiro."
                         : " Valores de repasse sujeitos à confirmação do pagamento do cliente."}
                 </p>
+                </div>
             </div>
         </div>
     );
