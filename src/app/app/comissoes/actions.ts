@@ -356,8 +356,14 @@ export async function marcarRepassesPagosLoteAction(
   ids: string[],
   refreshPath = "/app/comissoes",
   forcar = false,
+  pagoEmData?: string,
 ): Promise<{ ok: boolean; count: number; falhas: number; error?: string }> {
-  const pagoEm = new Date().toISOString();
+  // pagoEmData opcional no formato YYYY-MM-DD (data real do repasse). Sem ela, usa agora.
+  // Grava ao meio-dia para evitar virar o dia por fuso.
+  const pagoEm =
+    pagoEmData && /^\d{4}-\d{2}-\d{2}$/.test(pagoEmData)
+      ? new Date(`${pagoEmData}T12:00:00`).toISOString()
+      : new Date().toISOString();
   const results = await Promise.allSettled(
     ids.map((id) =>
       backendAuthed(`/comissoes/lancamentos/${id}/marcar-repasse-pago`, {
@@ -494,6 +500,34 @@ export async function recalcularComissoesContratoAction(
     return { ok: true, competencias_processadas: data?.competencias_processadas?.length };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Erro ao recalcular." };
+  }
+}
+
+/**
+ * Corrige a DATA de um repasse já pago (ex.: baixa feita hoje de um pagamento
+ * que ocorreu em outra data). Não muda valor nem status, só a data do repasse.
+ * pagoEmData no formato YYYY-MM-DD.
+ */
+export async function atualizarDataRepasseAction(
+  lancamentoId: string,
+  pagoEmData: string,
+  refreshPath = "/app/comissoes",
+): Promise<{ ok: boolean; error?: string }> {
+  if (!lancamentoId) return { ok: false, error: "Lançamento inválido." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(pagoEmData)) return { ok: false, error: "Data inválida." };
+  try {
+    await backendAuthed(`/comissoes/lancamentos/${lancamentoId}/repasse`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        repasse_status: "pago",
+        repasse_pago_em: `${pagoEmData}T12:00:00`,
+      }),
+    });
+    revalidatePath("/app/comissoes");
+    revalidatePath(refreshPath);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erro ao atualizar a data do repasse." };
   }
 }
 

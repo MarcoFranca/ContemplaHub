@@ -14,6 +14,9 @@ import {
     Wallet,
     ExternalLink,
     CalendarClock,
+    Pencil,
+    Check,
+    X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +25,7 @@ import {
     registrarInadimplenciaPorLancamentoAction,
     regularizarPorLancamentoAction,
     reverterRepassePagoAction,
+    atualizarDataRepasseAction,
 } from "@/app/app/comissoes/actions";
 
 export type RepasseItem = {
@@ -33,6 +37,7 @@ export type RepasseItem = {
     competencia: string | null;
     valor: number;
     leadId?: string | null;
+    pagoEm?: string | null; // data real do repasse (ISO), quando pago
 };
 
 export type ClienteGrupo = {
@@ -88,11 +93,15 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
     const [busy, setBusy] = React.useState<string | null>(null);
     const [mesAberto, setMesAberto] = React.useState<Record<string, boolean>>({});
     const mesAtual = nowMonth();
+    const [dataPagamento, setDataPagamento] = React.useState<string>(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    });
 
     const pagar = async (ids: string[], msg: string) => {
         setBusy(ids.join(","));
         try {
-            const res = await marcarRepassesPagosLoteAction(ids, refreshPath, true);
+            const res = await marcarRepassesPagosLoteAction(ids, refreshPath, true, dataPagamento);
             if (!res.ok) {
                 toast.error(res.error || `Não foi possível dar baixa em ${res.falhas} repasse(s).`);
             } else {
@@ -156,17 +165,29 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
                         {qtdAPagar} repasse{qtdAPagar !== 1 ? "s" : ""} · {aPagar.length} cliente{aPagar.length !== 1 ? "s" : ""} · {totalCotas} cota{totalCotas !== 1 ? "s" : ""}
                     </p>
                 </div>
-                {todosIds.length > 0 && (
-                    <Button
-                        size="lg"
-                        onClick={() => pagar(todosIds, "Repasses marcados como pagos.")}
-                        disabled={busy !== null}
-                        className="bg-emerald-600 text-white hover:bg-emerald-500"
-                    >
-                        {busy === todosIds.join(",") ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
-                        Pagar tudo ({money(totalAPagar)})
-                    </Button>
-                )}
+                <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="whitespace-nowrap">Data do pagamento</span>
+                        <input
+                            type="date"
+                            value={dataPagamento}
+                            onChange={(e) => setDataPagamento(e.target.value)}
+                            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm text-foreground [color-scheme:dark]"
+                        />
+                    </label>
+                    <span className="text-[11px] text-muted-foreground">Usada em todas as baixas abaixo</span>
+                    {todosIds.length > 0 && (
+                        <Button
+                            size="lg"
+                            onClick={() => pagar(todosIds, "Repasses marcados como pagos.")}
+                            disabled={busy !== null}
+                            className="bg-emerald-600 text-white hover:bg-emerald-500"
+                        >
+                            {busy === todosIds.join(",") ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+                            Pagar tudo ({money(totalAPagar)})
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {cartasSlot}
@@ -347,11 +368,22 @@ export function ParceiroRepasses({ refreshPath, aPagar, emAtraso, totalAPagar, q
     );
 }
 
+const toDateInput = (iso?: string | null) => (iso || "").slice(0, 10);
+const pagoEmLabel = (iso?: string | null) => {
+    const d = toDateInput(iso);
+    if (!d) return null;
+    const [y, m, dd] = d.split("-");
+    return `${dd}/${m}/${y}`;
+};
+
 export function HistoricoRepasses({ pagos, refreshPath }: { pagos: RepasseItem[]; refreshPath: string }) {
     const router = useRouter();
     const [aberto, setAberto] = React.useState(false);
     const [mesAberto, setMesAberto] = React.useState<Record<string, boolean>>({});
     const [desfazendo, setDesfazendo] = React.useState<string | null>(null);
+    const [editandoData, setEditandoData] = React.useState<string | null>(null);
+    const [novaData, setNovaData] = React.useState<string>("");
+    const [salvandoData, setSalvandoData] = React.useState(false);
 
     const desfazer = async (id: string) => {
         setDesfazendo(id);
@@ -365,6 +397,28 @@ export function HistoricoRepasses({ pagos, refreshPath }: { pagos: RepasseItem[]
             router.refresh();
         } finally {
             setDesfazendo(null);
+        }
+    };
+
+    const abrirEdicaoData = (it: RepasseItem) => {
+        setEditandoData(it.id);
+        setNovaData(toDateInput(it.pagoEm) || toDateInput(new Date().toISOString()));
+    };
+
+    const salvarData = async (id: string) => {
+        if (!novaData) return;
+        setSalvandoData(true);
+        try {
+            const res = await atualizarDataRepasseAction(id, novaData, refreshPath);
+            if (!res.ok) {
+                toast.error(res.error || "Não foi possível atualizar a data.");
+                return;
+            }
+            toast.success("Data do repasse atualizada.");
+            setEditandoData(null);
+            router.refresh();
+        } finally {
+            setSalvandoData(false);
         }
     };
 
@@ -410,10 +464,49 @@ export function HistoricoRepasses({ pagos, refreshPath }: { pagos: RepasseItem[]
                                     <div className="divide-y divide-white/5 border-t border-white/5 bg-black/10">
                                         {m.items.map((it) => (
                                             <div key={it.id} className="flex items-center justify-between gap-3 px-4 py-2 pl-9 text-sm">
-                                                <span className="truncate text-muted-foreground">
+                                                <span className="min-w-0 truncate text-muted-foreground">
                                                     {it.cliente_nome} · Cota {it.numero_cota}
                                                 </span>
-                                                <span className="flex items-center gap-2">
+                                                <span className="flex shrink-0 items-center gap-2">
+                                                    {editandoData === it.id ? (
+                                                        <span className="flex items-center gap-1">
+                                                            <input
+                                                                type="date"
+                                                                value={novaData}
+                                                                onChange={(e) => setNovaData(e.target.value)}
+                                                                className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[11px] text-foreground [color-scheme:dark]"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => salvarData(it.id)}
+                                                                disabled={salvandoData}
+                                                                title="Salvar data"
+                                                                className="inline-flex items-center rounded-md border border-emerald-500/30 px-1.5 py-0.5 text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50"
+                                                            >
+                                                                {salvandoData ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditandoData(null)}
+                                                                disabled={salvandoData}
+                                                                title="Cancelar"
+                                                                className="inline-flex items-center rounded-md border border-white/10 px-1.5 py-0.5 text-muted-foreground hover:bg-white/5 disabled:opacity-50"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => abrirEdicaoData(it)}
+                                                            title="Editar data do pagamento"
+                                                            className="inline-flex items-center gap-1 rounded-md border border-white/10 px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                                                        >
+                                                            <CalendarClock className="h-3 w-3" />
+                                                            {pagoEmLabel(it.pagoEm) ?? "sem data"}
+                                                            <Pencil className="h-2.5 w-2.5 opacity-60" />
+                                                        </button>
+                                                    )}
                                                     <span className="tabular-nums text-foreground">{money(it.valor)}</span>
                                                     <button
                                                         type="button"

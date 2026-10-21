@@ -46,6 +46,7 @@ const toLite = (it: ComissaoLancamento, leadMap?: Map<string, string | null>): R
     competencia: it.competencia_prevista ?? null,
     valor: Number(it.valor_liquido || 0),
     leadId: leadMap?.get(it.cota_id) ?? null,
+    pagoEm: it.repasse_pago_em ?? null,
 });
 
 export default async function ParceiroDetalhePage({ params }: PageProps) {
