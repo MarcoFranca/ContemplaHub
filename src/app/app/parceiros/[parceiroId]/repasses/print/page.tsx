@@ -113,7 +113,7 @@ export default async function RepassePrintPage({ params }: PageProps) {
 
     return (
         <div style={{ background: "#eef0f2" }} className="h-full overflow-y-auto p-4 text-neutral-900">
-            <style>{`
+            <style id="repasse-print-css">{`
                 #repasse-print, #repasse-print * {
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;

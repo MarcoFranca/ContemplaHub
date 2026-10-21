@@ -127,6 +127,46 @@ export function RepasseDocument({
     const total = linhasBase.reduce((s, l) => s + valorDe(l), 0);
     const foiEditado = Object.keys(overrides).length > 0;
 
+    // Imprime só o documento num iframe isolado: o layout do app (sidebar, altura
+    // fixa, overflow) não interfere e o conteúdo pagina por completo.
+    const imprimir = () => {
+        setEditando(false);
+        window.setTimeout(() => {
+            const el = document.getElementById("repasse-print");
+            if (!el) return;
+            const iframe = document.createElement("iframe");
+            Object.assign(iframe.style, { position: "fixed", right: "0", bottom: "0", width: "0", height: "0", border: "0" });
+            document.body.appendChild(iframe);
+            const doc = iframe.contentDocument;
+            const win = iframe.contentWindow;
+            if (!doc || !win) return;
+            const estilos = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+                .filter((n) => n.id !== "repasse-print-css")
+                .map((n) => n.outerHTML)
+                .join("");
+            const titulo = document.title.replace(/</g, "");
+            doc.open();
+            doc.write(
+                `<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title>${estilos}` +
+                    `<style>@page{margin:12mm} html,body{background:#fff!important;margin:0;height:auto;overflow:visible}` +
+                    ` #repasse-print{box-shadow:none!important;max-width:none!important;margin:0!important}` +
+                    ` *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}</style>` +
+                    `</head><body>${el.outerHTML}</body></html>`,
+            );
+            doc.close();
+            let impresso = false;
+            const go = () => {
+                if (impresso) return;
+                impresso = true;
+                win.focus();
+                win.print();
+                window.setTimeout(() => iframe.remove(), 1500);
+            };
+            iframe.onload = go;
+            window.setTimeout(go, 900); // fallback se o onload não disparar
+        }, 80);
+    };
+
     const isPagos = modo === "pagos";
     const tituloSecao = isPagos ? "Repasses pagos" : "A pagar neste mês";
 
@@ -234,7 +274,7 @@ export function RepasseDocument({
 
                     <button
                         type="button"
-                        onClick={() => window.print()}
+                        onClick={imprimir}
                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
                     >
                         <Printer className="h-4 w-4" />
