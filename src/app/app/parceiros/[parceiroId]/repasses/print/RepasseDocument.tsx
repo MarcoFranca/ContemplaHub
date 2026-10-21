@@ -14,6 +14,7 @@ export type LinhaDoc = {
     competenciaLabel: string;
     parcela: string;
     valor: number;
+    pagoEm?: string | null; // YYYY-MM-DD (data do repasse)
     pagoEmLabel?: string | null;
 };
 
@@ -41,6 +42,14 @@ function parseReais(s: string): number {
     return Number.isFinite(n) ? n : 0;
 }
 
+// "2026-10-15" -> "15/10/2026"
+const dateKeyLabel = (key: string) => {
+    if (!key) return "Sem data";
+    const [y, m, d] = key.split("-");
+    if (!y || !m || !d) return key;
+    return `${d}/${m}/${y}`;
+};
+
 type Modo = "apagar" | "pagos";
 
 export function RepasseDocument({
@@ -59,18 +68,45 @@ export function RepasseDocument({
     // Overrides de valor por id de linha (quando o parceiro/gestor ajusta à mão).
     const [overrides, setOverrides] = React.useState<Record<string, number>>({});
 
-    const linhasBase = modo === "apagar" ? aPagar : pagos;
+    // Datas de pagamento distintas (lotes de repasse), da mais recente para a mais antiga.
+    const pagoDatas = React.useMemo(() => {
+        const mapa = new Map<string, { total: number; count: number }>();
+        for (const l of pagos) {
+            const k = l.pagoEm || "";
+            if (!k) continue;
+            const g = mapa.get(k) ?? { total: 0, count: 0 };
+            g.total += l.valor;
+            g.count += 1;
+            mapa.set(k, g);
+        }
+        return Array.from(mapa.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+    }, [pagos]);
+
+    // Filtro de data no modo "Pagos": "" = todos; começa no último pagamento.
+    const [pagoFiltro, setPagoFiltro] = React.useState<string>(() => pagoDatas[0]?.[0] ?? "");
+
+    const linhasBase =
+        modo === "apagar"
+            ? aPagar
+            : pagoFiltro
+              ? pagos.filter((l) => (l.pagoEm || "") === pagoFiltro)
+              : pagos;
     const valorDe = (l: LinhaDoc) => (l.id in overrides ? overrides[l.id] : l.valor);
 
     // Título do documento (nome do arquivo no "Salvar como PDF").
     React.useEffect(() => {
-        const sufixo = modo === "apagar" ? "a-pagar" : "pagos";
+        const sufixo =
+            modo === "apagar"
+                ? "a-pagar"
+                : pagoFiltro
+                  ? `pagos-${pagoFiltro}`
+                  : "pagos-todos";
         const anterior = document.title;
         document.title = `${docTitleBase} - ${sufixo}`;
         return () => {
             document.title = anterior;
         };
-    }, [docTitleBase, modo]);
+    }, [docTitleBase, modo, pagoFiltro]);
 
     // Agrupa por cliente, preservando ordem por competência.
     const porCliente = React.useMemo(() => {
@@ -123,6 +159,23 @@ export function RepasseDocument({
                         </button>
                     </div>
 
+                    {/* Filtro de data do pagamento (só no modo Pagos) */}
+                    {modo === "pagos" && pagoDatas.length > 0 && (
+                        <select
+                            value={pagoFiltro}
+                            onChange={(e) => setPagoFiltro(e.target.value)}
+                            className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 focus:border-neutral-500 focus:outline-none"
+                            title="Data do pagamento"
+                        >
+                            <option value="">Todos os pagamentos</option>
+                            {pagoDatas.map(([data, info]) => (
+                                <option key={data} value={data}>
+                                    {dateKeyLabel(data)} ({info.count}) · {money(info.total)}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+
                     {/* Editar valores */}
                     <button
                         type="button"
@@ -171,7 +224,13 @@ export function RepasseDocument({
                     </div>
                     <div className="text-right text-xs text-neutral-500">
                         <div>Emitido em {emitidoEm}</div>
-                        <div>Competência: {mesLabel}</div>
+                        {isPagos ? (
+                            <div>
+                                {pagoFiltro ? `Pago em ${dateKeyLabel(pagoFiltro)}` : "Todos os pagamentos"}
+                            </div>
+                        ) : (
+                            <div>Competência: {mesLabel}</div>
+                        )}
                         <div className="mt-0.5 font-semibold text-neutral-600">
                             {isPagos ? "Repasses pagos" : "A pagar neste mês"}
                         </div>
@@ -195,7 +254,9 @@ export function RepasseDocument({
                             {money(total)}
                         </div>
                         <div className={`text-xs ${corResumo === "emerald" ? "text-emerald-700/70" : "text-neutral-500"}`}>
-                            {linhasBase.length} repasse(s){foiEditado ? " · valores ajustados manualmente" : ""}
+                            {linhasBase.length} repasse(s)
+                            {isPagos && pagoFiltro ? ` · pago em ${dateKeyLabel(pagoFiltro)}` : ""}
+                            {foiEditado ? " · valores ajustados manualmente" : ""}
                         </div>
                     </div>
                 </div>

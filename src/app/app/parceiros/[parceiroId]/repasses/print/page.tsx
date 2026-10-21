@@ -74,6 +74,7 @@ export default async function RepassePrintPage({ params }: PageProps) {
             competenciaLabel: monthLabel(comp),
             parcela: parcelaInfo.get(it.id) ?? "—",
             valor: Number(it.valor_liquido || 0),
+            pagoEm: (it.repasse_pago_em || "").slice(0, 10) || null,
             pagoEmLabel: dateLabel(it.repasse_pago_em),
         };
     };
