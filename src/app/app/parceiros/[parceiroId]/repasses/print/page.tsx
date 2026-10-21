@@ -119,9 +119,10 @@ export default async function RepassePrintPage({ params }: PageProps) {
                     print-color-adjust: exact !important;
                 }
                 @media print {
+                    html, body { height: auto !important; overflow: visible !important; }
                     body * { visibility: hidden !important; }
-                    #repasse-print, #repasse-print * { visibility: visible !important; }
-                    #repasse-print { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; margin: 0 !important; }
+                    #repasse-print, #repasse-print * { visibility: visible !important; overflow: visible !important; }
+                    #repasse-print { position: absolute; left: 0; top: 0; width: 100%; height: auto !important; box-shadow: none !important; margin: 0 !important; }
                     .no-print { display: none !important; }
                     @page { margin: 16mm; }
                 }
