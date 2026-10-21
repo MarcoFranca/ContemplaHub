@@ -334,7 +334,6 @@ export function RepasseDocument({
                         <div className={`text-xs ${theme.boxSub}`}>
                             {linhasBase.length} repasse(s)
                             {isPagos && pagoFiltro ? ` · pago em ${dateKeyLabel(pagoFiltro)}` : ""}
-                            {foiEditado ? " · valores ajustados manualmente" : ""}
                         </div>
                     </div>
                 </div>
@@ -375,7 +374,6 @@ export function RepasseDocument({
                                                         <ValorCell
                                                             editavel={editando}
                                                             valor={valorDe(l)}
-                                                            editado={l.id in overrides}
                                                             onChange={(n) =>
                                                                 setOverrides((prev) => ({ ...prev, [l.id]: n }))
                                                             }
@@ -420,12 +418,10 @@ export function RepasseDocument({
 function ValorCell({
     editavel,
     valor,
-    editado,
     onChange,
 }: {
     editavel: boolean;
     valor: number;
-    editado: boolean;
     onChange: (n: number) => void;
 }) {
     const [texto, setTexto] = React.useState<string>(valor.toFixed(2).replace(".", ","));
@@ -436,7 +432,7 @@ function ValorCell({
 
     if (!editavel) {
         return (
-            <span className={editado ? "font-semibold text-amber-700" : undefined}>
+            <span>
                 {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor || 0)}
             </span>
         );
