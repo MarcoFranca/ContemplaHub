@@ -21,6 +21,7 @@ export type ComissaoLancamento = {
   imposto_pct: number | string;
   valor_imposto: number | string;
   valor_liquido: number | string;
+  valor_repasse_ajustado?: number | string | null;
   status: ComissaoStatus;
   liberado_por_evento_em?: string | null;
   pago_em?: string | null;

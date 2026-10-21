@@ -3,7 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { Fragment } from "react";
-import { Printer, ArrowLeft, Pencil, RotateCcw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Printer, ArrowLeft, Pencil, RotateCcw, Save, Loader2 } from "lucide-react";
+import { salvarAjustesRepasseAction } from "./actions";
 
 export type LinhaDoc = {
     id: string;
@@ -13,7 +16,8 @@ export type LinhaDoc = {
     competencia: string; // YYYY-MM
     competenciaLabel: string;
     parcela: string;
-    valor: number;
+    valor: number; // valor exibido (ajustado salvo, se houver)
+    valorSistema: number; // valor calculado pelo sistema
     pagoEm?: string | null; // YYYY-MM-DD (data do repasse)
     pagoEmLabel?: string | null;
 };
@@ -25,6 +29,7 @@ type Props = {
     emitidoEm: string;
     mesLabel: string;
     voltarHref: string;
+    parceiroId: string;
     docTitleBase: string; // ex.: "Repasses - Fulano - 2026-10_201530"
     aPagar: LinhaDoc[];
     pagos: LinhaDoc[];
@@ -59,6 +64,7 @@ export function RepasseDocument({
     emitidoEm,
     mesLabel,
     voltarHref,
+    parceiroId,
     docTitleBase,
     aPagar,
     pagos,
@@ -126,6 +132,50 @@ export function RepasseDocument({
 
     const total = linhasBase.reduce((s, l) => s + valorDe(l), 0);
     const foiEditado = Object.keys(overrides).length > 0;
+    const router = useRouter();
+    const [salvando, setSalvando] = React.useState(false);
+    const todasLinhas = React.useMemo(() => [...aPagar, ...pagos], [aPagar, pagos]);
+    const temAjusteSalvo = todasLinhas.some((l) => Math.abs(l.valor - l.valorSistema) >= 0.005);
+
+    const persistir = async (ajustes: { id: string; valor: number | null }[], okMsg: string) => {
+        if (ajustes.length === 0) return;
+        setSalvando(true);
+        try {
+            const res = await salvarAjustesRepasseAction(parceiroId, ajustes);
+            if (!res.ok) {
+                toast.error(res.error || "Não foi possível salvar os ajustes.");
+                return;
+            }
+            toast.success(okMsg);
+            setOverrides({});
+            setEditando(false);
+            router.refresh();
+        } finally {
+            setSalvando(false);
+        }
+    };
+
+    // Valor igual ao do sistema limpa o ajuste (null).
+    const salvarAjustes = () => {
+        const porId = new Map(todasLinhas.map((l) => [l.id, l]));
+        const ajustes = Object.entries(overrides).map(([id, v]) => {
+            const l = porId.get(id);
+            const igualSistema = l ? Math.abs(v - l.valorSistema) < 0.005 : false;
+            return { id, valor: igualSistema ? null : v };
+        });
+        void persistir(ajustes, "Ajustes salvos.");
+    };
+
+    const restaurarSistema = () => {
+        const ajustes = todasLinhas
+            .filter((l) => Math.abs(l.valor - l.valorSistema) >= 0.005)
+            .map((l) => ({ id: l.id, valor: null }));
+        if (ajustes.length === 0) {
+            setOverrides({});
+            return;
+        }
+        void persistir(ajustes, "Valores do sistema restaurados.");
+    };
 
     // Imprime só o documento num iframe isolado: o layout do app (sidebar, altura
     // fixa, overflow) não interfere e o conteúdo pagina por completo.
@@ -263,7 +313,21 @@ export function RepasseDocument({
                     {foiEditado && (
                         <button
                             type="button"
-                            onClick={() => setOverrides({})}
+                            onClick={salvarAjustes}
+                            disabled={salvando}
+                            className="inline-flex items-center gap-2 rounded-lg border border-emerald-500 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
+                            title="Gravar os valores ajustados no sistema"
+                        >
+                            {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                            Salvar ajustes
+                        </button>
+                    )}
+
+                    {(foiEditado || temAjusteSalvo) && (
+                        <button
+                            type="button"
+                            disabled={salvando}
+                            onClick={restaurarSistema}
                             className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-600 hover:bg-neutral-50"
                             title="Voltar aos valores do sistema"
                         >
@@ -285,7 +349,7 @@ export function RepasseDocument({
 
             {editando && (
                 <div className="no-print mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700">
-                    Ajuste os valores diretamente na coluna Valor. Útil para alinhar com o repasse da Porto quando há diferença de centavos. Isso muda apenas este documento, não altera os dados do sistema.
+                    Ajuste os valores diretamente na coluna Valor. Útil para alinhar com o repasse da Porto quando há diferença de centavos. Clique em Salvar ajustes para gravar no sistema; sem salvar, vale só para este PDF. A comissão calculada não muda, o ajuste fica guardado à parte.
                 </div>
             )}
 

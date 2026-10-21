@@ -84,7 +84,8 @@ export default async function RepassePrintPage({ params }: PageProps) {
             competencia: comp,
             competenciaLabel: monthLabel(comp),
             parcela: parcelaInfo.get(it.id) ?? "—",
-            valor: Number(it.valor_liquido || 0),
+            valor: Number(it.valor_repasse_ajustado ?? it.valor_liquido ?? 0),
+            valorSistema: Number(it.valor_liquido || 0),
             pagoEm: (it.repasse_pago_em || "").slice(0, 10) || null,
             pagoEmLabel: dateLabel(it.repasse_pago_em),
         };
@@ -135,6 +136,7 @@ export default async function RepassePrintPage({ params }: PageProps) {
                 emitidoEm={emitidoEm}
                 mesLabel={monthLabel(mes)}
                 voltarHref={voltarHref}
+                parceiroId={parceiroId}
                 docTitleBase={docTitleBase}
                 aPagar={aPagar}
                 pagos={pagos}

@@ -14,7 +14,8 @@ function fmtDateBR(d = new Date()) {
     return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
-export default function GuiaPrintPage({ searchParams }: { searchParams: SP }) {
+export default async function GuiaPrintPage({ searchParams: spPromise }: { searchParams: Promise<SP> }) {
+    const searchParams = await spPromise;
     const nome = (searchParams.nome ?? "Cliente").trim();
     const org = (searchParams.org ?? "Autentika Seguros").trim();
     const doc = (searchParams.doc ?? "").trim();

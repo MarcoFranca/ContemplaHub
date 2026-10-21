@@ -36,6 +36,8 @@ const mesVigente = () => {
 };
 
 const compMonth = (it: ComissaoLancamento) => (it.competencia_prevista || "").slice(0, 7);
+// Valor do repasse: ajuste manual salvo, senão o líquido calculado.
+const valorRepasse = (it: ComissaoLancamento) => Number(it.valor_repasse_ajustado ?? it.valor_liquido ?? 0);
 const isAtraso = (it: ComissaoLancamento) => (it.observacoes || "").includes("INADIMPLENTE");
 const toLite = (it: ComissaoLancamento, leadMap?: Map<string, string | null>): RepasseItem => ({
     id: it.id,
@@ -44,7 +46,7 @@ const toLite = (it: ComissaoLancamento, leadMap?: Map<string, string | null>): R
     grupo_codigo: it.grupo_codigo || "—",
     contrato_id: it.contrato_id,
     competencia: it.competencia_prevista ?? null,
-    valor: Number(it.valor_liquido || 0),
+    valor: valorRepasse(it),
     leadId: leadMap?.get(it.cota_id) ?? null,
     pagoEm: it.repasse_pago_em ?? null,
 });
@@ -133,7 +135,7 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
                 cells: [],
             } as CartaTimeline);
         const mk = compMonth(it);
-        c.cells.push({ mes: mk, valor: Number(it.valor_liquido || 0), status: cellStatus(it) });
+        c.cells.push({ mes: mk, valor: valorRepasse(it), status: cellStatus(it) });
         cartaMapa.set(it.cota_id, c);
         if (it.contrato_id) cartaContrato.set(it.cota_id, it.contrato_id);
         const set = mesesComCell.get(it.cota_id) ?? new Set<string>();
@@ -196,7 +198,7 @@ export default async function ParceiroDetalhePage({ params }: PageProps) {
         const acc =
             gestaoMap.get(nome) ??
             ({ cliente_nome: nome, leadId: cotaLead.get(it.cota_id) ?? null, cotas: new Set(), valorCartas: 0, comissaoLiq: 0, repassado: 0, aRepassar: 0 } as GestaoAcc);
-        const liq = Number(it.valor_liquido || 0);
+        const liq = valorRepasse(it);
         acc.comissaoLiq += liq;
         if (it.repasse_status === "pago") acc.repassado += liq;
         else if (it.repasse_status === "pendente") acc.aRepassar += liq;
