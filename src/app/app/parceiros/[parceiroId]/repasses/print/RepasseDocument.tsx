@@ -249,9 +249,9 @@ export function RepasseDocument({
                 </div>
             )}
 
-            <div id="repasse-print" className="mx-auto max-w-[800px] overflow-hidden rounded-lg bg-white shadow-sm">
+            <div id="repasse-print" className="mx-auto max-w-[800px] rounded-lg bg-white shadow-sm">
                 {/* Faixa colorida do topo */}
-                <div className={`h-2 w-full ${theme.band}`} />
+                <div className={`h-2 w-full rounded-t-lg ${theme.band}`} />
 
                 <div className="p-8">
                 {/* Cabeçalho */}
